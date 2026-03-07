@@ -23,7 +23,7 @@ services:
     depends_on:
       - zookeeper
 
-  mongodb:
+  inventory-db:
     image: mongo:latest
     ports:
       - "27017:27017"
@@ -31,7 +31,57 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=example
     volumes:
-      - mongodb_data:/data/db
+      - inventory_mongodb_data:/data/db
+
+  order-db:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    volumes:
+      - order_mongodb_data:/data/db
+
+  picking-db:
+    image: mongo:latest
+    ports:
+      - "27019:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    volumes:
+      - picking_mongodb_data:/data/db
+
+  shipping-db:
+    image: mongo:latest
+    ports:
+      - "27020:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    volumes:
+      - shipping_mongodb_data:/data/db
+
+  inbound-db:
+    image: mongo:latest
+    ports:
+      - "27021:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    volumes:
+      - inbound_mongodb_data:/data/db
+
+  dispatch-db:
+    image: mongo:latest
+    ports:
+      - "27022:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    volumes:
+      - dispatch_mongodb_data:/data/db
 
   inventory-service:
     build: ./inventory-service
@@ -40,10 +90,10 @@ services:
     environment:
       - PORT=3001
       - KAFKA_BROKER=kafka:9092
-      - MONGODB_URI=mongodb://root:example@mongodb:27017/inventory?authSource=admin
+      - MONGODB_URI=mongodb://root:example@inventory-db:27017/inventory?authSource=admin
     depends_on:
       - kafka
-      - mongodb
+      - inventory-db
 
   order-service:
     build: ./order-service
@@ -52,10 +102,10 @@ services:
     environment:
       - PORT=3002
       - KAFKA_BROKER=kafka:9092
-      - MONGODB_URI=mongodb://root:example@mongodb:27017/order?authSource=admin
+      - MONGODB_URI=mongodb://root:example@order-db:27017/order?authSource=admin
     depends_on:
       - kafka
-      - mongodb
+      - order-db
 
   picking-service:
     build: ./picking-service
@@ -64,10 +114,10 @@ services:
     environment:
       - PORT=3003
       - KAFKA_BROKER=kafka:9092
-      - MONGODB_URI=mongodb://root:example@mongodb:27017/picking?authSource=admin
+      - MONGODB_URI=mongodb://root:example@picking-db:27017/picking?authSource=admin
     depends_on:
       - kafka
-      - mongodb
+      - picking-db
 
   shipping-service:
     build: ./shipping-service
@@ -76,10 +126,10 @@ services:
     environment:
       - PORT=3004
       - KAFKA_BROKER=kafka:9092
-      - MONGODB_URI=mongodb://root:example@mongodb:27017/shipping?authSource=admin
+      - MONGODB_URI=mongodb://root:example@shipping-db:27017/shipping?authSource=admin
     depends_on:
       - kafka
-      - mongodb
+      - shipping-db
 
   inbound-service:
     build: ./inbound-service
@@ -88,9 +138,10 @@ services:
     environment:
       - PORT=3005
       - KAFKA_BROKER=kafka:9092
+      - MONGODB_URI=mongodb://root:example@inbound-db:27017/inbound?authSource=admin
     depends_on:
       - kafka
-      - mongodb
+      - inbound-db
 
   dispatch-service:
     build: ./dispatch-service
@@ -99,9 +150,11 @@ services:
     environment:
       - PORT=3006
       - KAFKA_BROKER=kafka:9092
+      - MONGODB_URI=mongodb://root:example@dispatch-db:27017/dispatch?authSource=admin
       - SHIPPING_SERVICE_URL=http://shipping-service:3004/shipping
     depends_on:
       - kafka
+      - dispatch-db
 
   frontend:
     build: ./frontend
@@ -115,4 +168,9 @@ services:
       - shipping-service
 
 volumes:
-  mongodb_data:
+  inventory_mongodb_data:
+  order_mongodb_data:
+  picking_mongodb_data:
+  shipping_mongodb_data:
+  inbound_mongodb_data:
+  dispatch_mongodb_data:
