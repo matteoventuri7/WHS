@@ -33,5 +33,86 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  inventory-service:
+    build: ./inventory-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - KAFKA_BROKER=kafka:9092
+      - MONGODB_URI=mongodb://root:example@mongodb:27017/inventory?authSource=admin
+    depends_on:
+      - kafka
+      - mongodb
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - KAFKA_BROKER=kafka:9092
+      - MONGODB_URI=mongodb://root:example@mongodb:27017/order?authSource=admin
+    depends_on:
+      - kafka
+      - mongodb
+
+  picking-service:
+    build: ./picking-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - KAFKA_BROKER=kafka:9092
+      - MONGODB_URI=mongodb://root:example@mongodb:27017/picking?authSource=admin
+    depends_on:
+      - kafka
+      - mongodb
+
+  shipping-service:
+    build: ./shipping-service
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - KAFKA_BROKER=kafka:9092
+      - MONGODB_URI=mongodb://root:example@mongodb:27017/shipping?authSource=admin
+    depends_on:
+      - kafka
+      - mongodb
+
+  inbound-service:
+    build: ./inbound-service
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      - kafka
+      - mongodb
+
+  dispatch-service:
+    build: ./dispatch-service
+    ports:
+      - "3006:3006"
+    environment:
+      - PORT=3006
+      - KAFKA_BROKER=kafka:9092
+      - SHIPPING_SERVICE_URL=http://shipping-service:3004/shipping
+    depends_on:
+      - kafka
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - inbound-service
+      - inventory-service
+      - order-service
+      - picking-service
+      - shipping-service
+
 volumes:
   mongodb_data:

@@ -14,7 +14,7 @@ import { AppService } from './app.service';
         options: {
           client: {
             clientId: 'dispatch-producer',
-            brokers: ['localhost:29092'],
+            brokers: [process.env.KAFKA_BROKER || 'localhost:29092'],
           },
           consumer: {
             groupId: 'dispatch-consumer',

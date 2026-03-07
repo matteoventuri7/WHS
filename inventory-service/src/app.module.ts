@@ -7,7 +7,7 @@ import { Inventory, InventorySchema } from './schemas/inventory.schema';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://root:example@localhost:27017/inventory?authSource=admin'),
+    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/inventory?authSource=admin'),
     MongooseModule.forFeature([{ name: Inventory.name, schema: InventorySchema }]),
     ClientsModule.register([
       {
@@ -16,7 +16,7 @@ import { Inventory, InventorySchema } from './schemas/inventory.schema';
         options: {
           client: {
             clientId: 'inventory-producer',
-            brokers: ['localhost:29092'],
+            brokers: [process.env.KAFKA_BROKER || 'localhost:29092'],
           },
           consumer: {
             groupId: 'inventory-consumer',

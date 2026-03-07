@@ -7,7 +7,7 @@ import { PickingTask, PickingTaskSchema } from './schemas/picking.schema';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://root:example@localhost:27017/picking?authSource=admin'),
+    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/picking?authSource=admin'),
     MongooseModule.forFeature([{ name: PickingTask.name, schema: PickingTaskSchema }]),
     ClientsModule.register([
       {
@@ -16,7 +16,7 @@ import { PickingTask, PickingTaskSchema } from './schemas/picking.schema';
         options: {
           client: {
             clientId: 'picking-producer',
-            brokers: ['localhost:29092'],
+            brokers: [process.env.KAFKA_BROKER || 'localhost:29092'],
           },
           consumer: {
             groupId: 'picking-consumer',

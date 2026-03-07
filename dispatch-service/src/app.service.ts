@@ -12,7 +12,7 @@ export class AppService implements OnModuleInit {
   private currentInterval: number | null = null;
 
   // URL of the shipping service
-  private readonly shippingServiceUrl = 'http://localhost:3004/shipping';
+  private readonly shippingServiceUrl = process.env.SHIPPING_SERVICE_URL || 'http://localhost:3004/shipping';
 
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,

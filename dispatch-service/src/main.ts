@@ -9,7 +9,8 @@ async function bootstrap() {
   // Abilitiamo CORS per poter essere interrogati da un eventuale frontend
   app.enableCors();
 
-  await app.listen(3006);
-  logger.log(`Dispatch Service (Simulator) in ascolto sulla porta 3006`);
+  const port = process.env.PORT || 3006;
+  await app.listen(port);
+  logger.log(`Dispatch Service (Simulator) in ascolto sulla porta ${port}`);
 }
 bootstrap();

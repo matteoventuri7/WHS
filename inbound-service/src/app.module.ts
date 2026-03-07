@@ -12,7 +12,7 @@ import { AppService } from './app.service';
         options: {
           client: {
             clientId: 'inbound-producer',
-            brokers: ['localhost:29092'],
+            brokers: [process.env.KAFKA_BROKER || 'localhost:29092'],
           },
           consumer: {
             groupId: 'inbound-consumer',
@@ -24,4 +24,4 @@ import { AppService } from './app.service';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
