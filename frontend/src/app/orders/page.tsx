@@ -40,12 +40,17 @@ export default function OrdersPage() {
 
     const handleCancelOrder = async (orderId: string) => {
         try {
-            await fetch(`http://localhost:3002/orders/${orderId}/cancel`, {
+            const res = await fetch(`http://localhost:3002/orders/${orderId}/cancel`, {
                 method: 'PATCH'
             });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                alert(`Impossibile annullare l'ordine:\n${errorData.message || 'Errore sconosciuto'}`);
+            }
             fetchOrders();
         } catch (e) {
             console.error('Failed to cancel order', e);
+            alert(`Errore di rete durante l'annullamento dell'ordine`);
         }
     };
 

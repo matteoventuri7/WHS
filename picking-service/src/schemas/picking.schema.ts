@@ -14,7 +14,7 @@ export class PickingTask {
     @Prop()
     allocations: any[];
 
-    @Prop({ required: true, enum: ['PENDING', 'COMPLETED'], default: 'PENDING' })
+    @Prop({ required: true, enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'], default: 'PENDING' })
     status: string;
 }
 

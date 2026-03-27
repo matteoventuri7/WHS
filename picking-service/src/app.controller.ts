@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post, HttpException, HttpStatus } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { AppService } from './app.service';
 
@@ -25,6 +25,15 @@ export class AppController {
   async handleOrderReadyForPicking(@Payload() message: any) {
     if (message && message.orderId) {
       await this.appService.handleOrderReadyForPicking(message);
+    }
+  }
+
+  @Post('tasks/order/:orderId/cancel')
+  async cancelTaskForOrder(@Param('orderId') orderId: string) {
+    try {
+      return await this.appService.cancelPickingTask(orderId);
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 }

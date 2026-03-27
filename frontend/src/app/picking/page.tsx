@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ScanBarcode, RefreshCw, CheckCircle, Clock } from 'lucide-react';
+import { ScanBarcode, RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
 export default function PickingPage() {
     const [tasks, setTasks] = useState<any[]>([]);
@@ -44,11 +44,11 @@ export default function PickingPage() {
 
             <div className="grid gap-6">
                 {tasks.map((task, idx) => (
-                    <motion.div key={task._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className={`w-full p-6 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden ${task.status === 'COMPLETED' ? 'bg-slate-900/20 border-slate-800/40 opacity-70' : 'bg-slate-900/60 border-slate-700/60 shadow-lg hover:border-green-500/30'}`}>
+                    <motion.div key={task._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className={`w-full p-6 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden ${task.status !== 'PENDING' ? 'bg-slate-900/20 border-slate-800/40 opacity-70' : 'bg-slate-900/60 border-slate-700/60 shadow-lg hover:border-green-500/30'}`}>
 
                         <div className="flex items-start gap-5">
-                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center border ${task.status === 'COMPLETED' ? 'bg-slate-800/50 border-slate-700 text-slate-500' : 'bg-green-500/10 border-green-500/20 text-green-400 shadow-[0_0_15px_rgba(7ade80,0.15)]'}`}>
-                                {task.status === 'COMPLETED' ? <CheckCircle className="w-7 h-7" /> : <Clock className="w-7 h-7" />}
+                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center border ${task.status !== 'PENDING' ? 'bg-slate-800/50 border-slate-700 text-slate-500' : 'bg-green-500/10 border-green-500/20 text-green-400 shadow-[0_0_15px_rgba(7ade80,0.15)]'}`}>
+                                {task.status === 'COMPLETED' ? <CheckCircle className="w-7 h-7" /> : task.status === 'CANCELLED' ? <AlertCircle className="w-7 h-7" /> : <Clock className="w-7 h-7" />}
                             </div>
                             <div>
                                 <h3 className="font-bold text-xl mb-1 text-slate-200">Task #{task.taskId.slice(-6)}</h3>
@@ -70,6 +70,10 @@ export default function PickingPage() {
                                 <CheckCircle className="w-5 h-5" />
                                 Mark Completed
                             </button>
+                        ) : task.status === 'CANCELLED' ? (
+                            <div className="shrink-0 px-6 py-2 border border-red-900/40 rounded-lg text-red-500 flex items-center gap-2 font-medium bg-slate-900/30 opacity-80">
+                                <AlertCircle className="w-4 h-4" /> Canceled
+                            </div>
                         ) : (
                             <div className="shrink-0 px-6 py-2 border border-slate-800 rounded-lg text-slate-500 flex items-center gap-2 font-medium bg-slate-900/30">
                                 <CheckCircle className="w-4 h-4" /> Picked

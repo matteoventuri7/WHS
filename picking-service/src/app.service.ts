@@ -57,4 +57,22 @@ export class AppService implements OnModuleInit {
     }
     throw new Error('Task non trovato o già completato');
   }
+
+  async cancelPickingTask(orderId: string) {
+    const task = await this.taskModel.findOne({ orderId });
+    if (!task) {
+      this.logger.log(`Nessun picking task trovato per l'ordine ${orderId}. Annullamento consentito.`);
+      return { success: true, message: 'Nessun picking task associato.' };
+    }
+
+    if (task.status === 'PENDING') {
+      task.status = 'CANCELLED';
+      await task.save();
+      this.logger.log(`Picking Task ${task.taskId} annullato per ordine ${orderId}.`);
+      return { success: true, message: 'Picking task annullato.' };
+    }
+
+    this.logger.warn(`Impossibile annullare Picking Task ${task.taskId} per ordine ${orderId} (stato: ${task.status}).`);
+    throw new Error(`Impossibile annullare: il task di picking è in stato ${task.status}`);
+  }
 }

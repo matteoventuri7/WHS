@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, HttpException, HttpStatus } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { AppService } from './app.service';
 
@@ -23,7 +23,11 @@ export class AppController {
 
   @Patch(':id/cancel')
   async cancelOrder(@Param('id') id: string) {
-    return this.appService.cancelOrder(id);
+    try {
+      return await this.appService.cancelOrder(id);
+    } catch (e: any) {
+      throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   @EventPattern('InventoryAllocated')
