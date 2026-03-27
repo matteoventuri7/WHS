@@ -35,6 +35,7 @@ export default function RootLayout({
                   <NavLink href="/orders" label="Orders" activeColor="text-amber-400" />
                   <NavLink href="/picking" label="Picking Tasks" activeColor="text-green-400" />
                   <NavLink href="/shipping" label="Shipping & Dispatch" activeColor="text-purple-400" />
+                  <NavLink href="/status" label="System Status" activeColor="text-cyan-400" />
                 </div>
               </div>
 

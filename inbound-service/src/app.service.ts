@@ -14,6 +14,7 @@ export class AppService implements OnModuleInit {
   ) { }
 
   async onModuleInit() {
+    await this.kafkaClient.connect();
     this.logger.log('Connessione Kafka Producer (Inbound) inizializzata.');
   }
 

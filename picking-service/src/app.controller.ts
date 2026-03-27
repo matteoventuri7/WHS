@@ -11,6 +11,11 @@ export class AppController {
     return this.appService.getAllTasks();
   }
 
+  @Get('health')
+  getHealth() {
+    return { status: 'ok', service: 'picking' };
+  }
+
   @Post('tasks/:taskId/complete')
   async completeTask(@Param('taskId') taskId: string) {
     return this.appService.completePickingTask(taskId);

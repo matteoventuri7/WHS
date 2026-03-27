@@ -11,6 +11,11 @@ export class AppController {
     return this.appService.getAllVehicles();
   }
 
+  @Get('health')
+  getHealth() {
+    return { status: 'ok', service: 'shipping' };
+  }
+
   @Post('vehicles')
   async registerVehicle(@Body() body: { vehicleId: string, maxCapacity: number }) {
     return this.appService.registerVehicle(body.vehicleId, Number(body.maxCapacity));

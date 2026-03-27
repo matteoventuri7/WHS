@@ -14,6 +14,7 @@ export class AppService implements OnModuleInit {
   ) { }
 
   async onModuleInit() {
+    await this.kafkaClient.connect();
     this.logger.log('Connessione Kafka Producer inizializzata.');
   }
 
@@ -96,6 +97,20 @@ export class AppService implements OnModuleInit {
         );
       }
       this.kafkaClient.emit('OutOfStock', { orderId: payload.orderId });
+    }
+  }
+
+  async handleOrderCancelled(payload: { orderId: string, previousStatus: string, allocations?: any[] }) {
+    this.logger.log(`Ricevuto evento OrderCancelled per ordine ${payload.orderId}`);
+    if (payload.allocations && payload.allocations.length > 0) {
+      this.logger.log(`Annullamento allocazioni per ordine ${payload.orderId}. Ripristino stock...`);
+      for (const alloc of payload.allocations) {
+        await this.inventoryModel.updateOne(
+          { productId: alloc.productId, location: alloc.location },
+          { $inc: { reservedQuantity: -alloc.quantity } }
+        );
+      }
+      this.logger.log(`Stock liberato con successo per ordine ${payload.orderId}`);
     }
   }
 }

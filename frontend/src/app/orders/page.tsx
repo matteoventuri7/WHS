@@ -6,6 +6,8 @@ import { ShoppingCart, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock, Truck 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [cancelingId, setCancelingId] = useState<string | null>(null);
 
     const [productId, setProductId] = useState('');
     const [quantity, setQuantity] = useState('');
@@ -36,15 +38,29 @@ export default function OrdersPage() {
         fetchOrders();
     };
 
+    const handleCancelOrder = async (orderId: string) => {
+        try {
+            await fetch(`http://localhost:3002/orders/${orderId}/cancel`, {
+                method: 'PATCH'
+            });
+            fetchOrders();
+        } catch (e) {
+            console.error('Failed to cancel order', e);
+        }
+    };
+
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'PENDING': return <Clock className="w-5 h-5 text-blue-400" />;
             case 'SUSPENDED': return <AlertCircle className="w-5 h-5 text-red-400" />;
             case 'ALLOCATED': return <CheckCircle2 className="w-5 h-5 text-amber-400" />;
             case 'SHIPPED': return <Truck className="w-5 h-5 text-emerald-400" />;
+            case 'CANCELLED': return <AlertCircle className="w-5 h-5 text-red-600" />;
             default: return <Clock className="w-5 h-5 text-slate-400" />;
         }
     };
+
+    const filteredOrders = orders.filter(o => statusFilter === 'ALL' || o.status === statusFilter);
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
@@ -83,10 +99,24 @@ export default function OrdersPage() {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="md:col-span-2 space-y-4">
-                    <h2 className="text-xl font-semibold mb-6">Order Lifecycle</h2>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-semibold">Order Lifecycle</h2>
+                        <select 
+                            value={statusFilter} 
+                            onChange={e => setStatusFilter(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-amber-500 outline-none text-sm text-slate-300"
+                        >
+                            <option value="ALL">Tutti gli ordini</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="ALLOCATED">Allocated</option>
+                            <option value="SUSPENDED">Suspended</option>
+                            <option value="SHIPPED">Shipped</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
 
                     <div className="grid gap-4">
-                        {orders.map((order, idx) => (
+                        {filteredOrders.map((order, idx) => (
                             <motion.div key={order._id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }} className="w-full p-5 rounded-xl bg-slate-900/30 border border-slate-800/60 hover:border-slate-700/80 transition-all group">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
@@ -99,6 +129,7 @@ export default function OrdersPage() {
                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wider ${order.status === 'PENDING' ? 'bg-blue-500/20 text-blue-400' :
                                                         order.status === 'SUSPENDED' ? 'bg-red-500/20 text-red-400' :
                                                             order.status === 'ALLOCATED' ? 'bg-amber-500/20 text-amber-400' :
+                                                                order.status === 'CANCELLED' ? 'bg-red-900/40 text-red-500 line-through opacity-80' :
                                                                 'bg-emerald-500/20 text-emerald-400'
                                                     }`}>
                                                     {order.status}
@@ -108,6 +139,26 @@ export default function OrdersPage() {
                                                 Requested: <span className="text-slate-300 font-mono">{order.items[0].quantity}x {order.items[0].productId}</span>
                                             </p>
                                         </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-3">
+                                        {order.status !== 'SHIPPED' && order.status !== 'CANCELLED' && (
+                                            cancelingId === order.orderId ? (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs text-slate-400">Sicuro?</span>
+                                                    <button onClick={() => setCancelingId(null)} className="text-xs px-2 py-1.5 rounded-lg border border-slate-600 text-slate-400 hover:bg-slate-800 transition-colors">No</button>
+                                                    <button onClick={() => { setCancelingId(null); handleCancelOrder(order.orderId); }} className="text-xs px-2 py-1.5 rounded-lg border border-red-500/50 text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors">Sì, annulla</button>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => setCancelingId(order.orderId)}
+                                                    className="text-xs px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 transition-colors flex items-center gap-1"
+                                                    title="Annulla Ordine"
+                                                >
+                                                    Annulla
+                                                </button>
+                                            )
+                                        )}
                                     </div>
 
                                     {order.allocations && order.allocations.length > 0 && (
@@ -125,10 +176,10 @@ export default function OrdersPage() {
                             </motion.div>
                         ))}
 
-                        {orders.length === 0 && !loading && (
+                        {filteredOrders.length === 0 && !loading && (
                             <div className="text-center py-16 border border-slate-800 border-dashed rounded-2xl bg-slate-900/10">
                                 <ShoppingCart className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                                <p className="text-slate-400">No orders yet. Place a new outbound order!</p>
+                                <p className="text-slate-400">Nessun ordine trovato per lo stato selezionato.</p>
                             </div>
                         )}
                     </div>

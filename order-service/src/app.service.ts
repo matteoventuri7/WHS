@@ -35,6 +35,33 @@ export class AppService implements OnModuleInit {
     return this.orderModel.find().exec();
   }
 
+  async cancelOrder(orderId: string) {
+    const order = await this.orderModel.findOne({ orderId });
+    if (!order) {
+      throw new Error(`Order ${orderId} not found`);
+    }
+    if (order.status === 'SHIPPED') {
+      throw new Error(`Cannot cancel a shipped order`);
+    }
+    if (order.status === 'CANCELLED') {
+      return order; // Already cancelled
+    }
+
+    const previousStatus = order.status;
+    order.status = 'CANCELLED';
+    await order.save();
+
+    this.logger.log(`Ordine ${order.orderId} annullato.`);
+
+    this.kafkaClient.emit('OrderCancelled', {
+      orderId: order.orderId,
+      previousStatus,
+      allocations: order.allocations
+    });
+
+    return order;
+  }
+
   async handleInventoryAllocated(payload: { orderId: string, allocations: any[] }) {
     const order = await this.orderModel.findOne({ orderId: payload.orderId });
     if (order && order.status !== 'ALLOCATED') {

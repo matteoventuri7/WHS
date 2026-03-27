@@ -10,6 +10,11 @@ export class AppController {
     return this.appService.getStatus();
   }
 
+  @Get('health')
+  getHealth() {
+    return { status: 'ok', service: 'dispatch' };
+  }
+
   @Post('start')
   startSimulation(@Body() body?: { intervalMs?: number }) {
     return this.appService.startSimulation(body?.intervalMs);
