@@ -3,6 +3,7 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PickingTask, PickingTaskDocument } from './schemas/picking.schema';
+import { EventsGateway } from './events.gateway';
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -11,6 +12,7 @@ export class AppService implements OnModuleInit {
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(PickingTask.name) private taskModel: Model<PickingTaskDocument>,
+    private readonly eventsGateway: EventsGateway,
   ) { }
 
   async onModuleInit() {
@@ -38,6 +40,7 @@ export class AppService implements OnModuleInit {
         orderId: task.orderId,
         allocations: task.allocations
       });
+      this.eventsGateway.notifyDataChanged();
     }
   }
 
@@ -53,6 +56,7 @@ export class AppService implements OnModuleInit {
         orderId: task.orderId,
         allocations: task.allocations
       });
+      this.eventsGateway.notifyDataChanged();
       return task;
     }
     throw new Error('Task non trovato o già completato');
@@ -69,6 +73,7 @@ export class AppService implements OnModuleInit {
       task.status = 'CANCELLED';
       await task.save();
       this.logger.log(`Picking Task ${task.taskId} annullato per ordine ${orderId}.`);
+      this.eventsGateway.notifyDataChanged();
       return { success: true, message: 'Picking task annullato.' };
     }
 

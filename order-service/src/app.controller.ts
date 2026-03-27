@@ -30,6 +30,15 @@ export class AppController {
     }
   }
 
+  @Patch(':id/resume')
+  async resumeOrder(@Param('id') id: string) {
+    try {
+      return await this.appService.resumeOrder(id);
+    } catch (e: any) {
+      throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
   @EventPattern('InventoryAllocated')
   async handleInventoryAllocated(@Payload() message: any) {
     if (message && message.orderId) {

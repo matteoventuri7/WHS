@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ScanBarcode, RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { useRealtimeData } from '../useRealtimeData';
 
 export default function PickingPage() {
     const [tasks, setTasks] = useState<any[]>([]);
@@ -21,6 +22,7 @@ export default function PickingPage() {
     };
 
     useEffect(() => { fetchTasks(); }, []);
+    useRealtimeData('http://localhost:3003', fetchTasks);
 
     const completeTask = async (taskId: string) => {
         await fetch(`http://localhost:3003/picking/tasks/${taskId}/complete`, { method: 'POST' });

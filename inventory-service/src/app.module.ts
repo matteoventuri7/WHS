@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { EventsGateway } from './events.gateway';
 import { Inventory, InventorySchema } from './schemas/inventory.schema';
 
 @Module({
@@ -26,6 +27,6 @@ import { Inventory, InventorySchema } from './schemas/inventory.schema';
     ]),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, EventsGateway],
 })
 export class AppModule { }

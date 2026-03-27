@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PackageOpen, Plus, ArchiveRestore, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { useRealtimeData } from '../useRealtimeData';
 
 export default function InventoryPage() {
     const [items, setItems] = useState<any[]>([]);
@@ -27,6 +28,7 @@ export default function InventoryPage() {
     };
 
     useEffect(() => { fetchInventory(); }, []);
+    useRealtimeData('http://localhost:3001', fetchInventory);
 
     const handleInbound = async (e: React.FormEvent) => {
         e.preventDefault();

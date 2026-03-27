@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Link from 'next/link';
 import SimulatorToggle from './SimulatorToggle';
+import DispatchSimulatorToggle from './DispatchSimulatorToggle';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -39,9 +40,10 @@ export default function RootLayout({
                 </div>
               </div>
 
-              {/* Simulator Auto-Toggle */}
-              <div className="flex items-center ml-auto">
+              {/* Simulator Auto-Toggles */}
+              <div className="flex items-center ml-auto gap-4">
                 <SimulatorToggle />
+                <DispatchSimulatorToggle />
               </div>
             </div>
           </div>

@@ -12,6 +12,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const microservices_1 = require("@nestjs/microservices");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
+const events_gateway_1 = require("./events.gateway");
 const order_schema_1 = require("./schemas/order.schema");
 let AppModule = class AppModule {
 };
@@ -38,7 +39,7 @@ exports.AppModule = AppModule = __decorate([
             ]),
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService],
+        providers: [app_service_1.AppService, events_gateway_1.EventsGateway],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

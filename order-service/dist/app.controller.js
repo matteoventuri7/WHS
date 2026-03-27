@@ -27,6 +27,25 @@ let AppController = class AppController {
     async getOrders() {
         return this.appService.getAllOrders();
     }
+    getHealth() {
+        return { status: 'ok', service: 'order' };
+    }
+    async cancelOrder(id) {
+        try {
+            return await this.appService.cancelOrder(id);
+        }
+        catch (e) {
+            throw new common_1.HttpException(e.message, common_1.HttpStatus.BAD_REQUEST);
+        }
+    }
+    async resumeOrder(id) {
+        try {
+            return await this.appService.resumeOrder(id);
+        }
+        catch (e) {
+            throw new common_1.HttpException(e.message, common_1.HttpStatus.BAD_REQUEST);
+        }
+    }
     async handleInventoryAllocated(message) {
         if (message && message.orderId) {
             await this.appService.handleInventoryAllocated(message);
@@ -60,6 +79,26 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AppController.prototype, "getOrders", null);
+__decorate([
+    (0, common_1.Get)('health'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AppController.prototype, "getHealth", null);
+__decorate([
+    (0, common_1.Patch)(':id/cancel'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "cancelOrder", null);
+__decorate([
+    (0, common_1.Patch)(':id/resume'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "resumeOrder", null);
 __decorate([
     (0, microservices_1.EventPattern)('InventoryAllocated'),
     __param(0, (0, microservices_1.Payload)()),

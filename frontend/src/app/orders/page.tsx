@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock, Truck } from 'lucide-react';
+import { useRealtimeData } from '../useRealtimeData';
 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<any[]>([]);
@@ -26,6 +27,7 @@ export default function OrdersPage() {
     };
 
     useEffect(() => { fetchOrders(); }, []);
+    useRealtimeData('http://localhost:3002', fetchOrders);
 
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,6 +53,22 @@ export default function OrdersPage() {
         } catch (e) {
             console.error('Failed to cancel order', e);
             alert(`Errore di rete durante l'annullamento dell'ordine`);
+        }
+    };
+
+    const handleResumeOrder = async (orderId: string) => {
+        try {
+            const res = await fetch(`http://localhost:3002/orders/${orderId}/resume`, {
+                method: 'PATCH'
+            });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                alert(`Impossibile riprendere l'ordine:\n${errorData.message || 'Errore sconosciuto'}`);
+            }
+            fetchOrders();
+        } catch (e) {
+            console.error('Failed to resume order', e);
+            alert(`Errore di rete durante il ripristino dell'ordine`);
         }
     };
 
@@ -147,6 +165,15 @@ export default function OrdersPage() {
                                     </div>
                                     
                                     <div className="flex items-center gap-3">
+                                        {order.status === 'SUSPENDED' && (
+                                            <button 
+                                                onClick={() => handleResumeOrder(order.orderId)}
+                                                className="text-xs px-3 py-1.5 rounded-lg border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50 transition-colors flex items-center gap-1"
+                                                title="Riprendi Ordine"
+                                            >
+                                                Riprendi
+                                            </button>
+                                        )}
                                         {order.status !== 'SHIPPED' && order.status !== 'CANCELLED' && (
                                             cancelingId === order.orderId ? (
                                                 <div className="flex items-center gap-2">

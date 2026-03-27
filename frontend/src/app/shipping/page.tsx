@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Truck, Plus, RefreshCw, Send, PackageCheck } from 'lucide-react';
+import { Truck, Plus, RefreshCw, Send, PackageCheck, Clock, Package } from 'lucide-react';
+import { useRealtimeData } from '../useRealtimeData';
 
 export default function ShippingPage() {
     const [vehicles, setVehicles] = useState<any[]>([]);
@@ -10,12 +11,19 @@ export default function ShippingPage() {
     const [vehicleId, setVehicleId] = useState('');
     const [maxCapacity, setMaxCapacity] = useState('');
 
-    const fetchVehicles = async () => {
+    const [pendingShipments, setPendingShipments] = useState<any[]>([]);
+
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3004/shipping/vehicles');
-            const data = await res.json();
-            setVehicles(data.sort((a: any, b: any) => b.status.localeCompare(a.status))); // AVAILABLE first
+            const [vehiclesRes, pendingRes] = await Promise.all([
+                fetch('http://localhost:3004/shipping/vehicles'),
+                fetch('http://localhost:3004/shipping/pending')
+            ]);
+            const vData = await vehiclesRes.json();
+            const pData = await pendingRes.json();
+            setVehicles(vData.sort((a: any, b: any) => b.status.localeCompare(a.status))); // AVAILABLE first
+            setPendingShipments(pData);
         } catch (e) {
             console.error(e);
         } finally {
@@ -23,7 +31,8 @@ export default function ShippingPage() {
         }
     };
 
-    useEffect(() => { fetchVehicles(); }, []);
+    useEffect(() => { fetchData(); }, []);
+    useRealtimeData('http://localhost:3004', fetchData);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,12 +42,12 @@ export default function ShippingPage() {
             body: JSON.stringify({ vehicleId, maxCapacity: Number(maxCapacity) })
         });
         setVehicleId(''); setMaxCapacity('');
-        fetchVehicles();
+        fetchData();
     };
 
     const dispatchVehicle = async (id: string) => {
         await fetch(`http://localhost:3004/shipping/vehicles/${id}/dispatch`, { method: 'POST' });
-        fetchVehicles();
+        fetchData();
     };
 
     return (
@@ -51,7 +60,7 @@ export default function ShippingPage() {
                     </h1>
                     <p className="text-slate-400 mt-2">Manage logistics, vehicles, and final shipment dispatch.</p>
                 </div>
-                <button onClick={fetchVehicles} className="p-2 bg-slate-800/50 hover:bg-slate-800 rounded-full transition-colors border border-slate-700/50 hover:border-purple-500/50 group">
+                <button onClick={fetchData} className="p-2 bg-slate-800/50 hover:bg-slate-800 rounded-full transition-colors border border-slate-700/50 hover:border-purple-500/50 group">
                     <RefreshCw className={`w-5 h-5 text-slate-400 group-hover:text-purple-400 transition-colors ${loading ? 'animate-spin text-purple-400' : ''}`} />
                 </button>
             </div>
@@ -126,6 +135,40 @@ export default function ShippingPage() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Pending Shipments Section */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-8">
+                <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-orange-400" /> Pending Shipments
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {pendingShipments.map((ps, idx) => (
+                        <motion.div key={ps._id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }} className="p-5 rounded-xl bg-slate-900/40 border border-slate-800/60 backdrop-blur-sm flex flex-col gap-3 relative overflow-hidden group hover:border-orange-500/30 transition-colors">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <div className="text-xs text-orange-400/80 font-mono mb-1">TASK: {ps.taskId}</div>
+                                    <div className="font-semibold text-slate-200">Order: {ps.orderId}</div>
+                                </div>
+                                <div className="p-2 bg-orange-500/10 rounded-lg text-orange-400">
+                                    <Package className="w-5 h-5" />
+                                </div>
+                            </div>
+                            <div className="mt-2 text-sm text-slate-400">
+                                Total Items: <span className="font-bold text-slate-200">{ps.totalItems}</span>
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1">
+                                Queued at: {new Date(ps.createdAt).toLocaleString()}
+                            </div>
+                        </motion.div>
+                    ))}
+                    {pendingShipments.length === 0 && !loading && (
+                        <div className="col-span-full text-center py-12 border border-slate-800 border-dashed rounded-2xl bg-slate-900/10">
+                            <PackageCheck className="w-10 h-10 text-emerald-500/50 mx-auto mb-3" />
+                            <p className="text-slate-400">No pending shipments. All tasks have been assigned!</p>
+                        </div>
+                    )}
+                </div>
+            </motion.div>
         </div>
     );
 }

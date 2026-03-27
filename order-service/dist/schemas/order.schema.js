@@ -42,7 +42,7 @@ __decorate([
     __metadata("design:type", Array)
 ], Order.prototype, "items", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true, enum: ['PENDING', 'SUSPENDED', 'ALLOCATED', 'SHIPPED'], default: 'PENDING' }),
+    (0, mongoose_1.Prop)({ required: true, enum: ['PENDING', 'SUSPENDED', 'ALLOCATED', 'SHIPPED', 'CANCELLED'], default: 'PENDING' }),
     __metadata("design:type", String)
 ], Order.prototype, "status", void 0);
 __decorate([

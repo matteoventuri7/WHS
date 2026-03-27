@@ -21,6 +21,24 @@ export declare class AppController {
     } & {
         id: string;
     })[]>;
+    getHealth(): {
+        status: string;
+        service: string;
+    };
+    cancelOrder(id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/order.schema").OrderDocument, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/order.schema").Order & import("mongoose").Document<import("mongoose").Types.ObjectId, any, any, Record<string, any>, {}> & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    } & {
+        id: string;
+    }>;
+    resumeOrder(id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/order.schema").OrderDocument, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/order.schema").Order & import("mongoose").Document<import("mongoose").Types.ObjectId, any, any, Record<string, any>, {}> & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    } & {
+        id: string;
+    }>;
     handleInventoryAllocated(message: any): Promise<void>;
     handleOutOfStock(message: any): Promise<void>;
     handleItemStored(): Promise<void>;

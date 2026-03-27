@@ -2,11 +2,13 @@ import { OnModuleInit } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { Model } from 'mongoose';
 import { Order, OrderDocument } from './schemas/order.schema';
+import { EventsGateway } from './events.gateway';
 export declare class AppService implements OnModuleInit {
     private readonly kafkaClient;
     private orderModel;
+    private readonly eventsGateway;
     private readonly logger;
-    constructor(kafkaClient: ClientKafka, orderModel: Model<OrderDocument>);
+    constructor(kafkaClient: ClientKafka, orderModel: Model<OrderDocument>, eventsGateway: EventsGateway);
     onModuleInit(): Promise<void>;
     placeOrder(items: {
         productId: string;
@@ -25,6 +27,20 @@ export declare class AppService implements OnModuleInit {
     } & {
         id: string;
     })[]>;
+    cancelOrder(orderId: string): Promise<import("mongoose").Document<unknown, {}, OrderDocument, {}, import("mongoose").DefaultSchemaOptions> & Order & import("mongoose").Document<import("mongoose").Types.ObjectId, any, any, Record<string, any>, {}> & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    } & {
+        id: string;
+    }>;
+    resumeOrder(orderId: string): Promise<import("mongoose").Document<unknown, {}, OrderDocument, {}, import("mongoose").DefaultSchemaOptions> & Order & import("mongoose").Document<import("mongoose").Types.ObjectId, any, any, Record<string, any>, {}> & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    } & {
+        id: string;
+    }>;
     handleInventoryAllocated(payload: {
         orderId: string;
         allocations: any[];

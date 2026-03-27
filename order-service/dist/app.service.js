@@ -19,16 +19,18 @@ const microservices_1 = require("@nestjs/microservices");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const order_schema_1 = require("./schemas/order.schema");
+const events_gateway_1 = require("./events.gateway");
 let AppService = AppService_1 = class AppService {
     kafkaClient;
     orderModel;
+    eventsGateway;
     logger = new common_1.Logger(AppService_1.name);
-    constructor(kafkaClient, orderModel) {
+    constructor(kafkaClient, orderModel, eventsGateway) {
         this.kafkaClient = kafkaClient;
         this.orderModel = orderModel;
+        this.eventsGateway = eventsGateway;
     }
     async onModuleInit() {
-        await this.kafkaClient.connect();
         this.logger.log('Connessione Kafka Producer per Order Service inizializzata.');
     }
     async placeOrder(items) {
@@ -39,10 +41,67 @@ let AppService = AppService_1 = class AppService {
             orderId: order.orderId,
             items: order.items,
         });
+        this.eventsGateway.notifyDataChanged();
         return order;
     }
     async getAllOrders() {
         return this.orderModel.find().exec();
+    }
+    async cancelOrder(orderId) {
+        const order = await this.orderModel.findOne({ orderId });
+        if (!order) {
+            throw new Error(`Order ${orderId} not found`);
+        }
+        if (order.status === 'SHIPPED') {
+            throw new Error(`Cannot cancel a shipped order`);
+        }
+        if (order.status === 'CANCELLED') {
+            return order;
+        }
+        if (order.status === 'ALLOCATED') {
+            try {
+                const response = await fetch(`http://picking-service:3003/picking/tasks/order/${orderId}/cancel`, {
+                    method: 'POST',
+                });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Il task di picking è già in progress o completato.');
+                }
+            }
+            catch (error) {
+                this.logger.error(`Impossibile annullare picking task: ${error.message}`);
+                throw new Error(`Impossibile annullare ordine: ${error.message}`);
+            }
+        }
+        const previousStatus = order.status;
+        order.status = 'CANCELLED';
+        await order.save();
+        this.logger.log(`Ordine ${order.orderId} annullato.`);
+        this.kafkaClient.emit('OrderCancelled', {
+            orderId: order.orderId,
+            previousStatus,
+            allocations: order.allocations
+        });
+        this.eventsGateway.notifyDataChanged();
+        return order;
+    }
+    async resumeOrder(orderId) {
+        const order = await this.orderModel.findOne({ orderId });
+        if (!order) {
+            throw new Error(`Order ${orderId} not found`);
+        }
+        if (order.status !== 'SUSPENDED') {
+            throw new Error(`Can only resume suspended orders`);
+        }
+        order.status = 'PENDING';
+        await order.save();
+        this.logger.log(`Ordine ${order.orderId} ripreso manualmente (RESUMED), in attesa di allocazione.`);
+        this.kafkaClient.emit('OrderPlaced', {
+            orderId: order.orderId,
+            items: order.items,
+        });
+        this.eventsGateway.notifyDataChanged();
+        return order;
     }
     async handleInventoryAllocated(payload) {
         const order = await this.orderModel.findOne({ orderId: payload.orderId });
@@ -55,6 +114,7 @@ let AppService = AppService_1 = class AppService {
                 orderId: order.orderId,
                 allocations: order.allocations
             });
+            this.eventsGateway.notifyDataChanged();
         }
     }
     async handleOutOfStock(payload) {
@@ -64,6 +124,7 @@ let AppService = AppService_1 = class AppService {
             await order.save();
             this.logger.log(`Ordine ${order.orderId} sospeso (OutOfStock).`);
             this.kafkaClient.emit('OrderSuspended', { orderId: order.orderId });
+            this.eventsGateway.notifyDataChanged();
         }
     }
     async handleItemStored() {
@@ -82,6 +143,7 @@ let AppService = AppService_1 = class AppService {
             order.status = 'SHIPPED';
             await order.save();
             this.logger.log(`Ordine ${order.orderId} aggiornato a SHIPPED.`);
+            this.eventsGateway.notifyDataChanged();
         }
     }
 };
@@ -91,6 +153,7 @@ exports.AppService = AppService = AppService_1 = __decorate([
     __param(0, (0, common_1.Inject)('KAFKA_CLIENT')),
     __param(1, (0, mongoose_1.InjectModel)(order_schema_1.Order.name)),
     __metadata("design:paramtypes", [microservices_1.ClientKafka,
-        mongoose_2.Model])
+        mongoose_2.Model,
+        events_gateway_1.EventsGateway])
 ], AppService);
 //# sourceMappingURL=app.service.js.map

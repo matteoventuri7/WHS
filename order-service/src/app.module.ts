@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { EventsGateway } from './events.gateway';
 import { Order, OrderSchema } from './schemas/order.schema';
 
 @Module({
@@ -26,6 +27,6 @@ import { Order, OrderSchema } from './schemas/order.schema';
     ]),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, EventsGateway],
 })
 export class AppModule { }

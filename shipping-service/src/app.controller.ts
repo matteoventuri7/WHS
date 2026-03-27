@@ -11,6 +11,11 @@ export class AppController {
     return this.appService.getAllVehicles();
   }
 
+  @Get('pending')
+  async getPendingShipments() {
+    return this.appService.getPendingShipments();
+  }
+
   @Get('health')
   getHealth() {
     return { status: 'ok', service: 'shipping' };
