@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PackageOpen, Plus, ArchiveRestore, RefreshCw } from 'lucide-react';
+import { PackageOpen, Plus, ArchiveRestore, RefreshCw, Eye, EyeOff } from 'lucide-react';
 
 export default function InventoryPage() {
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showAll, setShowAll] = useState(false);
 
     // Form states
     const [productId, setProductId] = useState('');
@@ -79,15 +80,36 @@ export default function InventoryPage() {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="md:col-span-2 space-y-4">
-                    <h2 className="text-xl font-semibold mb-6">Current Stock Levels</h2>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold">Current Stock Levels</h2>
+                        <button
+                            onClick={() => setShowAll(v => !v)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                                showAll
+                                    ? 'bg-slate-700/60 border-slate-600 text-slate-200 hover:bg-slate-700'
+                                    : 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20'
+                            }`}
+                        >
+                            {showAll ? <><EyeOff className="w-4 h-4" /> Solo disponibili</> : <><Eye className="w-4 h-4" /> Tutta la merce</>}
+                        </button>
+                    </div>
 
                     <div className="grid gap-4">
-                        {items.map((item, idx) => {
+                        {items.filter(item => showAll || (item.quantity - item.reservedQuantity) > 0).map((item, idx) => {
                             const available = item.quantity - item.reservedQuantity;
+                            const isEmpty = available <= 0;
                             return (
-                                <motion.div key={item._id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }} className="w-full p-4 rounded-xl bg-slate-900/30 border border-slate-800/60 hover:border-slate-700/80 transition-all flex flex-col sm:flex-row sm:items-center justify-between group gap-4">
+                                <motion.div key={item._id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }} className={`w-full p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between group gap-4 ${
+                                    isEmpty
+                                        ? 'bg-red-900/20 border-red-800/60 hover:border-red-700/80'
+                                        : 'bg-slate-900/30 border-slate-800/60 hover:border-slate-700/80'
+                                }`}>
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center border group-hover:scale-110 transition-transform ${
+                                            isEmpty
+                                                ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                                                : 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                        }`}>
                                             <PackageOpen className="w-6 h-6" />
                                         </div>
                                         <div>
@@ -98,7 +120,7 @@ export default function InventoryPage() {
                                     <div className="flex gap-6 sm:text-right text-left">
                                         <div>
                                             <p className="text-xs uppercase tracking-wider text-slate-500">Available</p>
-                                            <p className="font-bold text-xl text-slate-200">{available}</p>
+                                            <p className={`font-bold text-xl ${isEmpty ? 'text-red-400' : 'text-slate-200'}`}>{available}</p>
                                         </div>
                                         <div>
                                             <p className="text-xs uppercase tracking-wider text-slate-500">Reserved</p>
@@ -113,10 +135,12 @@ export default function InventoryPage() {
                             );
                         })}
 
-                        {items.length === 0 && !loading && (
+                        {items.filter(item => showAll || (item.quantity - item.reservedQuantity) > 0).length === 0 && !loading && (
                             <div className="text-center py-16 border border-slate-800 border-dashed rounded-2xl bg-slate-900/10">
                                 <PackageOpen className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                                <p className="text-slate-400">Warehouse is empty. Receive some goods first!</p>
+                                <p className="text-slate-400">
+                                    {showAll ? 'Warehouse is empty. Receive some goods first!' : 'Nessun articolo con disponibilità positiva.'}
+                                </p>
                             </div>
                         )}
                     </div>

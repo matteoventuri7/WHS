@@ -29,6 +29,12 @@ services:
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
     depends_on:
       - zookeeper
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   inventory-db:
     image: mongo:latest
@@ -99,8 +105,10 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@inventory-db:27017/inventory?authSource=admin
     depends_on:
-      - kafka
-      - inventory-db
+      kafka:
+        condition: service_healthy
+      inventory-db:
+        condition: service_started
 
   order-service:
     build: ./order-service
@@ -111,8 +119,10 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@order-db:27017/order?authSource=admin
     depends_on:
-      - kafka
-      - order-db
+      kafka:
+        condition: service_healthy
+      order-db:
+        condition: service_started
 
   picking-service:
     build: ./picking-service
@@ -123,8 +133,10 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@picking-db:27017/picking?authSource=admin
     depends_on:
-      - kafka
-      - picking-db
+      kafka:
+        condition: service_healthy
+      picking-db:
+        condition: service_started
 
   shipping-service:
     build: ./shipping-service
@@ -135,8 +147,10 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@shipping-db:27017/shipping?authSource=admin
     depends_on:
-      - kafka
-      - shipping-db
+      kafka:
+        condition: service_healthy
+      shipping-db:
+        condition: service_started
 
   inbound-service:
     build: ./inbound-service
@@ -147,8 +161,10 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@inbound-db:27017/inbound?authSource=admin
     depends_on:
-      - kafka
-      - inbound-db
+      kafka:
+        condition: service_healthy
+      inbound-db:
+        condition: service_started
 
   dispatch-service:
     build: ./dispatch-service
@@ -160,8 +176,10 @@ services:
       - MONGODB_URI=mongodb://root:example@dispatch-db:27017/dispatch?authSource=admin
       - SHIPPING_SERVICE_URL=http://shipping-service:3004/shipping
     depends_on:
-      - kafka
-      - dispatch-db
+      kafka:
+        condition: service_healthy
+      dispatch-db:
+        condition: service_started
 
   frontend:
     build: ./frontend

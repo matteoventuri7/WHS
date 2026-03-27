@@ -13,12 +13,13 @@ L'entità principale del dominio è il **PickingTask**:
 - `taskId` (String): ID univoco del lavoro fisico assegnato e stampato al magazziniere.
 - `orderId` (String): Reference di collegamento con l'Ordine cliente padre.
 - `allocations` (Array): L'elenco operativo del lavoratore (es. "Vai in B-12 e preleva 20 bottiglie").
-- `status` (Enum String): Ciclo di vita limitato, puramente dicotomico ('PENDING' e 'COMPLETED').
+- `status` (Enum String): Ciclo di vita del task (`PENDING`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`).
 
 ## API REST (Endpoint Controller)
 Il master hub gira sulla porta `3003`:
 - `GET /picking/tasks`: Elenca la "To-Do List" operativa di magazzino in realt-time.
 - `POST /picking/tasks/:taskId/complete`: Simula l'azione del palmare (o lettore RFID) con cui l'omino di magazzino in corsia dice: *"Ho posato i materiali fisicamente nell'area di uscita piazzale"*.
+- `POST /picking/tasks/order/:orderId/cancel`: Endpoint sincrono invocato dall'**Order Service** per annullare il task di picking associato a un dato ordine. Funge da guardia bloccante.
 
 ## Logica Event-Driven (Consumer e Producer)
 
@@ -33,3 +34,12 @@ Questo servizio non fa partire "azioni d'impulso". Tutto è pre-avviato in ascol
 - **Emissione evento `PickingTaskCompleted`**
   - Quando un attore Umano invia l'API `/complete`, lo status del documento MongoDB muta in `COMPLETED`.
   - In sequenza reattiva, l'operativo Produce (emette su Kafka) evento `PickingTaskCompleted`, avvertendo la filiera di sistema (lo Shipping ed eventuale scarico effettivo della pre-ricevuta di invio).
+
+### 3. Cancellazione di un Picking Task (Flusso Sincrono)
+Questo servizio espone un endpoint dedicato che l'Order Service chiama in modo sincrono durante il processo di cancellazione dell'ordine padre.
+
+- **`POST /picking/tasks/order/:orderId/cancel`**
+  - **Pre-condizione `PENDING`:** Se il task esiste ed è ancora in stato `PENDING` (il magazziniere non ha ancora iniziato), il servizio aggiorna lo stato in **`CANCELLED`** sul MongoDB locale e risponde `200 OK`. Il task compare nella UI con badge rosso e icona di avviso.
+  - **Pre-condizione `IN_PROGRESS`:** Il task è già in lavorazione. Il servizio risponde `400 Bad Request` con il messaggio `"Il picking task è già in corso e non può essere annullato"`. L'ordine padre non viene cancellato.
+  - **Pre-condizione `COMPLETED`:** Il task è già concluso. Il servizio risponde `400 Bad Request`. L'ordine non può essere annullato.
+  - **Nessun task trovato:** Se non esiste alcun picking task per quell'ordine, risponde `200 OK` (non c'è nulla da bloccare, l'ordine può essere cancellato liberamente).

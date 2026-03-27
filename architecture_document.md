@@ -30,14 +30,18 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 
 ### 3.2. Order Service
 - **Responsabilità:** Gestione del ciclo di vita degli ordini in uscita (Outbound).
-- **Comandi Principali:** `PlaceOrder` (inserimento nuovo ordine di uscita).
+- **Comandi Principali:** `PlaceOrder` (inserimento nuovo ordine di uscita), `CancelOrder` (annullamento di un ordine esistente).
+- **Stati Possibili:** `PENDING`, `SUSPENDED`, `ALLOCATED`, `SHIPPED`, **`CANCELLED`**.
 - **Eventi Emessi:** `OrderPlaced`, `OrderSuspended`, `OrderReadyForPicking`.
 - **Logica Core:** Una volta emesso l'evento `OrderPlaced`, resta in attesa di risposta dall'Inventory Service. Se riceve `OutOfStock`, emette `OrderSuspended`. Se riceve un riassortimento scatenato da un `ItemStored`, reinnesca automaticamente il tentativo di allocazione.
+- **Logica di Cancellazione:** Prima di segnare un ordine come `CANCELLED`, l'Order Service effettua una chiamata HTTP sincrona al Picking Service (`POST /picking/tasks/order/:orderId/cancel`). Il Picking Service funge da guardia: se il task è ancora `PENDING`, lo annulla e restituisce `200 OK`; se è già `IN_PROGRESS` o `COMPLETED`, risponde con `400 Bad Request` e l'ordine non viene annullato.
 
 ### 3.3. Picking Service
 - **Responsabilità:** Generazione e gestione delle task operative di magazzino in base agli ordini confermati (istruzioni di reperimento su locazioni fisiche).
-- **Comandi Principali:** `CompletePickingTask` (input dell'operatore nel simulatore per segnalare l'avvenuto prelievo).
+- **Comandi Principali:** `CompletePickingTask` (input dell'operatore nel simulatore per segnalare l'avvenuto prelievo), `CancelPickingTask` (annullamento sincrono richiesto dall'Order Service).
+- **Stati Possibili:** `PENDING`, `IN_PROGRESS`, `COMPLETED`, **`CANCELLED`**.
 - **Eventi Emessi:** `PickingTaskCreated`, `PickingTaskCompleted`.
+- **Logica di Cancellazione:** Espone l'endpoint `POST /picking/tasks/order/:orderId/cancel`. Se il task associato è `PENDING`, viene portato in stato `CANCELLED` e viene risposto `200 OK`. Se il task è `IN_PROGRESS` o `COMPLETED`, risponde `400 Bad Request` bloccando la cancellazione dell'ordine padre.
 
 ### 3.4. Shipping Service
 - **Responsabilità:** Assegnazione della merce prelevata ai veicoli disponibili e spedizione.
@@ -52,6 +56,8 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 
 ## 4. Diagramma di Flusso Esecutivo degli Eventi
 
+### 4.1. Flusso Happy Path (Evasione Ordine)
+
 1. **(UI -> API)** L'operatore simula un ordine inviando `PlaceOrder(Acqua: 24)`.
 2. **Order Service** emette l'evento `OrderPlaced`.
 3. **Inventory Service** cattura l'evento. Se sufficiente disponibilità, emette `InventoryAllocated(Locazione: B-12-33)`. Se no, `OutOfStock(Sospeso)`.
@@ -60,6 +66,18 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 6. **Shipping Service** cattura il task completato e lo assegna al primo veicolo con capacità residua sufficiente emettendo `ShipmentAssigned`.
 7. **Dispatch Simulator** (o operatore da UI) individua i veicoli carichi pronti e innesca la spedizione.
 8. **Shipping Service** elabora il dispatch ed emette `VehicleDispatched`.
+
+### 4.2. Flusso di Cancellazione Ordine
+
+1. **(UI -> API)** L'operatore clicca "Annulla" su un ordine nella pagina Ordini.
+2. **Order Service** riceve la richiesta `DELETE /orders/:orderId`.
+3. **Order Service** effettua una chiamata HTTP sincrona a **Picking Service**: `POST /picking/tasks/order/:orderId/cancel`.
+4. **Picking Service** verifica lo stato del task associato all'ordine:
+   - Se `PENDING` → marca il task come `CANCELLED` e risponde `200 OK`.
+   - Se `IN_PROGRESS` o `COMPLETED` → risponde `400 Bad Request` con messaggio di errore.
+5. **Order Service** in caso di `200 OK` marca l'ordine come `CANCELLED` nel proprio MongoDB.
+6. **Order Service** in caso di `400` propaga l'errore alla UI che mostra un alert con la motivazione del blocco.
+7. **(UI)** Il badge dell'ordine diventa `CANCELLED` (grigio); il badge del task di picking diventa `CANCELLED` (rosso con icona alert).
 
 ## 5. La UI di Next.js (Simulatore)
 
