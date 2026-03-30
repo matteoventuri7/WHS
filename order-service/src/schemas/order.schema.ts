@@ -20,7 +20,7 @@ export class Order {
     @Prop({ type: [OrderItem], required: true })
     items: OrderItem[];
 
-    @Prop({ required: true, enum: ['PENDING', 'SUSPENDED', 'ALLOCATED', 'SHIPPED', 'CANCELLED'], default: 'PENDING' })
+    @Prop({ required: true, enum: ['PENDING', 'SUSPENDED', 'ALLOCATED', 'PICKING_COMPLETED', 'SHIPPED', 'CANCELLED'], default: 'PENDING' })
     status: string;
 
     @Prop()

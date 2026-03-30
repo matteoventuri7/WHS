@@ -77,6 +77,7 @@ export default function OrdersPage() {
             case 'PENDING': return <Clock className="w-5 h-5 text-blue-400" />;
             case 'SUSPENDED': return <AlertCircle className="w-5 h-5 text-red-400" />;
             case 'ALLOCATED': return <CheckCircle2 className="w-5 h-5 text-amber-400" />;
+            case 'PICKING_COMPLETED': return <CheckCircle2 className="w-5 h-5 text-cyan-400" />;
             case 'SHIPPED': return <Truck className="w-5 h-5 text-emerald-400" />;
             case 'CANCELLED': return <AlertCircle className="w-5 h-5 text-red-600" />;
             default: return <Clock className="w-5 h-5 text-slate-400" />;
@@ -132,6 +133,7 @@ export default function OrdersPage() {
                             <option value="ALL">Tutti gli ordini</option>
                             <option value="PENDING">Pending</option>
                             <option value="ALLOCATED">Allocated</option>
+                            <option value="PICKING_COMPLETED">Picking Completed</option>
                             <option value="SUSPENDED">Suspended</option>
                             <option value="SHIPPED">Shipped</option>
                             <option value="CANCELLED">Cancelled</option>
@@ -152,6 +154,7 @@ export default function OrdersPage() {
                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wider ${order.status === 'PENDING' ? 'bg-blue-500/20 text-blue-400' :
                                                         order.status === 'SUSPENDED' ? 'bg-red-500/20 text-red-400' :
                                                             order.status === 'ALLOCATED' ? 'bg-amber-500/20 text-amber-400' :
+                                                                order.status === 'PICKING_COMPLETED' ? 'bg-cyan-500/20 text-cyan-300' :
                                                                 order.status === 'CANCELLED' ? 'bg-red-900/40 text-red-500 line-through opacity-80' :
                                                                 'bg-emerald-500/20 text-emerald-400'
                                                     }`}>
@@ -174,7 +177,7 @@ export default function OrdersPage() {
                                                 Riprendi
                                             </button>
                                         )}
-                                        {order.status !== 'SHIPPED' && order.status !== 'CANCELLED' && (
+                                        {order.status !== 'SHIPPED' && order.status !== 'CANCELLED' && order.status !== 'PICKING_COMPLETED' && (
                                             cancelingId === order.orderId ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs text-slate-400">Sicuro?</span>

@@ -31,7 +31,7 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 ### 3.2. Order Service
 - **Responsabilità:** Gestione del ciclo di vita degli ordini in uscita (Outbound).
 - **Comandi Principali:** `PlaceOrder` (inserimento nuovo ordine di uscita), `CancelOrder` (annullamento di un ordine esistente).
-- **Stati Possibili:** `PENDING`, `SUSPENDED`, `ALLOCATED`, `SHIPPED`, **`CANCELLED`**.
+- **Stati Possibili:** `PENDING`, `SUSPENDED`, `ALLOCATED`, `PICKING_COMPLETED`, `SHIPPED`, **`CANCELLED`**.
 - **Eventi Emessi:** `OrderPlaced`, `OrderSuspended`, `OrderReadyForPicking`.
 - **Logica Core:** Una volta emesso l'evento `OrderPlaced`, resta in attesa di risposta dall'Inventory Service. Se riceve `OutOfStock`, emette `OrderSuspended`. Se riceve un riassortimento scatenato da un `ItemStored`, reinnesca automaticamente il tentativo di allocazione.
 - **Logica di Cancellazione:** Prima di segnare un ordine come `CANCELLED`, l'Order Service effettua una chiamata HTTP sincrona al Picking Service (`POST /picking/tasks/order/:orderId/cancel`). Il Picking Service funge da guardia: se il task è ancora `PENDING`, lo annulla e restituisce `200 OK`; se è già `IN_PROGRESS` o `COMPLETED`, risponde con `400 Bad Request` e l'ordine non viene annullato.

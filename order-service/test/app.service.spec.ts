@@ -99,6 +99,11 @@ describe('AppService', () => {
       await expect(appService.cancelOrder('O1')).rejects.toThrow('Cannot cancel a shipped order');
     });
 
+    it('should throw Error if picking task is already completed', async () => {
+      orderModel.findOne.mockResolvedValue({ orderId: 'O1', status: 'PICKING_COMPLETED' });
+      await expect(appService.cancelOrder('O1')).rejects.toThrow('Cannot cancel an order with completed picking task');
+    });
+
     it('should return order immediately if already cancelled', async () => {
       const order = { orderId: 'O1', status: 'CANCELLED' };
       orderModel.findOne.mockResolvedValue(order);
@@ -320,6 +325,46 @@ describe('AppService', () => {
       orderModel.findOne.mockResolvedValue(null);
 
       await appService.handleShipmentAssigned({ orderId: 'O1' });
+    });
+  });
+
+  describe('handlePickingTaskCompleted', () => {
+    it('should update order status to PICKING_COMPLETED when order is ALLOCATED', async () => {
+      const order = {
+        orderId: 'O1',
+        status: 'ALLOCATED',
+        save: jest.fn().mockResolvedValue(true)
+      };
+      orderModel.findOne.mockResolvedValue(order);
+
+      await appService.handlePickingTaskCompleted({ orderId: 'O1' });
+
+      expect(order.status).toBe('PICKING_COMPLETED');
+      expect(order.save).toHaveBeenCalled();
+      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
+    });
+
+    it('should do nothing if order is not found', async () => {
+      orderModel.findOne.mockResolvedValue(null);
+
+      await appService.handlePickingTaskCompleted({ orderId: 'O1' });
+
+      expect(eventsGateway.notifyDataChanged).not.toHaveBeenCalled();
+    });
+
+    it('should ignore event if order is not ALLOCATED', async () => {
+      const order = {
+        orderId: 'O1',
+        status: 'CANCELLED',
+        save: jest.fn().mockResolvedValue(true)
+      };
+      orderModel.findOne.mockResolvedValue(order);
+
+      await appService.handlePickingTaskCompleted({ orderId: 'O1' });
+
+      expect(order.status).toBe('CANCELLED');
+      expect(order.save).not.toHaveBeenCalled();
+      expect(eventsGateway.notifyDataChanged).not.toHaveBeenCalled();
     });
   });
 });

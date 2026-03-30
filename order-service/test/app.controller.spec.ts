@@ -17,6 +17,7 @@ describe('AppController', () => {
       handleOutOfStock: jest.fn(),
       handleItemStored: jest.fn(),
       handleShipmentAssigned: jest.fn(),
+      handlePickingTaskCompleted: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -144,6 +145,20 @@ describe('AppController', () => {
       const message = { other: 'data' };
       await appController.handleShipmentAssigned(message);
       expect(appService.handleShipmentAssigned).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handlePickingTaskCompleted', () => {
+    it('should handle picking task completed if message has orderId', async () => {
+      const message = { orderId: 'O1' };
+      await appController.handlePickingTaskCompleted(message);
+      expect(appService.handlePickingTaskCompleted).toHaveBeenCalledWith(message);
+    });
+
+    it('should not call service if message is missing orderId', async () => {
+      const message = { other: 'data' };
+      await appController.handlePickingTaskCompleted(message);
+      expect(appService.handlePickingTaskCompleted).not.toHaveBeenCalled();
     });
   });
 });

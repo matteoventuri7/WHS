@@ -13,4 +13,15 @@ describe('OrderSchema', () => {
     expect(typeof doc.orderId).toBe('string');
     expect(doc.status).toBe('PENDING');
   });
+
+  it('should allow PICKING_COMPLETED as valid status', () => {
+    const OrderModel = models.OrderSchemaTest || model('OrderSchemaTest', OrderSchema);
+
+    const doc = new OrderModel({
+      items: [{ productId: 'P1', quantity: 2 }],
+      status: 'PICKING_COMPLETED',
+    });
+
+    expect(doc.validateSync()).toBeUndefined();
+  });
 });

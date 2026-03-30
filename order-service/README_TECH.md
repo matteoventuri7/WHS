@@ -12,7 +12,7 @@ L'**Order Service** è il punto di ingresso per gli ordini di spedizione merci (
 L'entità principale del dominio è l'**Order**:
 - `orderId` (String): ID univoco dell'ordine.
 - `items` (Array di `{ productId, quantity }`): La lista della spesa.
-- `status` (Enum String): Traccia il ciclo di vita (`PENDING`, `SUSPENDED`, `ALLOCATED`, `SHIPPED`, `CANCELLED`).
+- `status` (Enum String): Traccia il ciclo di vita (`PENDING`, `SUSPENDED`, `ALLOCATED`, `PICKING_COMPLETED`, `SHIPPED`, `CANCELLED`).
 - `allocations` (Array Libero): Un bucket in cui il microservizio salva le istruzioni esatte su "dove trovare" la merce in magazzino, ricevute dall'Inventory Service in un momento successivo.
 
 ## API REST (Endpoint Controller)
@@ -44,13 +44,18 @@ L'Order Service resta in ascolto del Consumer Group Kafka `order-consumer`. Reag
   - **Reazione:** L'Order Service si "risveglia" selettivamente. Va sul DB a pescare **tutti** gli ordini attualmente in stato `SUSPENDED` (ordinandoli per data). Per ognuno di essi, prova a re-emettere su Kafka il pacchetto **`OrderPlaced`**, come fosse un ordine appena arrivato, sperando che stavolta il magazzino abbia gli articoli a sufficienza.
 
 - **Ascolto evento `ShipmentAssigned`**
-  - **Reazione:** Quando un camion ha fisicamente caricato la merce prelevata nel piazzale del magazzino, aggiorna lo status da `ALLOCATED` a **`SHIPPED`**. Questo conclude il ciclo di vita utile tracciato da questo servizio.
+  - **Reazione:** Quando un camion ha fisicamente caricato la merce prelevata nel piazzale del magazzino, aggiorna lo status a **`SHIPPED`**. Questo conclude il ciclo di vita utile tracciato da questo servizio.
+
+- **Ascolto evento `PickingTaskCompleted`**
+  - **Reazione:** Quando il Picking Service conferma il completamento del task, l'ordine passa da `ALLOCATED` a **`PICKING_COMPLETED`**.
+  - **Effetto sulla UI:** questo stato intermedio impedisce cancellazioni tardive e consente di nascondere subito il bottone di annullamento prima che arrivi `ShipmentAssigned`.
 
 ### 3. Cancellazione di un Ordine (Flusso Sincrono)
 La cancellazione avviene tramite una chiamata API REST e **non** transita su Kafka, poiché richiede una risposta immediata (sincrona) prima di procedere.
 
 1. Il service riceve la richiesta di annullamento.
 2. **Coordinamento con Picking Service:** Esegue una chiamata HTTP `POST /picking/tasks/order/:orderId/cancel` verso il Picking Service.
+  - Se l'ordine è in stato `PICKING_COMPLETED`, l'annullamento viene bloccato immediatamente.
    - Se il Picking Service risponde **`200 OK`**: il picking task è stato annullato con successo (era ancora `PENDING`). L'Order Service procede ad aggiornare lo stato dell'ordine in **`CANCELLED`** su MongoDB.
    - Se il Picking Service risponde **`400 Bad Request`**: il task è già avanzato (`IN_PROGRESS` o `COMPLETED`) e la cancellazione viene **bloccata**. L'errore viene propagato alla UI con la motivazione.
 3. Se l'ordine non ha ancora un task di picking associato (es. ancora `PENDING` o `SUSPENDED`), viene marcato direttamente come `CANCELLED` senza passare per il Picking Service.

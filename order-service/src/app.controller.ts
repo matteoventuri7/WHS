@@ -65,4 +65,11 @@ export class AppController {
       await this.appService.handleShipmentAssigned(message);
     }
   }
+
+  @EventPattern('PickingTaskCompleted')
+  async handlePickingTaskCompleted(@Payload() message: any) {
+    if (message && message.orderId) {
+      await this.appService.handlePickingTaskCompleted(message);
+    }
+  }
 }

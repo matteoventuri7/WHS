@@ -46,6 +46,9 @@ export class AppService implements OnModuleInit {
     if (order.status === 'SHIPPED') {
       throw new Error(`Cannot cancel a shipped order`);
     }
+    if (order.status === 'PICKING_COMPLETED') {
+      throw new Error(`Cannot cancel an order with completed picking task`);
+    }
     if (order.status === 'CANCELLED') {
       return order; // Already cancelled
     }
@@ -151,5 +154,21 @@ export class AppService implements OnModuleInit {
       this.logger.log(`Ordine ${order.orderId} aggiornato a SHIPPED.`);
       this.eventsGateway.notifyDataChanged();
     }
+  }
+
+  async handlePickingTaskCompleted(payload: { orderId: string }) {
+    const order = await this.orderModel.findOne({ orderId: payload.orderId });
+    if (!order) {
+      return;
+    }
+
+    if (order.status !== 'ALLOCATED') {
+      return;
+    }
+
+    order.status = 'PICKING_COMPLETED';
+    await order.save();
+    this.logger.log(`Ordine ${order.orderId} aggiornato a PICKING_COMPLETED.`);
+    this.eventsGateway.notifyDataChanged();
   }
 }
