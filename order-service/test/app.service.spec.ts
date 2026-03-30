@@ -44,6 +44,14 @@ describe('AppService', () => {
     expect(appService).toBeDefined();
   });
 
+  describe('onModuleInit', () => {
+    it('should log initialization message', async () => {
+      const loggerSpy = jest.spyOn(appService['logger'], 'log').mockImplementation();
+      await appService.onModuleInit();
+      expect(loggerSpy).toHaveBeenCalledWith('Connessione Kafka Producer per Order Service inizializzata.');
+    });
+  });
+
   describe('placeOrder', () => {
     it('should place a new order and emit OrderPlaced event', async () => {
       const items = [{ productId: 'p1', quantity: 10 }];
