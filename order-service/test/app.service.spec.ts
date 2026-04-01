@@ -38,6 +38,10 @@ describe('AppService', () => {
     }).compile();
 
     appService = module.get<AppService>(AppService);
+
+    // Keep test output clean while still asserting logger calls when needed.
+    jest.spyOn(appService['logger'], 'log').mockImplementation(() => undefined);
+    jest.spyOn(appService['logger'], 'error').mockImplementation(() => undefined);
   });
 
   it('should be defined', () => {
@@ -46,7 +50,7 @@ describe('AppService', () => {
 
   describe('onModuleInit', () => {
     it('should log initialization message', async () => {
-      const loggerSpy = jest.spyOn(appService['logger'], 'log').mockImplementation();
+      const loggerSpy = appService['logger'].log as jest.Mock;
       await appService.onModuleInit();
       expect(loggerSpy).toHaveBeenCalledWith('Connessione Kafka Producer per Order Service inizializzata.');
     });

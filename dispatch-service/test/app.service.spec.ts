@@ -33,6 +33,11 @@ describe('AppService', () => {
 
     service = module.get<AppService>(AppService);
     httpService = module.get<HttpService>(HttpService);
+
+    // Silence logger output in tests while preserving call assertions.
+    jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined);
+    jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined);
+    jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
     
     // Clear mocks
     jest.clearAllMocks();
@@ -45,7 +50,7 @@ describe('AppService', () => {
 
   describe('onModuleInit', () => {
     it('should log initialization message', async () => {
-      const loggerSpy = jest.spyOn(service['logger'], 'log');
+      const loggerSpy = service['logger'].log as jest.Mock;
       await service.onModuleInit();
       expect(loggerSpy).toHaveBeenCalledWith('Connessione Kafka Producer (Dispatch) inizializzata.');
     });
@@ -129,7 +134,7 @@ describe('AppService', () => {
     });
 
     it('should log warning if shipping-service returns invalid data', async () => {
-      const loggerSpy = jest.spyOn(service['logger'], 'warn');
+      const loggerSpy = service['logger'].warn as jest.Mock;
       mockHttpService.get.mockReturnValue(of({ data: null }));
 
       await service['simulateDispatch']();
@@ -139,7 +144,7 @@ describe('AppService', () => {
     });
 
     it('should log if no vehicles are ready', async () => {
-      const loggerSpy = jest.spyOn(service['logger'], 'log');
+      const loggerSpy = service['logger'].log as jest.Mock;
       mockHttpService.get.mockReturnValue(of({ data: [{ vehicleId: 'V1', status: 'AVAILABLE', currentLoad: 0, assignedTaskIds: [] }] }));
 
       await service['simulateDispatch']();
@@ -149,7 +154,7 @@ describe('AppService', () => {
     });
 
     it('should log error if shipping-service get request fails', async () => {
-      const loggerSpy = jest.spyOn(service['logger'], 'error');
+      const loggerSpy = service['logger'].error as jest.Mock;
       mockHttpService.get.mockReturnValue(throwError(() => new Error('Connection refused')));
 
       await service['simulateDispatch']();
@@ -164,7 +169,7 @@ describe('AppService', () => {
       ];
       mockHttpService.get.mockReturnValue(of({ data: vehicles }));
       mockHttpService.post.mockReturnValue(throwError(() => new Error('Dispatch failed')));
-      const loggerSpy = jest.spyOn(service['logger'], 'error');
+      const loggerSpy = service['logger'].error as jest.Mock;
 
       await service['simulateDispatch']();
 

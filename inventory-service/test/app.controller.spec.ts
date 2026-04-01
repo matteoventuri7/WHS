@@ -5,6 +5,8 @@ import { AppService } from '../src/app.service';
 describe('AppController', () => {
   let appController: AppController;
   let appService: AppService;
+  let consoleLogSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     const mockAppService = {
@@ -26,9 +28,15 @@ describe('AppController', () => {
 
     appController = module.get<AppController>(AppController);
     appService = module.get<AppService>(AppService);
+
+    // Silence expected console output from controller event handlers.
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
+    consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
     jest.clearAllMocks();
   });
 

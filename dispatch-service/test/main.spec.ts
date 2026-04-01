@@ -4,6 +4,8 @@ describe('main bootstrap', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    const { Logger } = require('@nestjs/common');
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     delete process.env.PORT;
   });
 
