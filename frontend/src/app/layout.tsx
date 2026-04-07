@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Link from 'next/link';
-import SimulatorToggle from './SimulatorToggle';
-import DispatchSimulatorToggle from './DispatchSimulatorToggle';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -38,12 +36,6 @@ export default function RootLayout({
                   <NavLink href="/shipping" label="Shipping & Dispatch" activeColor="text-purple-400" />
                   <NavLink href="/status" label="System Status" activeColor="text-cyan-400" />
                 </div>
-              </div>
-
-              {/* Simulator Auto-Toggles */}
-              <div className="flex items-center ml-auto gap-4">
-                <SimulatorToggle />
-                <DispatchSimulatorToggle />
               </div>
             </div>
           </div>

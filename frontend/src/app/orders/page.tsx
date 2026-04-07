@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Plus, RefreshCw, AlertCircle, CheckCircle2, Clock, Truck } from 'lucide-react';
+import { ShoppingCart, Plus, AlertCircle, CheckCircle2, Clock, Truck } from 'lucide-react';
 import { useRealtimeData } from '../useRealtimeData';
 
 export default function OrdersPage() {
@@ -88,7 +88,7 @@ export default function OrdersPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-            <div className="flex justify-between items-center">
+            <div>
                 <div>
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400 flex items-center gap-3">
                         <ShoppingCart className="w-8 h-8 text-amber-400" />
@@ -96,9 +96,6 @@ export default function OrdersPage() {
                     </h1>
                     <p className="text-slate-400 mt-2">Place outbound orders and track their lifecycle.</p>
                 </div>
-                <button onClick={fetchOrders} className="p-2 bg-slate-800/50 hover:bg-slate-800 rounded-full transition-colors border border-slate-700/50 hover:border-amber-500/50 group">
-                    <RefreshCw className={`w-5 h-5 text-slate-400 group-hover:text-amber-400 transition-colors ${loading ? 'animate-spin text-amber-400' : ''}`} />
-                </button>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">

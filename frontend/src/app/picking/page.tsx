@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ScanBarcode, RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { ScanBarcode, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useRealtimeData } from '../useRealtimeData';
 
 export default function PickingPage() {
@@ -31,7 +31,7 @@ export default function PickingPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-            <div className="flex justify-between items-center">
+            <div>
                 <div>
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-500 flex items-center gap-3">
                         <ScanBarcode className="w-8 h-8 text-green-400" />
@@ -39,9 +39,6 @@ export default function PickingPage() {
                     </h1>
                     <p className="text-slate-400 mt-2">Execute picking tasks generated from allocated orders.</p>
                 </div>
-                <button onClick={fetchTasks} className="p-2 bg-slate-800/50 hover:bg-slate-800 rounded-full transition-colors border border-slate-700/50 hover:border-green-500/50 group">
-                    <RefreshCw className={`w-5 h-5 text-slate-400 group-hover:text-green-400 transition-colors ${loading ? 'animate-spin text-green-400' : ''}`} />
-                </button>
             </div>
 
             <div className="grid gap-6">

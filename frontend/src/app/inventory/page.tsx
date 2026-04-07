@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PackageOpen, Plus, ArchiveRestore, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { PackageOpen, Plus, ArchiveRestore, Eye, EyeOff } from 'lucide-react';
 import { useRealtimeData } from '../useRealtimeData';
+import SimulatorToggle from '../components/SimulatorToggle';
 
 export default function InventoryPage() {
     const [items, setItems] = useState<any[]>([]);
@@ -51,9 +52,9 @@ export default function InventoryPage() {
                     </h1>
                     <p className="text-slate-400 mt-2">Manage stock levels and receive new materials.</p>
                 </div>
-                <button onClick={fetchInventory} className="p-2 bg-slate-800/50 hover:bg-slate-800 rounded-full transition-colors border border-slate-700/50 hover:border-blue-500/50 group">
-                    <RefreshCw className={`w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors ${loading ? 'animate-spin text-blue-400' : ''}`} />
-                </button>
+                <div className="flex items-center gap-4">
+                    <SimulatorToggle />
+                </div>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">

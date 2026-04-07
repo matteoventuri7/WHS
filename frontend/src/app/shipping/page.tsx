@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Truck, Plus, RefreshCw, Send, PackageCheck, Clock, Package } from 'lucide-react';
+import { Truck, Plus, Send, PackageCheck, Clock, Package } from 'lucide-react';
 import { useRealtimeData } from '../useRealtimeData';
+import DispatchSimulatorToggle from '../components/DispatchSimulatorToggle';
 
 export default function ShippingPage() {
     const [vehicles, setVehicles] = useState<any[]>([]);
@@ -60,9 +61,9 @@ export default function ShippingPage() {
                     </h1>
                     <p className="text-slate-400 mt-2">Manage logistics, vehicles, and final shipment dispatch.</p>
                 </div>
-                <button onClick={fetchData} className="p-2 bg-slate-800/50 hover:bg-slate-800 rounded-full transition-colors border border-slate-700/50 hover:border-purple-500/50 group">
-                    <RefreshCw className={`w-5 h-5 text-slate-400 group-hover:text-purple-400 transition-colors ${loading ? 'animate-spin text-purple-400' : ''}`} />
-                </button>
+                <div className="flex items-center gap-4">
+                    <DispatchSimulatorToggle />
+                </div>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
