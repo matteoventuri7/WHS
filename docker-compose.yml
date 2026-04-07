@@ -36,6 +36,17 @@ services:
       retries: 10
       start_period: 30s
 
+  kafka-init:
+    image: apache/kafka:latest
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./scripts/init-kafka-topics.sh:/init-kafka-topics.sh
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    entrypoint: ["/bin/bash", "/init-kafka-topics.sh"]
+
   inventory-db:
     image: mongo:latest
     ports:
@@ -105,8 +116,8 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@inventory-db:27017/inventory?authSource=admin
     depends_on:
-      kafka:
-        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       inventory-db:
         condition: service_started
 
@@ -119,8 +130,8 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@order-db:27017/order?authSource=admin
     depends_on:
-      kafka:
-        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       order-db:
         condition: service_started
 
@@ -133,8 +144,8 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@picking-db:27017/picking?authSource=admin
     depends_on:
-      kafka:
-        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       picking-db:
         condition: service_started
 
@@ -147,8 +158,8 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@shipping-db:27017/shipping?authSource=admin
     depends_on:
-      kafka:
-        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       shipping-db:
         condition: service_started
 
@@ -161,8 +172,8 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MONGODB_URI=mongodb://root:example@inbound-db:27017/inbound?authSource=admin
     depends_on:
-      kafka:
-        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       inbound-db:
         condition: service_started
 
@@ -176,8 +187,8 @@ services:
       - MONGODB_URI=mongodb://root:example@dispatch-db:27017/dispatch?authSource=admin
       - SHIPPING_SERVICE_URL=http://shipping-service:3004/shipping
     depends_on:
-      kafka:
-        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       dispatch-db:
         condition: service_started
 

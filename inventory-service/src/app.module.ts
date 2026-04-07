@@ -18,6 +18,13 @@ import { Inventory, InventorySchema } from './schemas/inventory.schema';
           client: {
             clientId: 'inventory-producer',
             brokers: [process.env.KAFKA_BROKER || 'localhost:29092'],
+            retry: {
+              initialRetryTime: 100,
+              retries: 8,
+              factor: 2,
+              maxRetryTime: 30000,
+              randomizationFactor: 0.2,
+            },
           },
           consumer: {
             groupId: 'inventory-consumer',

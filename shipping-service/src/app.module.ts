@@ -22,6 +22,13 @@ import { PendingShipment, PendingShipmentSchema } from './schemas/pending-shipme
           client: {
             clientId: 'shipping-producer',
             brokers: [process.env.KAFKA_BROKER || 'localhost:29092'],
+            retry: {
+              initialRetryTime: 100,
+              retries: 8,
+              factor: 2,
+              maxRetryTime: 30000,
+              randomizationFactor: 0.2,
+            },
           },
           consumer: {
             groupId: 'shipping-consumer',

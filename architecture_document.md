@@ -54,6 +54,88 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 - **Inbound Simulator (`inbound-service`):** Genera periodicamente merce in arrivo (simulando i fornitori), emettendo direttamente eventi Kafka `GoodsArriving` o simili.
 - **Dispatch Simulator (`dispatch-service`):** Interroga periodicamente le API dello `Shipping Service` per trovare veicoli carichi pronti alla partenza e invia il comando di dispatch in automatico.
 
+## 3.6. Infrastruttura Docker & Kafka Topic Initialization
+
+### Problema Risolto: Race Condition nei Topic Kafka
+
+**Problema:** Quando più servizi (che utilizzano `@EventPattern`) tentavano di sottoscriversi a topic Kafka contemporaneamente, il broker rispondeva con `UNKNOWN_TOPIC_OR_PARTITION` prima che i topic fossero creati, causando il crash dei servizi (Exited 1).
+
+**Soluzione:** Container `kafka-init` pre-crea tutti i topic prima che qualsiasi servizio si avvii.
+
+### Architettura del Kafka Init
+
+```
+1. Kafka + Zookeeper → avvio container
+                        ↓
+2. Kafka reaches healthcheck (service_healthy)
+                        ↓
+3. kafka-init container starts
+   - Waits 5s for broker stabilization
+   - Runs: /opt/kafka/bin/kafka-topics.sh --create --if-not-exists
+   - Pre-creates all 13 topics (idempotent)
+                        ↓
+4. kafka-init exits with status 0 (service_completed_successfully)
+                        ↓
+5. All microservices (inventory, order, picking, shipping, inbound, dispatch)
+   start simultaneously
+   - Topics already exist
+   - @EventPattern listeners subscribe without race conditions
+   - All services reach "Nest application successfully started"
+```
+
+### Docker Compose Dependency Order
+
+**Before (problematic):**
+```yaml
+services:
+  inventory-service:
+    depends_on:
+      kafka:
+        condition: service_healthy  # ❌ services start too early
+```
+
+**After (correct):**
+```yaml
+kafka-init:
+  image: apache/kafka:latest
+  depends_on:
+    kafka:
+      condition: service_healthy
+  volumes:
+    - ./scripts/init-kafka-topics.sh:/init-kafka-topics.sh
+  entrypoint: ["/bin/bash", "/init-kafka-topics.sh"]
+
+inventory-service:
+  depends_on:
+    kafka-init:
+      condition: service_completed_successfully  # ✅ waits for init
+```
+
+### Topics Pre-Created
+
+| Topic Category | Topic Names |
+|---|---|
+| **Order Flow** | OrderPlaced, OrderCancelled, OrderReadyForPicking, OrderSuspended |
+| **Inventory** | InventoryAllocated, OutOfStock, ItemStored, GoodsArriving |
+| **Picking Operations** | PickingTaskCreated, PickingTaskCompleted |
+| **Shipping** | ShipmentAssigned, VehicleDispatched, VehicleRegistered |
+
+### Adding New Topics
+
+To add a new topic (e.g., `OrderCompleted`):
+1. Edit `scripts/init-kafka-topics.sh` and add:
+   ```bash
+   create_topic "OrderCompleted"
+   ```
+2. Add listener in relevant service:
+   ```typescript
+   @EventPattern('OrderCompleted')
+   async handleOrderCompleted(data: any) { ... }
+   ```
+3. Rebuild: `docker compose up -d --build`
+
+## 4. Diagramma di Flusso Esecutivo degli Eventi
+
 ## 4. Diagramma di Flusso Esecutivo degli Eventi
 
 ### 4.1. Flusso Happy Path (Evasione Ordine)
@@ -87,3 +169,9 @@ L'applicazione frontend presenterà dashboard separate per ogni dominio, permett
 - **Mappa/Lista Inventario:** Fotografia live dello stato mantenuto dall'Inventory Service nei propri database per vedere dove si trova fisicamente la merce.
 - **Palmare Magazziniere:** Interfaccia di task list su cosa prelevare.
 - **Piazzale Spedizioni:** Dashboard dei camionisti/spedizionieri.
+
+---
+
+**Last Updated:** April 2026 (includes Kafka topic pre-initialization via kafka-init container)  
+**Architecture Focus:** Event-Driven, Event Sourcing, Microservices Pattern  
+**Infrastructure:** Docker Compose with Kafka, MongoDB, NestJS, Next.js

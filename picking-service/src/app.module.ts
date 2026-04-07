@@ -18,6 +18,13 @@ import { PickingTask, PickingTaskSchema } from './schemas/picking.schema';
           client: {
             clientId: 'picking-producer',
             brokers: [process.env.KAFKA_BROKER || 'localhost:29092'],
+            retry: {
+              initialRetryTime: 100,
+              retries: 8,
+              factor: 2,
+              maxRetryTime: 30000,
+              randomizationFactor: 0.2,
+            },
           },
           consumer: {
             groupId: 'picking-consumer',
