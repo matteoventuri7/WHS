@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "workspaces": [
     "simulators/shipping-simulator-service",
+    "simulators/picking-simulator-service",
     "frontend",
     "simulators/inventory-simulator-service",
     "inventory-service",

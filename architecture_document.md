@@ -49,11 +49,12 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 - **Eventi Emessi:** `VehicleRegistered`, `ShipmentAssigned`, `VehicleDispatched`.
 - **Logica Core:** Appena sente `PickingTaskCompleted`, tenta di inserire i materiali nei veicoli in attesa rispettando i limiti capienza (items parametrizzati).
 
-### 3.5. Simulatori (Inbound & Dispatch)
+### 3.5. Simulatori (Inbound, Order, Dispatch & Picking)
 - **Responsabilità:** Generazione automatica di carichi di lavoro e automazione di processi per testare e mostrare il sistema in funzione.
 - **Inventory Simulator (`inventory-simulator-service`):** Genera periodicamente merce in arrivo (simulando i fornitori), emettendo direttamente eventi Kafka `GoodsArriving` o simili.
 - **Order Simulator (`order-simulator-service`):** Crea automaticamente ordini di prova, emettendo eventi `OrderPlaced` per avviare il flusso di processing nel sistema.
 - **Shipping Simulator (`shipping-simulator-service`):** Interroga periodicamente le API dello `Shipping Service` per trovare veicoli carichi pronti alla partenza e invia il comando di dispatch in automatico.
+- **Picking Simulator (`picking-simulator-service`):** Interroga periodicamente le API del `Picking Service`, seleziona casualmente un task `PENDING` e invia il completamento automatico (`POST /picking/tasks/:taskId/complete`).
 
 ## 3.6. Infrastruttura Docker & Kafka Topic Initialization
 

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ScanBarcode, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useRealtimeData } from '../useRealtimeData';
+import PickingSimulatorToggle from '../components/PickingSimulatorToggle';
 
 export default function PickingPage() {
     const [tasks, setTasks] = useState<any[]>([]);
@@ -31,13 +32,16 @@ export default function PickingPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-            <div>
+            <div className="flex justify-between items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-500 flex items-center gap-3">
                         <ScanBarcode className="w-8 h-8 text-green-400" />
                         Picking Operations
                     </h1>
                     <p className="text-slate-400 mt-2">Execute picking tasks generated from allocated orders.</p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <PickingSimulatorToggle />
                 </div>
             </div>
 

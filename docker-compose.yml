@@ -115,6 +115,16 @@ services:
     volumes:
       - order_simulator_mongodb_data:/data/db
 
+  picking-simulator-db:
+    image: mongo:latest
+    ports:
+      - "27024:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    volumes:
+      - picking_simulator_mongodb_data:/data/db
+
   inventory-service:
     build: ./inventory-service
     ports:
@@ -216,17 +226,33 @@ services:
       order-simulator-db:
         condition: service_started
 
+  picking-simulator-service:
+    build: ./simulators/picking-simulator-service
+    ports:
+      - "3008:3008"
+    environment:
+      - PORT=3008
+      - KAFKA_BROKER=kafka:9092
+      - MONGODB_URI=mongodb://root:example@picking-simulator-db:27017/picking_simulator?authSource=admin
+      - PICKING_SERVICE_URL=http://picking-service:3003/picking
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      picking-simulator-db:
+        condition: service_started
+
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
     depends_on:
-      - inbound-service
+      - inventory-simulator-service
       - inventory-service
       - order-service
       - picking-service
       - shipping-service
       - order-simulator-service
+      - picking-simulator-service
 
 volumes:
   inventory_mongodb_data:
@@ -235,4 +261,6 @@ volumes:
   shipping_mongodb_data:
   inbound_mongodb_data:
   dispatch_mongodb_data:
+  shipping_simulator_mongodb_data:
   order_simulator_mongodb_data:
+  picking_simulator_mongodb_data:
