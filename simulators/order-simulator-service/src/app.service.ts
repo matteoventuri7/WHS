@@ -9,30 +9,47 @@ type InventoryRecord = {
   reservedQuantity: number;
 };
 
+type OrderRecord = {
+  orderId?: string;
+  status?: string;
+};
+
+type CreatedOrderResponse = {
+  orderId?: string;
+};
+
 @Injectable()
 export class AppService implements OnModuleInit {
   private readonly logger = new Logger(AppService.name);
+  private static readonly RANDOM_CANCEL_PROBABILITY = 0.1;
+  private static readonly NON_CANCELLABLE_STATUSES = new Set([
+    'SHIPPED',
+    'CANCELLED',
+    'PICKING_COMPLETED',
+  ]);
 
   private simulationInterval: NodeJS.Timeout | null = null;
   private isSimulating: boolean = false;
   private currentInterval: number | null = null;
 
-  private readonly inventoryServiceUrl = process.env.INVENTORY_SERVICE_URL || 'http://localhost:3001/inventory';
-  private readonly orderServiceUrl = process.env.ORDER_SERVICE_URL || 'http://localhost:3002/orders';
+  private readonly inventoryServiceUrl =
+    process.env.INVENTORY_SERVICE_URL || 'http://localhost:3001/inventory';
+  private readonly orderServiceUrl =
+    process.env.ORDER_SERVICE_URL || 'http://localhost:3002/orders';
 
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     private readonly httpService: HttpService,
-  ) { }
+  ) {}
 
-  async onModuleInit() {
+  onModuleInit() {
     this.logger.log('Order simulator inizializzato.');
   }
 
   getStatus() {
     return {
       isSimulating: this.isSimulating,
-      intervalMs: this.currentInterval
+      intervalMs: this.currentInterval,
     };
   }
 
@@ -43,7 +60,9 @@ export class AppService implements OnModuleInit {
 
     this.isSimulating = true;
     this.currentInterval = intervalMs;
-    this.logger.log(`Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`);
+    this.logger.log(
+      `Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`,
+    );
 
     // Eseguiamo subito la prima passata
     void this.simulateOrder();
@@ -55,7 +74,7 @@ export class AppService implements OnModuleInit {
     return {
       message: 'Order simulation started',
       isSimulating: true,
-      intervalMs
+      intervalMs,
     };
   }
 
@@ -81,7 +100,7 @@ export class AppService implements OnModuleInit {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.get(this.inventoryServiceUrl)
+        this.httpService.get<InventoryRecord[]>(this.inventoryServiceUrl),
       );
 
       const inventoryRows = response.data;
@@ -92,7 +111,7 @@ export class AppService implements OnModuleInit {
 
       const availableByProduct = new Map<string, number>();
 
-      for (const row of inventoryRows as InventoryRecord[]) {
+      for (const row of inventoryRows) {
         if (!row || typeof row.productId !== 'string') {
           continue;
         }
@@ -118,24 +137,108 @@ export class AppService implements OnModuleInit {
       }
 
       const selectedIndex = Math.floor(Math.random() * topProducts.length);
-      const [selectedProductId, selectedAvailability] = topProducts[selectedIndex];
+      const [selectedProductId, selectedAvailability] =
+        topProducts[selectedIndex];
       const quantity = Math.floor(Math.random() * 50) + 1;
 
       try {
-        await firstValueFrom(
-          this.httpService.post(this.orderServiceUrl, {
+        const orderCreationResponse = await firstValueFrom(
+          this.httpService.post<CreatedOrderResponse>(this.orderServiceUrl, {
             items: [{ productId: selectedProductId, quantity }],
-          })
+          }),
         );
 
+        const createdOrderId =
+          typeof orderCreationResponse.data?.orderId === 'string'
+            ? orderCreationResponse.data.orderId
+            : 'sconosciuto';
+
         this.logger.log(
-          `Ordine generato: ${quantity}x ${selectedProductId} (disponibilita top: ${selectedAvailability}).`,
+          `Ordine generato: ${createdOrderId} - ${quantity}x ${selectedProductId} (disponibilita top: ${selectedAvailability}).`,
         );
-      } catch (orderError: any) {
-        this.logger.error(`Errore durante la creazione ordine: ${orderError.message}`);
+
+        await this.maybeCancelRandomNonCompletedOrder();
+      } catch (orderError: unknown) {
+        this.logger.error(
+          `Errore durante la creazione ordine: ${this.getErrorMessage(orderError)}`,
+        );
       }
-    } catch (error: any) {
-      this.logger.error(`Impossibile contattare inventory-service: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Impossibile contattare inventory-service: ${this.getErrorMessage(error)}`,
+      );
     }
+  }
+
+  private async maybeCancelRandomNonCompletedOrder() {
+    if (!this.shouldAttemptRandomCancellation()) {
+      return;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<OrderRecord[]>(this.orderServiceUrl),
+      );
+      if (!Array.isArray(response.data)) {
+        this.logger.warn(
+          'Formato risposta non valido da order-service durante la selezione ordine da annullare',
+        );
+        return;
+      }
+
+      const cancellableOrders = response.data.filter((order) =>
+        this.isCancellableOrder(order),
+      );
+      if (cancellableOrders.length === 0) {
+        this.logger.log(
+          'Nessun ordine non completato disponibile per la cancellazione random.',
+        );
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * cancellableOrders.length);
+      const orderToCancel = cancellableOrders[randomIndex];
+      if (!orderToCancel?.orderId) {
+        return;
+      }
+
+      await firstValueFrom(
+        this.httpService.patch(
+          `${this.orderServiceUrl}/${orderToCancel.orderId}/cancel`,
+          {},
+        ),
+      );
+
+      this.logger.log(
+        `Ordine ${orderToCancel.orderId} annullato tramite regola random al 10%.`,
+      );
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Tentativo di cancellazione random fallito: ${this.getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  private shouldAttemptRandomCancellation() {
+    return Math.random() < AppService.RANDOM_CANCEL_PROBABILITY;
+  }
+
+  private isCancellableOrder(order: OrderRecord) {
+    if (
+      typeof order?.orderId !== 'string' ||
+      typeof order.status !== 'string'
+    ) {
+      return false;
+    }
+
+    return !AppService.NON_CANCELLABLE_STATUSES.has(order.status.toUpperCase());
+  }
+
+  private getErrorMessage(error: unknown) {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return String(error);
   }
 }
