@@ -15,8 +15,8 @@ const INITIAL_SERVICES: ServiceStatus[] = [
     { name: 'Order Service', url: 'http://localhost:3002/orders/health', port: 3002, status: 'loading' },
     { name: 'Picking Service', url: 'http://localhost:3003/picking/health', port: 3003, status: 'loading' },
     { name: 'Shipping Service', url: 'http://localhost:3004/shipping/health', port: 3004, status: 'loading' },
-    { name: 'Inbound Simulator', url: 'http://localhost:3005/inbound/health', port: 3005, status: 'loading' },
-    { name: 'Dispatch Simulator', url: 'http://localhost:3006/dispatch/health', port: 3006, status: 'loading' },
+    { name: 'Inventory Simulator', url: 'http://localhost:3005/inventory-simulator/health', port: 3005, status: 'loading' },
+    { name: 'Shipping Simulator', url: 'http://localhost:3006/shipping-simulator/health', port: 3006, status: 'loading' },
     { name: 'Picking Simulator', url: 'http://localhost:3008/picking-simulator/health', port: 3008, status: 'loading' }
 ];
 
