@@ -11,12 +11,12 @@ Start-Sleep -Seconds 15
 
 Write-Host "`n[2/3] Avvio dei Microservizi NestJS..." -ForegroundColor Yellow
 $services = @(
-    @{ Name = "inbound-service"; Path = "simulators/inbound-service" },
+    @{ Name = "inventory-simulator-service"; Path = "simulators/inventory-simulator-service" },
     @{ Name = "inventory-service"; Path = "inventory-service" },
     @{ Name = "order-service"; Path = "order-service" },
     @{ Name = "picking-service"; Path = "picking-service" },
     @{ Name = "shipping-service"; Path = "shipping-service" },
-    @{ Name = "dispatch-service"; Path = "simulators/dispatch-service" },
+    @{ Name = "shipping-simulator-service"; Path = "simulators/shipping-simulator-service" },
     @{ Name = "order-simulator-service"; Path = "simulators/order-simulator-service" }
 )
 foreach ($svc in $services) {

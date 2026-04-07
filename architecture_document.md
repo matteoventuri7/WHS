@@ -51,8 +51,9 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 
 ### 3.5. Simulatori (Inbound & Dispatch)
 - **Responsabilità:** Generazione automatica di carichi di lavoro e automazione di processi per testare e mostrare il sistema in funzione.
-- **Inbound Simulator (`inbound-service`):** Genera periodicamente merce in arrivo (simulando i fornitori), emettendo direttamente eventi Kafka `GoodsArriving` o simili.
-- **Dispatch Simulator (`dispatch-service`):** Interroga periodicamente le API dello `Shipping Service` per trovare veicoli carichi pronti alla partenza e invia il comando di dispatch in automatico.
+- **Inventory Simulator (`inventory-simulator-service`):** Genera periodicamente merce in arrivo (simulando i fornitori), emettendo direttamente eventi Kafka `GoodsArriving` o simili.
+- **Order Simulator (`order-simulator-service`):** Crea automaticamente ordini di prova, emettendo eventi `OrderPlaced` per avviare il flusso di processing nel sistema.
+- **Shipping Simulator (`shipping-simulator-service`):** Interroga periodicamente le API dello `Shipping Service` per trovare veicoli carichi pronti alla partenza e invia il comando di dispatch in automatico.
 
 ## 3.6. Infrastruttura Docker & Kafka Topic Initialization
 

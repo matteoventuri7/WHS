@@ -3,9 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "workspaces": [
-    "dispatch-service",
+    "simulators/shipping-simulator-service",
     "frontend",
-    "inbound-service",
+    "simulators/inventory-simulator-service",
     "inventory-service",
     "order-service",
     "picking-service",
