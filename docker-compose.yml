@@ -105,6 +105,16 @@ services:
     volumes:
       - dispatch_mongodb_data:/data/db
 
+  order-simulator-db:
+    image: mongo:latest
+    ports:
+      - "27023:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    volumes:
+      - order_simulator_mongodb_data:/data/db
+
   inventory-service:
     build: ./inventory-service
     ports:
@@ -190,6 +200,22 @@ services:
       dispatch-db:
         condition: service_started
 
+  order-simulator-service:
+    build: ./simulators/order-simulator-service
+    ports:
+      - "3007:3007"
+    environment:
+      - PORT=3007
+      - KAFKA_BROKER=kafka:9092
+      - MONGODB_URI=mongodb://root:example@order-simulator-db:27017/order_simulator?authSource=admin
+      - INVENTORY_SERVICE_URL=http://inventory-service:3001/inventory
+      - ORDER_SERVICE_URL=http://order-service:3002/orders
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      order-simulator-db:
+        condition: service_started
+
   frontend:
     build: ./frontend
     ports:
@@ -200,6 +226,7 @@ services:
       - order-service
       - picking-service
       - shipping-service
+      - order-simulator-service
 
 volumes:
   inventory_mongodb_data:
@@ -208,3 +235,4 @@ volumes:
   shipping_mongodb_data:
   inbound_mongodb_data:
   dispatch_mongodb_data:
+  order_simulator_mongodb_data:

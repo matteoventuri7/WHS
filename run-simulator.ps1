@@ -10,10 +10,18 @@ Write-Host "Attesa di 15 secondi per permettere a Kafka di avviarsi correttament
 Start-Sleep -Seconds 15
 
 Write-Host "`n[2/3] Avvio dei Microservizi NestJS..." -ForegroundColor Yellow
-$services = "inbound-service", "inventory-service", "order-service", "picking-service", "shipping-service", "dispatch-service"
+$services = @(
+    @{ Name = "inbound-service"; Path = "simulators/inbound-service" },
+    @{ Name = "inventory-service"; Path = "inventory-service" },
+    @{ Name = "order-service"; Path = "order-service" },
+    @{ Name = "picking-service"; Path = "picking-service" },
+    @{ Name = "shipping-service"; Path = "shipping-service" },
+    @{ Name = "dispatch-service"; Path = "simulators/dispatch-service" },
+    @{ Name = "order-simulator-service"; Path = "simulators/order-simulator-service" }
+)
 foreach ($svc in $services) {
-    Write-Host " -> Avvio $svc..." -ForegroundColor Green
-    Start-Process pwsh -ArgumentList "-NoExit -Command cd E:\uni\WHS\$svc; npm run start:dev" -WindowStyle Normal
+    Write-Host " -> Avvio $($svc.Name)..." -ForegroundColor Green
+    Start-Process pwsh -ArgumentList "-NoExit -Command cd E:\uni\WHS\$($svc.Path); npm run start:dev" -WindowStyle Normal
 }
 
 Write-Host "`n[3/3] Avvio del Frontend Next.js..." -ForegroundColor Yellow

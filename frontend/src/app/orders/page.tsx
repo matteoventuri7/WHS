@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Plus, AlertCircle, CheckCircle2, Clock, Truck } from 'lucide-react';
 import { useRealtimeData } from '../useRealtimeData';
+import OrderSimulatorToggle from '../components/OrderSimulatorToggle';
 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<any[]>([]);
@@ -88,13 +89,16 @@ export default function OrdersPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-            <div>
+            <div className="flex justify-between items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400 flex items-center gap-3">
                         <ShoppingCart className="w-8 h-8 text-amber-400" />
                         Order Management
                     </h1>
                     <p className="text-slate-400 mt-2">Place outbound orders and track their lifecycle.</p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <OrderSimulatorToggle />
                 </div>
             </div>
 
