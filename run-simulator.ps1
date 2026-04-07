@@ -17,7 +17,8 @@ $services = @(
     @{ Name = "picking-service"; Path = "picking-service" },
     @{ Name = "shipping-service"; Path = "shipping-service" },
     @{ Name = "shipping-simulator-service"; Path = "simulators/shipping-simulator-service" },
-    @{ Name = "order-simulator-service"; Path = "simulators/order-simulator-service" }
+    @{ Name = "order-simulator-service"; Path = "simulators/order-simulator-service" },
+    @{ Name = "picking-simulator-service"; Path = "simulators/picking-simulator-service" }
 )
 foreach ($svc in $services) {
     Write-Host " -> Avvio $($svc.Name)..." -ForegroundColor Green

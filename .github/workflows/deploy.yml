@@ -28,6 +28,7 @@ jobs:
           - inventory-simulator-service
           - shipping-simulator-service
           - order-simulator-service
+          - picking-simulator-service
 
     steps:
       - name: Checkout repository
@@ -67,6 +68,7 @@ jobs:
           - inventory-simulator-service
           - shipping-simulator-service
           - order-simulator-service
+          - picking-simulator-service
           - frontend
 
     steps:
