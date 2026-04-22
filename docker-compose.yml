@@ -45,6 +45,33 @@ services:
       - KAFKA_BROKER=kafka:9092
     entrypoint: ["/bin/bash", "/init-kafka-topics.sh"]
 
+  openobserve:
+    image: openobserve/openobserve:latest
+    ports:
+      - "5080:5080"
+    environment:
+      - ZO_DATA_DIR=/data
+      - ZO_ROOT_USER_EMAIL=root@example.com
+      - ZO_ROOT_USER_PASSWORD=Complexpass#123
+    volumes:
+      - openobserve_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:5080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    ports:
+      - "24224:24224"
+    volumes:
+      - ./deploy/observability/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+    depends_on:
+      openobserve:
+        condition: service_started
+
   inventory-db:
     image: mongo:latest
     ports:
@@ -138,6 +165,15 @@ services:
         condition: service_completed_successfully
       inventory-db:
         condition: service_started
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        fluentd-async: "true"
+        fluentd-retry-wait: "1"
+        fluentd-max-retries: "30"
+        fluentd-sub-second-precision: "true"
+        tag: "whs.inventory-service"
 
   order-service:
     build: ./order-service
@@ -152,6 +188,15 @@ services:
         condition: service_completed_successfully
       order-db:
         condition: service_started
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        fluentd-async: "true"
+        fluentd-retry-wait: "1"
+        fluentd-max-retries: "30"
+        fluentd-sub-second-precision: "true"
+        tag: "whs.order-service"
 
   picking-service:
     build: ./picking-service
@@ -166,6 +211,15 @@ services:
         condition: service_completed_successfully
       picking-db:
         condition: service_started
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        fluentd-async: "true"
+        fluentd-retry-wait: "1"
+        fluentd-max-retries: "30"
+        fluentd-sub-second-precision: "true"
+        tag: "whs.picking-service"
 
   shipping-service:
     build: ./shipping-service
@@ -180,6 +234,15 @@ services:
         condition: service_completed_successfully
       shipping-db:
         condition: service_started
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        fluentd-async: "true"
+        fluentd-retry-wait: "1"
+        fluentd-max-retries: "30"
+        fluentd-sub-second-precision: "true"
+        tag: "whs.shipping-service"
 
   inventory-simulator-service:
     build: ./simulators/inventory-simulator-service
@@ -264,3 +327,4 @@ volumes:
   shipping_simulator_mongodb_data:
   order_simulator_mongodb_data:
   picking_simulator_mongodb_data:
+  openobserve_data:
