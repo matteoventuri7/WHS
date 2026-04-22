@@ -170,7 +170,7 @@ services:
       options:
         fluentd-address: "localhost:24224"
         fluentd-async: "true"
-        fluentd-retry-wait: "1"
+        fluentd-retry-wait: "1s"
         fluentd-max-retries: "30"
         fluentd-sub-second-precision: "true"
         tag: "whs.inventory-service"
@@ -193,7 +193,7 @@ services:
       options:
         fluentd-address: "localhost:24224"
         fluentd-async: "true"
-        fluentd-retry-wait: "1"
+        fluentd-retry-wait: "1s"
         fluentd-max-retries: "30"
         fluentd-sub-second-precision: "true"
         tag: "whs.order-service"
@@ -216,7 +216,7 @@ services:
       options:
         fluentd-address: "localhost:24224"
         fluentd-async: "true"
-        fluentd-retry-wait: "1"
+        fluentd-retry-wait: "1s"
         fluentd-max-retries: "30"
         fluentd-sub-second-precision: "true"
         tag: "whs.picking-service"
@@ -239,7 +239,7 @@ services:
       options:
         fluentd-address: "localhost:24224"
         fluentd-async: "true"
-        fluentd-retry-wait: "1"
+        fluentd-retry-wait: "1s"
         fluentd-max-retries: "30"
         fluentd-sub-second-precision: "true"
         tag: "whs.shipping-service"
