@@ -32,38 +32,54 @@ export default function DashboardPage() {
   const eventsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/events');
+    let eventSource: EventSource | null = null;
+    let retryTimeout: ReturnType<typeof setTimeout>;
+    let retryCount = 0;
+    let cancelled = false;
 
-    eventSource.onopen = () => {
-      setIsConnected(true);
+    const connect = () => {
+      if (cancelled) return;
+      eventSource = new EventSource('/api/events');
+
+      eventSource.onopen = () => {
+        setIsConnected(true);
+        retryCount = 0;
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setEvents((prev) => {
+            const newEvent = {
+              id: crypto.randomUUID(),
+              topic: data.topic,
+              payload: data.payload,
+              timestamp: new Date()
+            };
+            return [newEvent, ...prev].slice(0, 100);
+          });
+        } catch (error) {
+          console.error("Failed to parse event", error);
+        }
+      };
+
+      eventSource.onerror = () => {
+        setIsConnected(false);
+        eventSource?.close();
+        // Retry with exponential backoff (max 30s)
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+        retryCount++;
+        console.log(`EventSource reconnecting in ${delay}ms (attempt ${retryCount})...`);
+        retryTimeout = setTimeout(connect, delay);
+      };
     };
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setEvents((prev) => {
-          const newEvent = {
-            id: crypto.randomUUID(),
-            topic: data.topic,
-            payload: data.payload,
-            timestamp: new Date()
-          };
-          // Keep only the last 100 events to prevent memory bloat
-          return [newEvent, ...prev].slice(0, 100);
-        });
-      } catch (error) {
-        console.error("Failed to parse event", error);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error("EventSource failed:", error);
-      setIsConnected(false);
-      eventSource.close();
-    };
+    connect();
 
     return () => {
-      eventSource.close();
+      cancelled = true;
+      clearTimeout(retryTimeout);
+      eventSource?.close();
     };
   }, []);
 

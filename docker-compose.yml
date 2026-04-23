@@ -321,14 +321,26 @@ services:
       - "3000:3000"
     environment:
       - PORT_TO_SERVICE={"3001":"inventory-service","3002":"order-service","3003":"picking-service","3004":"shipping-service","3005":"inventory-simulator-service","3006":"shipping-simulator-service","3007":"order-simulator-service","3008":"picking-simulator-service", "5080":"openobserve","9092":"kafka","2181":"zookeeper","24224":"fluent-bit"}
+      - KAFKA_BROKER=kafka:9092
     depends_on:
-      - inventory-simulator-service
-      - inventory-service
-      - order-service
-      - picking-service
-      - shipping-service
-      - order-simulator-service
-      - picking-simulator-service
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      inventory-simulator-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      picking-service:
+        condition: service_started
+      shipping-service:
+        condition: service_started
+      order-simulator-service:
+        condition: service_started
+      picking-simulator-service:
+        condition: service_started
 
 volumes:
   inventory_mongodb_data:
