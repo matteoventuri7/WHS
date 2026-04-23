@@ -13,13 +13,15 @@ export class AppService implements OnModuleInit {
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     private readonly eventsGateway: EventsGateway,
-  ) { }
+  ) {}
 
   async onModuleInit() {
-    this.logger.log('Connessione Kafka Producer per Order Service inizializzata.');
+    this.logger.log(
+      'Connessione Kafka Producer per Order Service inizializzata.',
+    );
   }
 
-  async placeOrder(items: { productId: string, quantity: number }[]) {
+  async placeOrder(items: { productId: string; quantity: number }[]) {
     const order = new this.orderModel({ items, status: 'PENDING' });
     await order.save();
 
@@ -55,15 +57,23 @@ export class AppService implements OnModuleInit {
 
     if (order.status === 'ALLOCATED') {
       try {
-        const response = await fetch(`http://picking-service:3003/picking/tasks/order/${orderId}/cancel`, {
-          method: 'POST',
-        });
+        const response = await fetch(
+          `http://picking-service:3003/picking/tasks/order/${orderId}/cancel`,
+          {
+            method: 'POST',
+          },
+        );
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Il task di picking è già in progress o completato.');
+          throw new Error(
+            errorData.message ||
+              'Il task di picking è già in progress o completato.',
+          );
         }
       } catch (error: any) {
-        this.logger.error(`Impossibile annullare picking task: ${error.message}`);
+        this.logger.error(
+          `Impossibile annullare picking task: ${error.message}`,
+        );
         throw new Error(`Impossibile annullare ordine: ${error.message}`);
       }
     }
@@ -77,7 +87,7 @@ export class AppService implements OnModuleInit {
     this.kafkaClient.emit('OrderCancelled', {
       orderId: order.orderId,
       previousStatus,
-      allocations: order.allocations
+      allocations: order.allocations,
     });
 
     this.eventsGateway.notifyDataChanged();
@@ -96,7 +106,9 @@ export class AppService implements OnModuleInit {
     order.status = 'PENDING';
     await order.save();
 
-    this.logger.log(`Ordine ${order.orderId} ripreso manualmente (RESUMED), in attesa di allocazione.`);
+    this.logger.log(
+      `Ordine ${order.orderId} ripreso manualmente (RESUMED), in attesa di allocazione.`,
+    );
 
     this.kafkaClient.emit('OrderPlaced', {
       orderId: order.orderId,
@@ -107,7 +119,10 @@ export class AppService implements OnModuleInit {
     return order;
   }
 
-  async handleInventoryAllocated(payload: { orderId: string, allocations: any[] }) {
+  async handleInventoryAllocated(payload: {
+    orderId: string;
+    allocations: any[];
+  }) {
     const order = await this.orderModel.findOne({ orderId: payload.orderId });
     if (order && order.status !== 'ALLOCATED') {
       order.status = 'ALLOCATED';
@@ -117,7 +132,7 @@ export class AppService implements OnModuleInit {
 
       this.kafkaClient.emit('OrderReadyForPicking', {
         orderId: order.orderId,
-        allocations: order.allocations
+        allocations: order.allocations,
       });
       this.eventsGateway.notifyDataChanged();
     }
@@ -136,9 +151,13 @@ export class AppService implements OnModuleInit {
 
   async handleItemStored() {
     // Riprova ad allocare tutti gli ordini sospesi in ordine di arrivo
-    const suspendedOrders = await this.orderModel.find({ status: 'SUSPENDED' }).sort({ _id: 1 });
+    const suspendedOrders = await this.orderModel
+      .find({ status: 'SUSPENDED' })
+      .sort({ _id: 1 });
     for (const order of suspendedOrders) {
-      this.logger.log(`Ripristino e ri-tentativo di allocazione per ordine sospeso ${order.orderId}`);
+      this.logger.log(
+        `Ripristino e ri-tentativo di allocazione per ordine sospeso ${order.orderId}`,
+      );
       this.kafkaClient.emit('OrderPlaced', {
         orderId: order.orderId,
         items: order.items,

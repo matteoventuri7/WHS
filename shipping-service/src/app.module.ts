@@ -5,11 +5,17 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventsGateway } from './events.gateway';
 import { Vehicle, VehicleSchema } from './schemas/vehicle.schema';
-import { PendingShipment, PendingShipmentSchema } from './schemas/pending-shipment.schema';
+import {
+  PendingShipment,
+  PendingShipmentSchema,
+} from './schemas/pending-shipment.schema';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/shipping?authSource=admin'),
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI ||
+        'mongodb://root:example@localhost:27017/shipping?authSource=admin',
+    ),
     MongooseModule.forFeature([
       { name: Vehicle.name, schema: VehicleSchema },
       { name: PendingShipment.name, schema: PendingShipmentSchema },
@@ -40,4 +46,4 @@ import { PendingShipment, PendingShipmentSchema } from './schemas/pending-shipme
   controllers: [AppController],
   providers: [AppService, EventsGateway],
 })
-export class AppModule { }
+export class AppModule {}

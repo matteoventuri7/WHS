@@ -58,7 +58,12 @@ describe('AppService', () => {
 
   describe('receiveGoods', () => {
     it('should save inventory, emit event and notify gateway', async () => {
-      const mockItem = { productId: 'P1', quantity: 15, reservedQuantity: 0, location: 'A1' };
+      const mockItem = {
+        productId: 'P1',
+        quantity: 15,
+        reservedQuantity: 0,
+        location: 'A1',
+      };
       mockInventoryModel.findOneAndUpdate.mockResolvedValue(mockItem);
 
       const result = await appService.receiveGoods('P1', 15, 'A1');
@@ -66,7 +71,7 @@ describe('AppService', () => {
       expect(mockInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
         { productId: 'P1', location: 'A1' },
         { $inc: { quantity: 15 }, $setOnInsert: { reservedQuantity: 0 } },
-        { returnDocument: 'after', upsert: true }
+        { returnDocument: 'after', upsert: true },
       );
 
       expect(mockKafkaClient.emit).toHaveBeenCalledWith('ItemStored', {
@@ -103,9 +108,19 @@ describe('AppService', () => {
       };
 
       // Mock findOne (available stock)
-      mockInventoryModel.findOne.mockResolvedValueOnce({ _id: 'id1', productId: 'P1', location: 'A1', quantity: 10, reservedQuantity: 0 });
+      mockInventoryModel.findOne.mockResolvedValueOnce({
+        _id: 'id1',
+        productId: 'P1',
+        location: 'A1',
+        quantity: 10,
+        reservedQuantity: 0,
+      });
       // Mock findOneAndUpdate (reserve item)
-      mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({ _id: 'id1', quantity: 10, reservedQuantity: 5 });
+      mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({
+        _id: 'id1',
+        quantity: 10,
+        reservedQuantity: 5,
+      });
 
       await appService.handleOrderPlaced(payload);
 
@@ -117,10 +132,12 @@ describe('AppService', () => {
       expect(mockInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
         {
           _id: 'id1',
-          $expr: { $gte: [{ $subtract: ['$quantity', '$reservedQuantity'] }, 5] },
+          $expr: {
+            $gte: [{ $subtract: ['$quantity', '$reservedQuantity'] }, 5],
+          },
         },
         { $inc: { reservedQuantity: 5 } },
-        { returnDocument: 'after' }
+        { returnDocument: 'after' },
       );
 
       expect(mockKafkaClient.emit).toHaveBeenCalledWith('InventoryAllocated', {
@@ -132,29 +149,49 @@ describe('AppService', () => {
     });
 
     it('should allocate from multiple locations if required', async () => {
-        const payload = {
-          orderId: 'O2',
-          items: [{ productId: 'P2', quantity: 15 }],
-        };
-  
-        // Mock findOne loop 1
-        mockInventoryModel.findOne.mockResolvedValueOnce({ _id: 'loc1', productId: 'P2', location: 'A1', quantity: 10, reservedQuantity: 0 });
-        mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({ _id: 'loc1', quantity: 10, reservedQuantity: 10 });
+      const payload = {
+        orderId: 'O2',
+        items: [{ productId: 'P2', quantity: 15 }],
+      };
 
-        // Mock findOne loop 2
-        mockInventoryModel.findOne.mockResolvedValueOnce({ _id: 'loc2', productId: 'P2', location: 'B1', quantity: 10, reservedQuantity: 0 });
-        mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({ _id: 'loc2', quantity: 10, reservedQuantity: 5 });
-  
-        await appService.handleOrderPlaced(payload);
-  
-        expect(mockKafkaClient.emit).toHaveBeenCalledWith('InventoryAllocated', {
-          orderId: 'O2',
-          allocations: [
-            { productId: 'P2', quantity: 10, location: 'A1' },
-            { productId: 'P2', quantity: 5, location: 'B1' },
-          ],
-        });
-        expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
+      // Mock findOne loop 1
+      mockInventoryModel.findOne.mockResolvedValueOnce({
+        _id: 'loc1',
+        productId: 'P2',
+        location: 'A1',
+        quantity: 10,
+        reservedQuantity: 0,
+      });
+      mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({
+        _id: 'loc1',
+        quantity: 10,
+        reservedQuantity: 10,
+      });
+
+      // Mock findOne loop 2
+      mockInventoryModel.findOne.mockResolvedValueOnce({
+        _id: 'loc2',
+        productId: 'P2',
+        location: 'B1',
+        quantity: 10,
+        reservedQuantity: 0,
+      });
+      mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({
+        _id: 'loc2',
+        quantity: 10,
+        reservedQuantity: 5,
+      });
+
+      await appService.handleOrderPlaced(payload);
+
+      expect(mockKafkaClient.emit).toHaveBeenCalledWith('InventoryAllocated', {
+        orderId: 'O2',
+        allocations: [
+          { productId: 'P2', quantity: 10, location: 'A1' },
+          { productId: 'P2', quantity: 5, location: 'B1' },
+        ],
+      });
+      expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should fail to allocate, rollback partial reservations, and emit OutOfStock', async () => {
@@ -164,8 +201,18 @@ describe('AppService', () => {
       };
 
       // Only 5 available in total
-      mockInventoryModel.findOne.mockResolvedValueOnce({ _id: 'id1', productId: 'P3', location: 'A1', quantity: 5, reservedQuantity: 0 });
-      mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({ _id: 'id1', quantity: 5, reservedQuantity: 5 });
+      mockInventoryModel.findOne.mockResolvedValueOnce({
+        _id: 'id1',
+        productId: 'P3',
+        location: 'A1',
+        quantity: 5,
+        reservedQuantity: 0,
+      });
+      mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({
+        _id: 'id1',
+        quantity: 5,
+        reservedQuantity: 5,
+      });
       // Next iteration finds no stock
       mockInventoryModel.findOne.mockResolvedValueOnce(null);
 
@@ -174,11 +221,16 @@ describe('AppService', () => {
       // Verify rollback for the partial location A1
       expect(mockInventoryModel.updateOne).toHaveBeenCalledWith(
         { productId: 'P3', location: 'A1' },
-        { $inc: { reservedQuantity: -5 } }
+        { $inc: { reservedQuantity: -5 } },
       );
 
-      expect(mockKafkaClient.emit).toHaveBeenCalledWith('OutOfStock', { orderId: 'O3' });
-      expect(mockKafkaClient.emit).not.toHaveBeenCalledWith('InventoryAllocated', expect.any(Object));
+      expect(mockKafkaClient.emit).toHaveBeenCalledWith('OutOfStock', {
+        orderId: 'O3',
+      });
+      expect(mockKafkaClient.emit).not.toHaveBeenCalledWith(
+        'InventoryAllocated',
+        expect.any(Object),
+      );
       expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
   });
@@ -198,12 +250,12 @@ describe('AppService', () => {
 
       expect(mockInventoryModel.updateOne).toHaveBeenCalledWith(
         { productId: 'P1', location: 'A1' },
-        { $inc: { reservedQuantity: -5 } }
+        { $inc: { reservedQuantity: -5 } },
       );
 
       expect(mockInventoryModel.updateOne).toHaveBeenCalledWith(
         { productId: 'P2', location: 'B1' },
-        { $inc: { reservedQuantity: -2 } }
+        { $inc: { reservedQuantity: -2 } },
       );
 
       expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();

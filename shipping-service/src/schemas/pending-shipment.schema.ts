@@ -5,20 +5,21 @@ export type PendingShipmentDocument = PendingShipment & Document;
 
 @Schema()
 export class PendingShipment {
-    @Prop({ required: true })
-    taskId: string;
+  @Prop({ required: true })
+  taskId: string;
 
-    @Prop({ required: true })
-    orderId: string;
+  @Prop({ required: true })
+  orderId: string;
 
-    @Prop({ type: Array, default: [] })
-    allocations: any[];
+  @Prop({ type: Array, default: [] })
+  allocations: any[];
 
-    @Prop({ required: true })
-    totalItems: number;
+  @Prop({ required: true })
+  totalItems: number;
 
-    @Prop({ default: () => new Date() })
-    createdAt: Date;
+  @Prop({ default: () => new Date() })
+  createdAt: Date;
 }
 
-export const PendingShipmentSchema = SchemaFactory.createForClass(PendingShipment);
+export const PendingShipmentSchema =
+  SchemaFactory.createForClass(PendingShipment);

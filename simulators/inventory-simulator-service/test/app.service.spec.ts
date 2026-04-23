@@ -24,7 +24,7 @@ describe('AppService', () => {
     }).compile();
 
     appService = module.get<AppService>(AppService);
-    kafkaClient = module.get('KAFKA_CLIENT') as jest.Mocked<ClientKafka>;
+    kafkaClient = module.get('KAFKA_CLIENT');
 
     // Suppress logs during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
@@ -110,7 +110,7 @@ describe('AppService', () => {
     it('should stop running simulation', () => {
       appService.startSimulation(5000);
       const result = appService.stopSimulation();
-      
+
       expect(result).toEqual({
         message: 'Inbound simulation stopped',
         isSimulating: false,

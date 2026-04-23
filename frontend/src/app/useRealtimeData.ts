@@ -9,7 +9,10 @@ import { io, Socket } from 'socket.io-client';
 export function useRealtimeData(serviceUrl: string, fetchFn: () => void) {
   const socketRef = useRef<Socket | null>(null);
   const fetchRef = useRef(fetchFn);
-  fetchRef.current = fetchFn;
+
+  useEffect(() => {
+    fetchRef.current = fetchFn;
+  }, [fetchFn]);
 
   useEffect(() => {
     const socket = io(serviceUrl, {

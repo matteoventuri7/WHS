@@ -1,13 +1,24 @@
-import { Body, Controller, Get, Param, Patch, Post, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { AppService } from './app.service';
 
 @Controller('orders')
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @Post()
-  async placeOrder(@Body() body: { items: { productId: string, quantity: number }[] }) {
+  async placeOrder(
+    @Body() body: { items: { productId: string; quantity: number }[] },
+  ) {
     return this.appService.placeOrder(body.items);
   }
 

@@ -22,7 +22,7 @@ describe('main bootstrap', () => {
     };
 
     const { NestFactory } = require('@nestjs/core');
-    const createSpy = jest.spyOn(NestFactory, 'create').mockResolvedValue(app as never);
+    const createSpy = jest.spyOn(NestFactory, 'create').mockResolvedValue(app);
 
     require('../src/main');
     await new Promise((resolve) => setImmediate(resolve));
@@ -52,7 +52,7 @@ describe('main bootstrap', () => {
     };
 
     const { NestFactory } = require('@nestjs/core');
-    jest.spyOn(NestFactory, 'create').mockResolvedValue(app as never);
+    jest.spyOn(NestFactory, 'create').mockResolvedValue(app);
 
     require('../src/main');
     await new Promise((resolve) => setImmediate(resolve));

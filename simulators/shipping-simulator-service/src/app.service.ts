@@ -12,12 +12,13 @@ export class AppService implements OnModuleInit {
   private currentInterval: number | null = null;
 
   // URL of the shipping service
-  private readonly shippingServiceUrl = process.env.SHIPPING_SERVICE_URL || 'http://localhost:3004/shipping';
+  private readonly shippingServiceUrl =
+    process.env.SHIPPING_SERVICE_URL || 'http://localhost:3004/shipping';
 
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     private readonly httpService: HttpService,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     this.logger.log('Connessione Kafka Producer (Dispatch) inizializzata.');
@@ -26,7 +27,7 @@ export class AppService implements OnModuleInit {
   getStatus() {
     return {
       isSimulating: this.isSimulating,
-      intervalMs: this.currentInterval
+      intervalMs: this.currentInterval,
     };
   }
 
@@ -37,7 +38,9 @@ export class AppService implements OnModuleInit {
 
     this.isSimulating = true;
     this.currentInterval = intervalMs;
-    this.logger.log(`Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`);
+    this.logger.log(
+      `Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`,
+    );
 
     // Eseguiamo subito la prima passata
     this.simulateDispatch();
@@ -49,7 +52,7 @@ export class AppService implements OnModuleInit {
     return {
       message: 'Dispatch simulation started',
       isSimulating: true,
-      intervalMs
+      intervalMs,
     };
   }
 
@@ -82,7 +85,7 @@ export class AppService implements OnModuleInit {
     try {
       // 1. Recupera i veicoli dallo shipping-service
       const response = await firstValueFrom(
-        this.httpService.get(`${this.shippingServiceUrl}/vehicles`)
+        this.httpService.get(`${this.shippingServiceUrl}/vehicles`),
       );
 
       const vehicles = response.data;
@@ -92,13 +95,17 @@ export class AppService implements OnModuleInit {
       }
 
       // 2. Filtra i veicoli AVAILABLE e con un carico assegnato
-      const readyVehicles = vehicles.filter(v =>
-        v.status === 'AVAILABLE' &&
-        (v.currentLoad > 0 || (v.assignedTaskIds && v.assignedTaskIds.length > 0))
+      const readyVehicles = vehicles.filter(
+        (v) =>
+          v.status === 'AVAILABLE' &&
+          (v.currentLoad > 0 ||
+            (v.assignedTaskIds && v.assignedTaskIds.length > 0)),
       );
 
       if (readyVehicles.length === 0) {
-        this.logger.log('Nessun veicolo pronto per la partenza (AVAILABLE e con carico > 0).');
+        this.logger.log(
+          'Nessun veicolo pronto per la partenza (AVAILABLE e con carico > 0).',
+        );
         return;
       }
 
@@ -106,20 +113,29 @@ export class AppService implements OnModuleInit {
       readyVehicles.sort((a, b) => b.currentLoad - a.currentLoad);
       const vehicleToDispatch = readyVehicles[0];
 
-      this.logger.log(`Trovato veicolo pronto: ${vehicleToDispatch.vehicleId} (Load: ${vehicleToDispatch.currentLoad}/${vehicleToDispatch.maxCapacity})`);
+      this.logger.log(
+        `Trovato veicolo pronto: ${vehicleToDispatch.vehicleId} (Load: ${vehicleToDispatch.currentLoad}/${vehicleToDispatch.maxCapacity})`,
+      );
 
       // 4. Invia la richiesta di dispatch a shipping-service
       try {
         await firstValueFrom(
-          this.httpService.post(`${this.shippingServiceUrl}/vehicles/${vehicleToDispatch.vehicleId}/dispatch`)
+          this.httpService.post(
+            `${this.shippingServiceUrl}/vehicles/${vehicleToDispatch.vehicleId}/dispatch`,
+          ),
         );
-        this.logger.log(`Richiesta di dispatch inviata con successo per il veicolo ${vehicleToDispatch.vehicleId}.`);
+        this.logger.log(
+          `Richiesta di dispatch inviata con successo per il veicolo ${vehicleToDispatch.vehicleId}.`,
+        );
       } catch (dispatchError: any) {
-        this.logger.error(`Errore durante il dispatch del veicolo ${vehicleToDispatch.vehicleId}: ${dispatchError.message}`);
+        this.logger.error(
+          `Errore durante il dispatch del veicolo ${vehicleToDispatch.vehicleId}: ${dispatchError.message}`,
+        );
       }
-
     } catch (error: any) {
-      this.logger.error(`Impossibile contattare shipping-service: ${error.message}`);
+      this.logger.error(
+        `Impossibile contattare shipping-service: ${error.message}`,
+      );
     }
   }
 
@@ -132,13 +148,17 @@ export class AppService implements OnModuleInit {
       const response = await firstValueFrom(
         this.httpService.post(`${this.shippingServiceUrl}/vehicles`, {
           vehicleId,
-          maxCapacity
-        })
+          maxCapacity,
+        }),
       );
-      this.logger.log(`Nuovo camion generato dal simulatore: ${vehicleId} (Capacity: ${maxCapacity})`);
+      this.logger.log(
+        `Nuovo camion generato dal simulatore: ${vehicleId} (Capacity: ${maxCapacity})`,
+      );
       return response.data;
     } catch (error: any) {
-      this.logger.error(`Errore durante la generazione del camion: ${error.message}`);
+      this.logger.error(
+        `Errore durante la generazione del camion: ${error.message}`,
+      );
       throw error;
     }
   }

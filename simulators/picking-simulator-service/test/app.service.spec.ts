@@ -49,13 +49,18 @@ describe('AppService', () => {
     it('should log initialization message', async () => {
       const loggerSpy = service['logger'].log as jest.Mock;
       await service.onModuleInit();
-      expect(loggerSpy).toHaveBeenCalledWith('Picking simulator inizializzato.');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Picking simulator inizializzato.',
+      );
     });
   });
 
   describe('getStatus', () => {
     it('should return default status', () => {
-      expect(service.getStatus()).toEqual({ isSimulating: false, intervalMs: null });
+      expect(service.getStatus()).toEqual({
+        isSimulating: false,
+        intervalMs: null,
+      });
     });
   });
 
@@ -70,18 +75,31 @@ describe('AppService', () => {
 
     it('should start simulation and set interval', async () => {
       jest.spyOn(Math, 'random').mockReturnValue(0);
-      mockHttpService.get.mockReturnValue(of({ data: [{ taskId: 'TASK-001', status: 'PENDING' }] }));
+      mockHttpService.get.mockReturnValue(
+        of({ data: [{ taskId: 'TASK-001', status: 'PENDING' }] }),
+      );
       mockHttpService.post.mockReturnValue(of({ data: { success: true } }));
 
       const result = service.startSimulation(10000);
       await Promise.resolve();
 
-      expect(result).toEqual({ message: 'Picking simulation started', isSimulating: true, intervalMs: 10000 });
-      expect(service.getStatus()).toEqual({ isSimulating: true, intervalMs: 10000 });
+      expect(result).toEqual({
+        message: 'Picking simulation started',
+        isSimulating: true,
+        intervalMs: 10000,
+      });
+      expect(service.getStatus()).toEqual({
+        isSimulating: true,
+        intervalMs: 10000,
+      });
       expect(mockHttpService.get).toHaveBeenCalledTimes(1);
       expect(mockHttpService.post).toHaveBeenCalledTimes(1);
-      expect(mockHttpService.get).toHaveBeenCalledWith('http://localhost:3003/picking/tasks');
-      expect(mockHttpService.post).toHaveBeenCalledWith('http://localhost:3003/picking/tasks/TASK-001/complete');
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        'http://localhost:3003/picking/tasks',
+      );
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'http://localhost:3003/picking/tasks/TASK-001/complete',
+      );
 
       jest.advanceTimersByTime(10000);
       await Promise.resolve();
@@ -91,34 +109,52 @@ describe('AppService', () => {
 
     it('should not start if already simulating', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0);
-      mockHttpService.get.mockReturnValue(of({ data: [{ taskId: 'TASK-001', status: 'PENDING' }] }));
+      mockHttpService.get.mockReturnValue(
+        of({ data: [{ taskId: 'TASK-001', status: 'PENDING' }] }),
+      );
       mockHttpService.post.mockReturnValue(of({ data: { success: true } }));
       service.startSimulation(10000);
 
       const result = service.startSimulation(20000);
 
-      expect(result).toEqual({ message: 'Simulation is already running', isSimulating: true });
-      expect(service.getStatus()).toEqual({ isSimulating: true, intervalMs: 10000 });
+      expect(result).toEqual({
+        message: 'Simulation is already running',
+        isSimulating: true,
+      });
+      expect(service.getStatus()).toEqual({
+        isSimulating: true,
+        intervalMs: 10000,
+      });
     });
   });
 
   describe('stopSimulation', () => {
     it('should stop running simulation', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0);
-      mockHttpService.get.mockReturnValue(of({ data: [{ taskId: 'TASK-001', status: 'PENDING' }] }));
+      mockHttpService.get.mockReturnValue(
+        of({ data: [{ taskId: 'TASK-001', status: 'PENDING' }] }),
+      );
       mockHttpService.post.mockReturnValue(of({ data: { success: true } }));
       service.startSimulation(10000);
 
       const result = service.stopSimulation();
 
-      expect(result).toEqual({ message: 'Picking simulation stopped', isSimulating: false });
-      expect(service.getStatus()).toEqual({ isSimulating: false, intervalMs: null });
+      expect(result).toEqual({
+        message: 'Picking simulation stopped',
+        isSimulating: false,
+      });
+      expect(service.getStatus()).toEqual({
+        isSimulating: false,
+        intervalMs: null,
+      });
     });
 
     it('should do nothing if not simulating', () => {
       const result = service.stopSimulation();
-      
-      expect(result).toEqual({ message: 'Simulation is not currently running' });
+
+      expect(result).toEqual({
+        message: 'Simulation is not currently running',
+      });
     });
   });
 
@@ -137,8 +173,12 @@ describe('AppService', () => {
 
       await service['simulatePicking']();
 
-      expect(mockHttpService.get).toHaveBeenCalledWith('http://localhost:3003/picking/tasks');
-      expect(mockHttpService.post).toHaveBeenCalledWith('http://localhost:3003/picking/tasks/TASK-102/complete');
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        'http://localhost:3003/picking/tasks',
+      );
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'http://localhost:3003/picking/tasks/TASK-102/complete',
+      );
     });
 
     it('should log warning if picking-service returns invalid data', async () => {
@@ -147,39 +187,55 @@ describe('AppService', () => {
 
       await service['simulatePicking']();
 
-      expect(loggerSpy).toHaveBeenCalledWith('Formato risposta non valido da picking-service');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Formato risposta non valido da picking-service',
+      );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
 
     it('should skip completion if no pending task is available', async () => {
       const loggerSpy = service['logger'].log as jest.Mock;
-      mockHttpService.get.mockReturnValue(of({ data: [{ taskId: 'TASK-100', status: 'COMPLETED' }] }));
+      mockHttpService.get.mockReturnValue(
+        of({ data: [{ taskId: 'TASK-100', status: 'COMPLETED' }] }),
+      );
 
       await service['simulatePicking']();
 
-      expect(loggerSpy).toHaveBeenCalledWith('Nessun picking task PENDING disponibile.');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Nessun picking task PENDING disponibile.',
+      );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
 
     it('should log error if picking-service get request fails', async () => {
       const loggerSpy = service['logger'].error as jest.Mock;
-      mockHttpService.get.mockReturnValue(throwError(() => new Error('Connection refused')));
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error('Connection refused')),
+      );
 
       await service['simulatePicking']();
 
-      expect(loggerSpy).toHaveBeenCalledWith('Impossibile contattare picking-service: Connection refused');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Impossibile contattare picking-service: Connection refused',
+      );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
 
     it('should log error if task completion fails', async () => {
       jest.spyOn(Math, 'random').mockReturnValue(0);
-      mockHttpService.get.mockReturnValue(of({ data: [{ taskId: 'TASK-901', status: 'PENDING' }] }));
-      mockHttpService.post.mockReturnValue(throwError(() => new Error('Complete endpoint down')));
+      mockHttpService.get.mockReturnValue(
+        of({ data: [{ taskId: 'TASK-901', status: 'PENDING' }] }),
+      );
+      mockHttpService.post.mockReturnValue(
+        throwError(() => new Error('Complete endpoint down')),
+      );
       const loggerSpy = service['logger'].error as jest.Mock;
 
       await service['simulatePicking']();
 
-      expect(loggerSpy).toHaveBeenCalledWith('Errore durante il completamento del task TASK-901: Complete endpoint down');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Errore durante il completamento del task TASK-901: Complete endpoint down',
+      );
     });
   });
 });

@@ -3,7 +3,10 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Vehicle, VehicleDocument } from './schemas/vehicle.schema';
-import { PendingShipment, PendingShipmentDocument } from './schemas/pending-shipment.schema';
+import {
+  PendingShipment,
+  PendingShipmentDocument,
+} from './schemas/pending-shipment.schema';
 import { EventsGateway } from './events.gateway';
 
 @Injectable()
@@ -13,12 +16,15 @@ export class AppService implements OnModuleInit {
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(Vehicle.name) private vehicleModel: Model<VehicleDocument>,
-    @InjectModel(PendingShipment.name) private pendingShipmentModel: Model<PendingShipmentDocument>,
+    @InjectModel(PendingShipment.name)
+    private pendingShipmentModel: Model<PendingShipmentDocument>,
     private readonly eventsGateway: EventsGateway,
-  ) { }
+  ) {}
 
   async onModuleInit() {
-    this.logger.log('Connessione Kafka Producer per Shipping Service inizializzata.');
+    this.logger.log(
+      'Connessione Kafka Producer per Shipping Service inizializzata.',
+    );
   }
 
   async getAllVehicles() {
@@ -32,7 +38,9 @@ export class AppService implements OnModuleInit {
   async registerVehicle(vehicleId: string, maxCapacity: number) {
     const v = new this.vehicleModel({ vehicleId, maxCapacity });
     await v.save();
-    this.logger.log(`Veicolo ${vehicleId} registrato (capacità: ${maxCapacity}).`);
+    this.logger.log(
+      `Veicolo ${vehicleId} registrato (capacità: ${maxCapacity}).`,
+    );
     this.kafkaClient.emit('VehicleRegistered', { vehicleId, maxCapacity });
     this.eventsGateway.notifyDataChanged();
 
@@ -42,14 +50,27 @@ export class AppService implements OnModuleInit {
     return v;
   }
 
-  async handlePickingTaskCompleted(payload: { taskId: string, orderId: string, allocations: any[] }) {
-    const totalItems = payload.allocations.reduce((sum, item) => sum + item.quantity, 0);
+  async handlePickingTaskCompleted(payload: {
+    taskId: string;
+    orderId: string;
+    allocations: any[];
+  }) {
+    const totalItems = payload.allocations.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
 
-    const assigned = await this.tryAssignToVehicle(payload.taskId, payload.orderId, totalItems);
+    const assigned = await this.tryAssignToVehicle(
+      payload.taskId,
+      payload.orderId,
+      totalItems,
+    );
 
     if (!assigned) {
       // Salva come spedizione pendente per ritentare quando un veicolo sarà disponibile
-      const existing = await this.pendingShipmentModel.findOne({ taskId: payload.taskId });
+      const existing = await this.pendingShipmentModel.findOne({
+        taskId: payload.taskId,
+      });
       if (!existing) {
         const pending = new this.pendingShipmentModel({
           taskId: payload.taskId,
@@ -58,7 +79,9 @@ export class AppService implements OnModuleInit {
           totalItems,
         });
         await pending.save();
-        this.logger.warn(`Nessun veicolo disponibile. Task ${payload.taskId} salvato come spedizione pendente.`);
+        this.logger.warn(
+          `Nessun veicolo disponibile. Task ${payload.taskId} salvato come spedizione pendente.`,
+        );
       }
     }
     this.eventsGateway.notifyDataChanged();
@@ -68,8 +91,14 @@ export class AppService implements OnModuleInit {
    * Tenta di assegnare un task a un veicolo disponibile.
    * Ritorna true se l'assegnazione è avvenuta, false altrimenti.
    */
-  private async tryAssignToVehicle(taskId: string, orderId: string, totalItems: number): Promise<boolean> {
-    const vehicles = await this.vehicleModel.find({ status: 'AVAILABLE' }).sort({ _id: 1 });
+  private async tryAssignToVehicle(
+    taskId: string,
+    orderId: string,
+    totalItems: number,
+  ): Promise<boolean> {
+    const vehicles = await this.vehicleModel
+      .find({ status: 'AVAILABLE' })
+      .sort({ _id: 1 });
 
     for (const v of vehicles) {
       if (v.maxCapacity - v.currentLoad >= totalItems) {
@@ -80,13 +109,15 @@ export class AppService implements OnModuleInit {
         this.kafkaClient.emit('ShipmentAssigned', {
           taskId,
           orderId,
-          vehicleId: v.vehicleId
+          vehicleId: v.vehicleId,
         });
         return true;
       }
     }
 
-    this.logger.warn(`Nessun veicolo con capienza sufficiente (${totalItems} items) per il Task ${taskId}.`);
+    this.logger.warn(
+      `Nessun veicolo con capienza sufficiente (${totalItems} items) per il Task ${taskId}.`,
+    );
     return false;
   }
 
@@ -95,23 +126,35 @@ export class AppService implements OnModuleInit {
    * Chiamato dopo la registrazione di un nuovo veicolo.
    */
   private async processPendingShipments() {
-    const pendingShipments = await this.pendingShipmentModel.find().sort({ createdAt: 1 });
+    const pendingShipments = await this.pendingShipmentModel
+      .find()
+      .sort({ createdAt: 1 });
 
     if (pendingShipments.length === 0) {
       return;
     }
 
-    this.logger.log(`Trovate ${pendingShipments.length} spedizioni pendenti. Tentativo di assegnazione...`);
+    this.logger.log(
+      `Trovate ${pendingShipments.length} spedizioni pendenti. Tentativo di assegnazione...`,
+    );
 
     for (const pending of pendingShipments) {
-      const assigned = await this.tryAssignToVehicle(pending.taskId, pending.orderId, pending.totalItems);
+      const assigned = await this.tryAssignToVehicle(
+        pending.taskId,
+        pending.orderId,
+        pending.totalItems,
+      );
       if (assigned) {
         await this.pendingShipmentModel.deleteOne({ _id: pending._id });
-        this.logger.log(`Spedizione pendente per task ${pending.taskId} assegnata e rimossa dalla coda.`);
+        this.logger.log(
+          `Spedizione pendente per task ${pending.taskId} assegnata e rimossa dalla coda.`,
+        );
         this.eventsGateway.notifyDataChanged();
       } else {
         // Se non riesce ad assegnare questo, i successivi probabilmente non avranno capienza
-        this.logger.log(`Impossibile assegnare spedizione pendente per task ${pending.taskId}. Verrà riprovata.`);
+        this.logger.log(
+          `Impossibile assegnare spedizione pendente per task ${pending.taskId}. Verrà riprovata.`,
+        );
         break;
       }
     }
@@ -121,12 +164,15 @@ export class AppService implements OnModuleInit {
     const v = await this.vehicleModel.findOneAndUpdate(
       { vehicleId, status: 'AVAILABLE' },
       { $set: { status: 'DISPATCHED' } },
-      { returnDocument: 'after' }
+      { returnDocument: 'after' },
     );
 
     if (v) {
       this.logger.log(`Veicolo ${vehicleId} partito!`);
-      this.kafkaClient.emit('VehicleDispatched', { vehicleId, tasks: v.assignedTaskIds });
+      this.kafkaClient.emit('VehicleDispatched', {
+        vehicleId,
+        tasks: v.assignedTaskIds,
+      });
       this.eventsGateway.notifyDataChanged();
       return v;
     }

@@ -16,12 +16,13 @@ export class AppService implements OnModuleInit {
   private isSimulating: boolean = false;
   private currentInterval: number | null = null;
 
-  private readonly pickingServiceUrl = process.env.PICKING_SERVICE_URL || 'http://localhost:3003/picking';
+  private readonly pickingServiceUrl =
+    process.env.PICKING_SERVICE_URL || 'http://localhost:3003/picking';
 
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     private readonly httpService: HttpService,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     this.logger.log('Picking simulator inizializzato.');
@@ -30,7 +31,7 @@ export class AppService implements OnModuleInit {
   getStatus() {
     return {
       isSimulating: this.isSimulating,
-      intervalMs: this.currentInterval
+      intervalMs: this.currentInterval,
     };
   }
 
@@ -41,7 +42,9 @@ export class AppService implements OnModuleInit {
 
     this.isSimulating = true;
     this.currentInterval = intervalMs;
-    this.logger.log(`Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`);
+    this.logger.log(
+      `Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`,
+    );
 
     // Eseguiamo subito la prima passata
     void this.simulatePicking();
@@ -53,7 +56,7 @@ export class AppService implements OnModuleInit {
     return {
       message: 'Picking simulation started',
       isSimulating: true,
-      intervalMs
+      intervalMs,
     };
   }
 
@@ -79,7 +82,7 @@ export class AppService implements OnModuleInit {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`${this.pickingServiceUrl}/tasks`)
+        this.httpService.get(`${this.pickingServiceUrl}/tasks`),
       );
 
       const tasks = response.data;
@@ -89,7 +92,8 @@ export class AppService implements OnModuleInit {
       }
 
       const pendingTasks = (tasks as PickingTaskRecord[]).filter(
-        (task) => task && task.status === 'PENDING' && typeof task.taskId === 'string',
+        (task) =>
+          task && task.status === 'PENDING' && typeof task.taskId === 'string',
       );
 
       if (pendingTasks.length === 0) {
@@ -102,17 +106,23 @@ export class AppService implements OnModuleInit {
 
       try {
         await firstValueFrom(
-          this.httpService.post(`${this.pickingServiceUrl}/tasks/${selectedTask.taskId}/complete`)
+          this.httpService.post(
+            `${this.pickingServiceUrl}/tasks/${selectedTask.taskId}/complete`,
+          ),
         );
 
         this.logger.log(
           `Picking task ${selectedTask.taskId} completato automaticamente.`,
         );
       } catch (completeError: any) {
-        this.logger.error(`Errore durante il completamento del task ${selectedTask.taskId}: ${completeError.message}`);
+        this.logger.error(
+          `Errore durante il completamento del task ${selectedTask.taskId}: ${completeError.message}`,
+        );
       }
     } catch (error: any) {
-      this.logger.error(`Impossibile contattare picking-service: ${error.message}`);
+      this.logger.error(
+        `Impossibile contattare picking-service: ${error.message}`,
+      );
     }
   }
 }

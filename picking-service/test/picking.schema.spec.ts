@@ -3,7 +3,8 @@ import { PickingTask, PickingTaskSchema } from '../src/schemas/picking.schema';
 
 describe('PickingTaskSchema', () => {
   it('should apply defaults for taskId and status', () => {
-    const PickingTaskModel = models.PickingSchemaTest || model('PickingSchemaTest', PickingTaskSchema);
+    const PickingTaskModel =
+      models.PickingSchemaTest || model('PickingSchemaTest', PickingTaskSchema);
 
     const doc = new PickingTaskModel({
       orderId: 'O-1',

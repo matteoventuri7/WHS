@@ -17,9 +17,9 @@ describe('AppService', () => {
       exec: jest.fn(),
       findOne: jest.fn(),
     };
-    
+
     // Mock constructor for new taskModel
-    const mockTaskModel = function(data: any) {
+    const mockTaskModel = function (data: any) {
       Object.assign(this, data);
       this.taskId = 'generated-task-id';
       this.save = jest.fn().mockResolvedValue(this);
@@ -44,7 +44,7 @@ describe('AppService', () => {
     }).compile();
 
     appService = module.get<AppService>(AppService);
-    
+
     // suppress logger
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
@@ -61,7 +61,9 @@ describe('AppService', () => {
   describe('onModuleInit', () => {
     it('should log initialization', async () => {
       await appService.onModuleInit();
-      expect(Logger.prototype.log).toHaveBeenCalledWith('Connessione Kafka Producer per Picking Service inizializzata.');
+      expect(Logger.prototype.log).toHaveBeenCalledWith(
+        'Connessione Kafka Producer per Picking Service inizializzata.',
+      );
     });
   });
 
@@ -71,7 +73,7 @@ describe('AppService', () => {
       taskModel.exec.mockResolvedValue(mockTasks);
 
       const result = await appService.getAllTasks();
-      
+
       expect(taskModel.find).toHaveBeenCalled();
       expect(result).toEqual(mockTasks);
     });
@@ -80,7 +82,7 @@ describe('AppService', () => {
   describe('handleOrderReadyForPicking', () => {
     it('should create a picking task if it does not exist', async () => {
       taskModel.findOne.mockResolvedValue(null);
-      
+
       const payload = { orderId: 'O123', allocations: [{ id: 'A1' }] };
       await appService.handleOrderReadyForPicking(payload);
 
@@ -88,14 +90,14 @@ describe('AppService', () => {
       expect(kafkaClient.emit).toHaveBeenCalledWith('PickingTaskCreated', {
         taskId: 'generated-task-id',
         orderId: 'O123',
-        allocations: [{ id: 'A1' }]
+        allocations: [{ id: 'A1' }],
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should not create a task if it already exists', async () => {
       taskModel.findOne.mockResolvedValue({ orderId: 'O123', taskId: 'T1' });
-      
+
       const payload = { orderId: 'O123', allocations: [{ id: 'A1' }] };
       await appService.handleOrderReadyForPicking(payload);
 
@@ -112,7 +114,7 @@ describe('AppService', () => {
         orderId: 'O123',
         allocations: [{ id: 'A1' }],
         status: 'PENDING',
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       taskModel.findOne.mockResolvedValue(mockTask);
 
@@ -124,7 +126,7 @@ describe('AppService', () => {
       expect(kafkaClient.emit).toHaveBeenCalledWith('PickingTaskCompleted', {
         taskId: mockTask.taskId,
         orderId: mockTask.orderId,
-        allocations: mockTask.allocations
+        allocations: mockTask.allocations,
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toBe(mockTask);
@@ -132,13 +134,17 @@ describe('AppService', () => {
 
     it('should throw an error if task is not found', async () => {
       taskModel.findOne.mockResolvedValue(null);
-      await expect(appService.completePickingTask('T123')).rejects.toThrow('Task non trovato o già completato');
+      await expect(appService.completePickingTask('T123')).rejects.toThrow(
+        'Task non trovato o già completato',
+      );
     });
 
     it('should throw an error if task is not PENDING', async () => {
       const mockTask = { taskId: 'T123', status: 'COMPLETED' };
       taskModel.findOne.mockResolvedValue(mockTask);
-      await expect(appService.completePickingTask('T123')).rejects.toThrow('Task non trovato o già completato');
+      await expect(appService.completePickingTask('T123')).rejects.toThrow(
+        'Task non trovato o già completato',
+      );
     });
   });
 
@@ -147,8 +153,13 @@ describe('AppService', () => {
       taskModel.findOne.mockResolvedValue(null);
 
       const result = await appService.cancelPickingTask('O123');
-      expect(result).toEqual({ success: true, message: 'Nessun picking task associato.' });
-      expect(Logger.prototype.log).toHaveBeenCalledWith(`Nessun picking task trovato per l'ordine O123. Annullamento consentito.`);
+      expect(result).toEqual({
+        success: true,
+        message: 'Nessun picking task associato.',
+      });
+      expect(Logger.prototype.log).toHaveBeenCalledWith(
+        `Nessun picking task trovato per l'ordine O123. Annullamento consentito.`,
+      );
     });
 
     it('should cancel the task if it is PENDING', async () => {
@@ -156,7 +167,7 @@ describe('AppService', () => {
         taskId: 'T123',
         orderId: 'O123',
         status: 'PENDING',
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       taskModel.findOne.mockResolvedValue(mockTask);
 
@@ -164,7 +175,10 @@ describe('AppService', () => {
       expect(mockTask.status).toBe('CANCELLED');
       expect(mockTask.save).toHaveBeenCalled();
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
-      expect(result).toEqual({ success: true, message: 'Picking task annullato.' });
+      expect(result).toEqual({
+        success: true,
+        message: 'Picking task annullato.',
+      });
     });
 
     it('should throw an error if task cannot be cancelled', async () => {
@@ -172,12 +186,16 @@ describe('AppService', () => {
         taskId: 'T123',
         orderId: 'O123',
         status: 'IN_PROGRESS',
-        save: jest.fn()
+        save: jest.fn(),
       };
       taskModel.findOne.mockResolvedValue(mockTask);
 
-      await expect(appService.cancelPickingTask('O123')).rejects.toThrow('Impossibile annullare: il task di picking è in stato IN_PROGRESS');
-      expect(Logger.prototype.warn).toHaveBeenCalledWith(`Impossibile annullare Picking Task T123 per ordine O123 (stato: IN_PROGRESS).`);
+      await expect(appService.cancelPickingTask('O123')).rejects.toThrow(
+        'Impossibile annullare: il task di picking è in stato IN_PROGRESS',
+      );
+      expect(Logger.prototype.warn).toHaveBeenCalledWith(
+        `Impossibile annullare Picking Task T123 per ordine O123 (stato: IN_PROGRESS).`,
+      );
     });
   });
 });

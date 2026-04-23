@@ -8,8 +8,13 @@ import { PickingTask, PickingTaskSchema } from './schemas/picking.schema';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/picking?authSource=admin'),
-    MongooseModule.forFeature([{ name: PickingTask.name, schema: PickingTaskSchema }]),
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI ||
+        'mongodb://root:example@localhost:27017/picking?authSource=admin',
+    ),
+    MongooseModule.forFeature([
+      { name: PickingTask.name, schema: PickingTaskSchema },
+    ]),
     ClientsModule.register([
       {
         name: 'KAFKA_CLIENT',
@@ -36,4 +41,4 @@ import { PickingTask, PickingTaskSchema } from './schemas/picking.schema';
   controllers: [AppController],
   providers: [AppService, EventsGateway],
 })
-export class AppModule { }
+export class AppModule {}

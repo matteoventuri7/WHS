@@ -1,10 +1,17 @@
-import { Controller, Get, Param, Post, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { AppService } from './app.service';
 
 @Controller('picking')
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @Get('tasks')
   async getTasks() {

@@ -5,17 +5,21 @@ export type PickingTaskDocument = PickingTask & Document;
 
 @Schema()
 export class PickingTask {
-    @Prop({ required: true, default: () => new Date().getTime().toString() })
-    taskId: string;
+  @Prop({ required: true, default: () => new Date().getTime().toString() })
+  taskId: string;
 
-    @Prop({ required: true })
-    orderId: string;
+  @Prop({ required: true })
+  orderId: string;
 
-    @Prop()
-    allocations: any[];
+  @Prop()
+  allocations: any[];
 
-    @Prop({ required: true, enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'], default: 'PENDING' })
-    status: string;
+  @Prop({
+    required: true,
+    enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+    default: 'PENDING',
+  })
+  status: string;
 }
 
 export const PickingTaskSchema = SchemaFactory.createForClass(PickingTask);

@@ -1,10 +1,15 @@
 import { model, models } from 'mongoose';
-import { PendingShipment, PendingShipmentSchema } from '../src/schemas/pending-shipment.schema';
+import {
+  PendingShipment,
+  PendingShipmentSchema,
+} from '../src/schemas/pending-shipment.schema';
 import { Vehicle, VehicleSchema } from '../src/schemas/vehicle.schema';
 
 describe('Shipping schemas', () => {
   it('should apply createdAt default in PendingShipment schema', () => {
-    const PendingShipmentModel = models.PendingShipmentSchemaTest || model('PendingShipmentSchemaTest', PendingShipmentSchema);
+    const PendingShipmentModel =
+      models.PendingShipmentSchemaTest ||
+      model('PendingShipmentSchemaTest', PendingShipmentSchema);
 
     const doc = new PendingShipmentModel({
       taskId: 'T-1',
@@ -17,7 +22,8 @@ describe('Shipping schemas', () => {
   });
 
   it('should apply default values in Vehicle schema', () => {
-    const VehicleModel = models.VehicleSchemaTest || model('VehicleSchemaTest', VehicleSchema);
+    const VehicleModel =
+      models.VehicleSchemaTest || model('VehicleSchemaTest', VehicleSchema);
 
     const doc = new VehicleModel({
       vehicleId: 'V-1',

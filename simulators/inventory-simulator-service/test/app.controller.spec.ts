@@ -24,7 +24,7 @@ describe('AppController', () => {
     }).compile();
 
     appController = module.get<AppController>(AppController);
-    appService = module.get(AppService) as jest.Mocked<AppService>;
+    appService = module.get(AppService);
   });
 
   it('should be defined', () => {
@@ -33,7 +33,10 @@ describe('AppController', () => {
 
   describe('getStatus', () => {
     it('should return service status', () => {
-      appService.getStatus.mockReturnValue({ isSimulating: false, intervalMs: null });
+      appService.getStatus.mockReturnValue({
+        isSimulating: false,
+        intervalMs: null,
+      });
       const status = appController.getStatus();
       expect(status).toEqual({ isSimulating: false, intervalMs: null });
       expect(appService.getStatus).toHaveBeenCalled();
@@ -42,7 +45,10 @@ describe('AppController', () => {
 
   describe('getHealth', () => {
     it('should return health ok', () => {
-      expect(appController.getHealth()).toEqual({ status: 'ok', service: 'inbound' });
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'inbound',
+      });
     });
   });
 

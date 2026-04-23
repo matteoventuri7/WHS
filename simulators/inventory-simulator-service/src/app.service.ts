@@ -11,7 +11,7 @@ export class AppService implements OnModuleInit {
 
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     await this.kafkaClient.connect();
@@ -21,7 +21,7 @@ export class AppService implements OnModuleInit {
   getStatus() {
     return {
       isSimulating: this.isSimulating,
-      intervalMs: this.currentInterval
+      intervalMs: this.currentInterval,
     };
   }
 
@@ -32,7 +32,9 @@ export class AppService implements OnModuleInit {
 
     this.isSimulating = true;
     this.currentInterval = intervalMs;
-    this.logger.log(`Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`);
+    this.logger.log(
+      `Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`,
+    );
 
     // Eseguiamo subito la prima passata
     this.simulateInbound();
@@ -44,7 +46,7 @@ export class AppService implements OnModuleInit {
     return {
       message: 'Inbound simulation started',
       isSimulating: true,
-      intervalMs
+      intervalMs,
     };
   }
 

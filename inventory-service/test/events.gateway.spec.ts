@@ -26,12 +26,16 @@ describe('EventsGateway', () => {
 
   it('should log client connection', () => {
     gateway.handleConnection({ id: 'client-1' });
-    expect(Logger.prototype.log).toHaveBeenCalledWith('Client connesso: client-1');
+    expect(Logger.prototype.log).toHaveBeenCalledWith(
+      'Client connesso: client-1',
+    );
   });
 
   it('should log client disconnection', () => {
     gateway.handleDisconnect({ id: 'client-2' });
-    expect(Logger.prototype.log).toHaveBeenCalledWith('Client disconnesso: client-2');
+    expect(Logger.prototype.log).toHaveBeenCalledWith(
+      'Client disconnesso: client-2',
+    );
   });
 
   it('should emit dataChanged event', () => {

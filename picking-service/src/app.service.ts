@@ -11,19 +11,25 @@ export class AppService implements OnModuleInit {
 
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
-    @InjectModel(PickingTask.name) private taskModel: Model<PickingTaskDocument>,
+    @InjectModel(PickingTask.name)
+    private taskModel: Model<PickingTaskDocument>,
     private readonly eventsGateway: EventsGateway,
-  ) { }
+  ) {}
 
   async onModuleInit() {
-    this.logger.log('Connessione Kafka Producer per Picking Service inizializzata.');
+    this.logger.log(
+      'Connessione Kafka Producer per Picking Service inizializzata.',
+    );
   }
 
   async getAllTasks() {
     return this.taskModel.find().exec();
   }
 
-  async handleOrderReadyForPicking(payload: { orderId: string, allocations: any[] }) {
+  async handleOrderReadyForPicking(payload: {
+    orderId: string;
+    allocations: any[];
+  }) {
     // Verifichiamo di non aver già creato il task
     let task = await this.taskModel.findOne({ orderId: payload.orderId });
     if (!task) {
@@ -33,12 +39,14 @@ export class AppService implements OnModuleInit {
         status: 'PENDING',
       });
       await task.save();
-      this.logger.log(`Picking Task ${task.taskId} creato per ordine ${task.orderId}`);
+      this.logger.log(
+        `Picking Task ${task.taskId} creato per ordine ${task.orderId}`,
+      );
 
       this.kafkaClient.emit('PickingTaskCreated', {
         taskId: task.taskId,
         orderId: task.orderId,
-        allocations: task.allocations
+        allocations: task.allocations,
       });
       this.eventsGateway.notifyDataChanged();
     }
@@ -54,7 +62,7 @@ export class AppService implements OnModuleInit {
       this.kafkaClient.emit('PickingTaskCompleted', {
         taskId: task.taskId,
         orderId: task.orderId,
-        allocations: task.allocations
+        allocations: task.allocations,
       });
       this.eventsGateway.notifyDataChanged();
       return task;
@@ -65,19 +73,27 @@ export class AppService implements OnModuleInit {
   async cancelPickingTask(orderId: string) {
     const task = await this.taskModel.findOne({ orderId });
     if (!task) {
-      this.logger.log(`Nessun picking task trovato per l'ordine ${orderId}. Annullamento consentito.`);
+      this.logger.log(
+        `Nessun picking task trovato per l'ordine ${orderId}. Annullamento consentito.`,
+      );
       return { success: true, message: 'Nessun picking task associato.' };
     }
 
     if (task.status === 'PENDING') {
       task.status = 'CANCELLED';
       await task.save();
-      this.logger.log(`Picking Task ${task.taskId} annullato per ordine ${orderId}.`);
+      this.logger.log(
+        `Picking Task ${task.taskId} annullato per ordine ${orderId}.`,
+      );
       this.eventsGateway.notifyDataChanged();
       return { success: true, message: 'Picking task annullato.' };
     }
 
-    this.logger.warn(`Impossibile annullare Picking Task ${task.taskId} per ordine ${orderId} (stato: ${task.status}).`);
-    throw new Error(`Impossibile annullare: il task di picking è in stato ${task.status}`);
+    this.logger.warn(
+      `Impossibile annullare Picking Task ${task.taskId} per ordine ${orderId} (stato: ${task.status}).`,
+    );
+    throw new Error(
+      `Impossibile annullare: il task di picking è in stato ${task.status}`,
+    );
   }
 }

@@ -10,7 +10,10 @@ describe('AppModule', () => {
   });
 
   it('should register controllers, providers and imports', () => {
-    const controllers = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AppModule);
+    const controllers = Reflect.getMetadata(
+      MODULE_METADATA.CONTROLLERS,
+      AppModule,
+    );
     const providers = Reflect.getMetadata(MODULE_METADATA.PROVIDERS, AppModule);
     const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, AppModule);
 

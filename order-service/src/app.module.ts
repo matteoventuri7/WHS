@@ -8,7 +8,10 @@ import { Order, OrderSchema } from './schemas/order.schema';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/order?authSource=admin'),
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI ||
+        'mongodb://root:example@localhost:27017/order?authSource=admin',
+    ),
     MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
     ClientsModule.register([
       {
@@ -36,4 +39,4 @@ import { Order, OrderSchema } from './schemas/order.schema';
   controllers: [AppController],
   providers: [AppService, EventsGateway],
 })
-export class AppModule { }
+export class AppModule {}

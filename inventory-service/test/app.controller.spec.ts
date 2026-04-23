@@ -30,8 +30,12 @@ describe('AppController', () => {
     appService = module.get<AppService>(AppService);
 
     // Silence expected console output from controller event handlers.
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    consoleLogSpy = jest
+      .spyOn(console, 'log')
+      .mockImplementation(() => undefined);
+    consoleWarnSpy = jest
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -44,8 +48,15 @@ describe('AppController', () => {
     describe('POST /inventory/receive', () => {
       it('should call appService.receiveGoods with correct parameters', async () => {
         const body = { productId: 'P1', quantity: 10, location: 'A1' };
-        const mockResult = { productId: 'P1', quantity: 10, location: 'A1', reservedQuantity: 0 };
-        jest.spyOn(appService, 'receiveGoods').mockResolvedValue(mockResult as any);
+        const mockResult = {
+          productId: 'P1',
+          quantity: 10,
+          location: 'A1',
+          reservedQuantity: 0,
+        };
+        jest
+          .spyOn(appService, 'receiveGoods')
+          .mockResolvedValue(mockResult as any);
 
         const result = await appController.receiveGoods(body);
 
@@ -56,8 +67,17 @@ describe('AppController', () => {
 
     describe('GET /inventory', () => {
       it('should call appService.getAllInventory', async () => {
-        const mockInventory = [{ productId: 'P1', quantity: 10, location: 'A1', reservedQuantity: 0 }];
-        jest.spyOn(appService, 'getAllInventory').mockResolvedValue(mockInventory as any);
+        const mockInventory = [
+          {
+            productId: 'P1',
+            quantity: 10,
+            location: 'A1',
+            reservedQuantity: 0,
+          },
+        ];
+        jest
+          .spyOn(appService, 'getAllInventory')
+          .mockResolvedValue(mockInventory as any);
 
         const result = await appController.getInventory();
 
@@ -77,7 +97,10 @@ describe('AppController', () => {
   describe('Kafka Event Handlers', () => {
     describe('OrderPlaced', () => {
       it('should call handleOrderPlaced on appService if message is valid', async () => {
-        const message = { orderId: 'O1', items: [{ productId: 'P1', quantity: 5 }] };
+        const message = {
+          orderId: 'O1',
+          items: [{ productId: 'P1', quantity: 5 }],
+        };
         await appController.handleOrderPlaced(message);
         expect(appService.handleOrderPlaced).toHaveBeenCalledWith(message);
       });
@@ -118,7 +141,10 @@ describe('AppController', () => {
         await appController.handleGoodsArriving(null as any);
         expect(appService.receiveGoods).not.toHaveBeenCalled();
 
-        await appController.handleGoodsArriving({ productId: 'P1', quantity: 10 } as any); // Missing location
+        await appController.handleGoodsArriving({
+          productId: 'P1',
+          quantity: 10,
+        } as any); // Missing location
         expect(appService.receiveGoods).not.toHaveBeenCalled();
       });
     });

@@ -3,7 +3,8 @@ import { Order, OrderSchema } from '../src/schemas/order.schema';
 
 describe('OrderSchema', () => {
   it('should apply defaults for orderId and status', () => {
-    const OrderModel = models.OrderSchemaTest || model('OrderSchemaTest', OrderSchema);
+    const OrderModel =
+      models.OrderSchemaTest || model('OrderSchemaTest', OrderSchema);
 
     const doc = new OrderModel({
       items: [{ productId: 'P1', quantity: 2 }],
@@ -15,7 +16,8 @@ describe('OrderSchema', () => {
   });
 
   it('should allow PICKING_COMPLETED as valid status', () => {
-    const OrderModel = models.OrderSchemaTest || model('OrderSchemaTest', OrderSchema);
+    const OrderModel =
+      models.OrderSchemaTest || model('OrderSchemaTest', OrderSchema);
 
     const doc = new OrderModel({
       items: [{ productId: 'P1', quantity: 2 }],

@@ -22,9 +22,7 @@ describe('AppController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [
-        { provide: AppService, useValue: appService },
-      ],
+      providers: [{ provide: AppService, useValue: appService }],
     }).compile();
 
     appController = module.get<AppController>(AppController);
@@ -37,7 +35,11 @@ describe('AppController', () => {
   describe('placeOrder', () => {
     it('should place an order', async () => {
       const body = { items: [{ productId: 'p1', quantity: 2 }] };
-      const expectedResult = { orderId: 'O1', items: body.items, status: 'PENDING' };
+      const expectedResult = {
+        orderId: 'O1',
+        items: body.items,
+        status: 'PENDING',
+      };
       (appService.placeOrder as jest.Mock).mockResolvedValue(expectedResult);
 
       expect(await appController.placeOrder(body)).toBe(expectedResult);
@@ -57,7 +59,10 @@ describe('AppController', () => {
 
   describe('getHealth', () => {
     it('should return health status', () => {
-      expect(appController.getHealth()).toEqual({ status: 'ok', service: 'order' });
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'order',
+      });
     });
   });
 
@@ -73,10 +78,16 @@ describe('AppController', () => {
 
     it('should throw HttpException if cancelOrder fails', async () => {
       const orderId = 'O1';
-      (appService.cancelOrder as jest.Mock).mockRejectedValue(new Error('Cannot cancel a shipped order'));
+      (appService.cancelOrder as jest.Mock).mockRejectedValue(
+        new Error('Cannot cancel a shipped order'),
+      );
 
-      await expect(appController.cancelOrder(orderId)).rejects.toThrow(HttpException);
-      await expect(appController.cancelOrder(orderId)).rejects.toThrow('Cannot cancel a shipped order');
+      await expect(appController.cancelOrder(orderId)).rejects.toThrow(
+        HttpException,
+      );
+      await expect(appController.cancelOrder(orderId)).rejects.toThrow(
+        'Cannot cancel a shipped order',
+      );
     });
   });
 
@@ -92,10 +103,16 @@ describe('AppController', () => {
 
     it('should throw HttpException if resumeOrder fails', async () => {
       const orderId = 'O1';
-      (appService.resumeOrder as jest.Mock).mockRejectedValue(new Error('Can only resume suspended orders'));
+      (appService.resumeOrder as jest.Mock).mockRejectedValue(
+        new Error('Can only resume suspended orders'),
+      );
 
-      await expect(appController.resumeOrder(orderId)).rejects.toThrow(HttpException);
-      await expect(appController.resumeOrder(orderId)).rejects.toThrow('Can only resume suspended orders');
+      await expect(appController.resumeOrder(orderId)).rejects.toThrow(
+        HttpException,
+      );
+      await expect(appController.resumeOrder(orderId)).rejects.toThrow(
+        'Can only resume suspended orders',
+      );
     });
   });
 
@@ -152,7 +169,9 @@ describe('AppController', () => {
     it('should handle picking task completed if message has orderId', async () => {
       const message = { orderId: 'O1' };
       await appController.handlePickingTaskCompleted(message);
-      expect(appService.handlePickingTaskCompleted).toHaveBeenCalledWith(message);
+      expect(appService.handlePickingTaskCompleted).toHaveBeenCalledWith(
+        message,
+      );
     });
 
     it('should not call service if message is missing orderId', async () => {

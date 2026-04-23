@@ -41,7 +41,9 @@ describe('AppService', () => {
 
     // Keep test output clean while still asserting logger calls when needed.
     jest.spyOn(appService['logger'], 'log').mockImplementation(() => undefined);
-    jest.spyOn(appService['logger'], 'error').mockImplementation(() => undefined);
+    jest
+      .spyOn(appService['logger'], 'error')
+      .mockImplementation(() => undefined);
   });
 
   it('should be defined', () => {
@@ -52,7 +54,9 @@ describe('AppService', () => {
     it('should log initialization message', async () => {
       const loggerSpy = appService['logger'].log as jest.Mock;
       await appService.onModuleInit();
-      expect(loggerSpy).toHaveBeenCalledWith('Connessione Kafka Producer per Order Service inizializzata.');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Connessione Kafka Producer per Order Service inizializzata.',
+      );
     });
   });
 
@@ -74,7 +78,9 @@ describe('AppService', () => {
   describe('getAllOrders', () => {
     it('should return all orders', async () => {
       const orders = [{ orderId: 'O1', status: 'PENDING' }];
-      orderModel.find.mockReturnValue({ exec: jest.fn().mockResolvedValue(orders) });
+      orderModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(orders),
+      });
 
       const result = await appService.getAllOrders();
       expect(result).toBe(orders);
@@ -95,17 +101,29 @@ describe('AppService', () => {
 
     it('should throw Error if order is not found', async () => {
       orderModel.findOne.mockResolvedValue(null);
-      await expect(appService.cancelOrder('O1')).rejects.toThrow('Order O1 not found');
+      await expect(appService.cancelOrder('O1')).rejects.toThrow(
+        'Order O1 not found',
+      );
     });
 
     it('should throw Error if order is shipped', async () => {
-      orderModel.findOne.mockResolvedValue({ orderId: 'O1', status: 'SHIPPED' });
-      await expect(appService.cancelOrder('O1')).rejects.toThrow('Cannot cancel a shipped order');
+      orderModel.findOne.mockResolvedValue({
+        orderId: 'O1',
+        status: 'SHIPPED',
+      });
+      await expect(appService.cancelOrder('O1')).rejects.toThrow(
+        'Cannot cancel a shipped order',
+      );
     });
 
     it('should throw Error if picking task is already completed', async () => {
-      orderModel.findOne.mockResolvedValue({ orderId: 'O1', status: 'PICKING_COMPLETED' });
-      await expect(appService.cancelOrder('O1')).rejects.toThrow('Cannot cancel an order with completed picking task');
+      orderModel.findOne.mockResolvedValue({
+        orderId: 'O1',
+        status: 'PICKING_COMPLETED',
+      });
+      await expect(appService.cancelOrder('O1')).rejects.toThrow(
+        'Cannot cancel an order with completed picking task',
+      );
     });
 
     it('should return order immediately if already cancelled', async () => {
@@ -121,7 +139,7 @@ describe('AppService', () => {
         orderId: 'O1',
         status: 'PENDING',
         allocations: [],
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
 
@@ -132,7 +150,7 @@ describe('AppService', () => {
       expect(kafkaClient.emit).toHaveBeenCalledWith('OrderCancelled', {
         orderId: 'O1',
         previousStatus: 'PENDING',
-        allocations: []
+        allocations: [],
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toBe(order);
@@ -143,25 +161,28 @@ describe('AppService', () => {
         orderId: 'O1',
         status: 'ALLOCATED',
         allocations: [],
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
       mockFetch.mockResolvedValue({
         ok: true,
-        json: jest.fn().mockResolvedValue({ success: true })
+        json: jest.fn().mockResolvedValue({ success: true }),
       });
 
       const result = await appService.cancelOrder('O1');
 
-      expect(mockFetch).toHaveBeenCalledWith('http://picking-service:3003/picking/tasks/order/O1/cancel', {
-        method: 'POST'
-      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://picking-service:3003/picking/tasks/order/O1/cancel',
+        {
+          method: 'POST',
+        },
+      );
       expect(order.status).toBe('CANCELLED');
       expect(order.save).toHaveBeenCalled();
       expect(kafkaClient.emit).toHaveBeenCalledWith('OrderCancelled', {
         orderId: 'O1',
         previousStatus: 'ALLOCATED',
-        allocations: []
+        allocations: [],
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toBe(order);
@@ -172,28 +193,36 @@ describe('AppService', () => {
         orderId: 'O1',
         status: 'ALLOCATED',
         allocations: [],
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
       mockFetch.mockResolvedValue({
         ok: false,
-        json: jest.fn().mockResolvedValue({ message: 'Task already completed' })
+        json: jest
+          .fn()
+          .mockResolvedValue({ message: 'Task already completed' }),
       });
 
-      await expect(appService.cancelOrder('O1')).rejects.toThrow('Impossibile annullare ordine: Task already completed');
+      await expect(appService.cancelOrder('O1')).rejects.toThrow(
+        'Impossibile annullare ordine: Task already completed',
+      );
     });
   });
 
   describe('resumeOrder', () => {
     it('should throw Error if order is not found', async () => {
       orderModel.findOne.mockResolvedValue(null);
-      await expect(appService.resumeOrder('O1')).rejects.toThrow('Order O1 not found');
+      await expect(appService.resumeOrder('O1')).rejects.toThrow(
+        'Order O1 not found',
+      );
     });
 
     it('should throw Error if order is not suspended', async () => {
       const order = { orderId: 'O1', status: 'PENDING' };
       orderModel.findOne.mockResolvedValue(order);
-      await expect(appService.resumeOrder('O1')).rejects.toThrow('Can only resume suspended orders');
+      await expect(appService.resumeOrder('O1')).rejects.toThrow(
+        'Can only resume suspended orders',
+      );
     });
 
     it('should resume order and emit OrderPlaced event', async () => {
@@ -201,7 +230,7 @@ describe('AppService', () => {
         orderId: 'O1',
         status: 'SUSPENDED',
         items: [{ productId: 'p1', quantity: 1 }],
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
 
@@ -211,7 +240,7 @@ describe('AppService', () => {
       expect(order.save).toHaveBeenCalled();
       expect(kafkaClient.emit).toHaveBeenCalledWith('OrderPlaced', {
         orderId: 'O1',
-        items: order.items
+        items: order.items,
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toBe(order);
@@ -224,18 +253,21 @@ describe('AppService', () => {
         orderId: 'O1',
         status: 'PENDING',
         allocations: [],
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
 
-      await appService.handleInventoryAllocated({ orderId: 'O1', allocations: ['a1'] });
+      await appService.handleInventoryAllocated({
+        orderId: 'O1',
+        allocations: ['a1'],
+      });
 
       expect(order.status).toBe('ALLOCATED');
       expect(order.allocations).toEqual(['a1']);
       expect(order.save).toHaveBeenCalled();
       expect(kafkaClient.emit).toHaveBeenCalledWith('OrderReadyForPicking', {
         orderId: 'O1',
-        allocations: ['a1']
+        allocations: ['a1'],
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
@@ -244,11 +276,14 @@ describe('AppService', () => {
       const order = {
         orderId: 'O1',
         status: 'ALLOCATED',
-        save: jest.fn()
+        save: jest.fn(),
       };
       orderModel.findOne.mockResolvedValue(order);
 
-      await appService.handleInventoryAllocated({ orderId: 'O1', allocations: ['a1'] });
+      await appService.handleInventoryAllocated({
+        orderId: 'O1',
+        allocations: ['a1'],
+      });
 
       expect(order.save).not.toHaveBeenCalled();
     });
@@ -259,7 +294,7 @@ describe('AppService', () => {
       const order = {
         orderId: 'O1',
         status: 'PENDING',
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
 
@@ -267,7 +302,9 @@ describe('AppService', () => {
 
       expect(order.status).toBe('SUSPENDED');
       expect(order.save).toHaveBeenCalled();
-      expect(kafkaClient.emit).toHaveBeenCalledWith('OrderSuspended', { orderId: 'O1' });
+      expect(kafkaClient.emit).toHaveBeenCalledWith('OrderSuspended', {
+        orderId: 'O1',
+      });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
@@ -275,7 +312,7 @@ describe('AppService', () => {
       const order = {
         orderId: 'O1',
         status: 'SUSPENDED',
-        save: jest.fn()
+        save: jest.fn(),
       };
       orderModel.findOne.mockResolvedValue(order);
 
@@ -287,11 +324,19 @@ describe('AppService', () => {
 
   describe('handleItemStored', () => {
     it('should re-emit OrderPlaced for all suspended orders', async () => {
-      const order1 = { orderId: 'O1', items: [{ productId: 'p1', quantity: 1 }], status: 'SUSPENDED' };
-      const order2 = { orderId: 'O2', items: [{ productId: 'p2', quantity: 2 }], status: 'SUSPENDED' };
+      const order1 = {
+        orderId: 'O1',
+        items: [{ productId: 'p1', quantity: 1 }],
+        status: 'SUSPENDED',
+      };
+      const order2 = {
+        orderId: 'O2',
+        items: [{ productId: 'p2', quantity: 2 }],
+        status: 'SUSPENDED',
+      };
 
       const findResult = {
-        sort: jest.fn().mockResolvedValue([order1, order2])
+        sort: jest.fn().mockResolvedValue([order1, order2]),
       };
       orderModel.find.mockReturnValue(findResult);
 
@@ -300,11 +345,11 @@ describe('AppService', () => {
       expect(orderModel.find).toHaveBeenCalledWith({ status: 'SUSPENDED' });
       expect(kafkaClient.emit).toHaveBeenCalledWith('OrderPlaced', {
         orderId: order1.orderId,
-        items: order1.items
+        items: order1.items,
       });
       expect(kafkaClient.emit).toHaveBeenCalledWith('OrderPlaced', {
         orderId: order2.orderId,
-        items: order2.items
+        items: order2.items,
       });
     });
   });
@@ -314,7 +359,7 @@ describe('AppService', () => {
       const order = {
         orderId: 'O1',
         status: 'ALLOCATED',
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
 
@@ -337,7 +382,7 @@ describe('AppService', () => {
       const order = {
         orderId: 'O1',
         status: 'ALLOCATED',
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
 
@@ -360,7 +405,7 @@ describe('AppService', () => {
       const order = {
         orderId: 'O1',
         status: 'CANCELLED',
-        save: jest.fn().mockResolvedValue(true)
+        save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
 

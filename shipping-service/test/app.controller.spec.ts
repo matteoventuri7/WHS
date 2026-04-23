@@ -86,7 +86,9 @@ describe('AppController', () => {
       const message = { taskId: 'T1', orderId: 'O1', allocations: [] };
 
       await appController.handlePickingTaskCompleted(message);
-      expect(mockAppService.handlePickingTaskCompleted).toHaveBeenCalledWith(message);
+      expect(mockAppService.handlePickingTaskCompleted).toHaveBeenCalledWith(
+        message,
+      );
     });
 
     it('should not call service if message or taskId is absent', async () => {

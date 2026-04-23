@@ -8,8 +8,13 @@ import { Inventory, InventorySchema } from './schemas/inventory.schema';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/inventory?authSource=admin'),
-    MongooseModule.forFeature([{ name: Inventory.name, schema: InventorySchema }]),
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI ||
+        'mongodb://root:example@localhost:27017/inventory?authSource=admin',
+    ),
+    MongooseModule.forFeature([
+      { name: Inventory.name, schema: InventorySchema },
+    ]),
     ClientsModule.register([
       {
         name: 'KAFKA_CLIENT',
@@ -36,4 +41,4 @@ import { Inventory, InventorySchema } from './schemas/inventory.schema';
   controllers: [AppController],
   providers: [AppService, EventsGateway],
 })
-export class AppModule { }
+export class AppModule {}

@@ -17,9 +17,7 @@ describe('AppController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [
-        { provide: AppService, useValue: appService },
-      ],
+      providers: [{ provide: AppService, useValue: appService }],
     }).compile();
 
     appController = module.get<AppController>(AppController);
@@ -41,7 +39,10 @@ describe('AppController', () => {
 
   describe('getHealth', () => {
     it('should return health status', () => {
-      expect(appController.getHealth()).toEqual({ status: 'ok', service: 'picking' });
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'picking',
+      });
     });
   });
 
@@ -60,7 +61,9 @@ describe('AppController', () => {
     it('should handle order ready event if orderId is provided', async () => {
       const message = { orderId: 'O123', allocations: [] };
       await appController.handleOrderReadyForPicking(message);
-      expect(appService.handleOrderReadyForPicking).toHaveBeenCalledWith(message);
+      expect(appService.handleOrderReadyForPicking).toHaveBeenCalledWith(
+        message,
+      );
     });
 
     it('should not call service if message is missing orderId', async () => {
@@ -83,10 +86,16 @@ describe('AppController', () => {
     it('should throw HttpException if service throws an Error', async () => {
       const orderId = 'O123';
       const errorMessage = 'Impossibile annullare';
-      (appService.cancelPickingTask as jest.Mock).mockRejectedValue(new Error(errorMessage));
+      (appService.cancelPickingTask as jest.Mock).mockRejectedValue(
+        new Error(errorMessage),
+      );
 
-      await expect(appController.cancelTaskForOrder(orderId)).rejects.toThrow(HttpException);
-      await expect(appController.cancelTaskForOrder(orderId)).rejects.toThrow(errorMessage);
+      await expect(appController.cancelTaskForOrder(orderId)).rejects.toThrow(
+        HttpException,
+      );
+      await expect(appController.cancelTaskForOrder(orderId)).rejects.toThrow(
+        errorMessage,
+      );
     });
   });
 });

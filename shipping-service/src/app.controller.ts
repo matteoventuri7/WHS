@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 
 @Controller('shipping')
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @Get('vehicles')
   async getVehicles() {
@@ -22,8 +22,13 @@ export class AppController {
   }
 
   @Post('vehicles')
-  async registerVehicle(@Body() body: { vehicleId: string, maxCapacity: number }) {
-    return this.appService.registerVehicle(body.vehicleId, Number(body.maxCapacity));
+  async registerVehicle(
+    @Body() body: { vehicleId: string; maxCapacity: number },
+  ) {
+    return this.appService.registerVehicle(
+      body.vehicleId,
+      Number(body.maxCapacity),
+    );
   }
 
   @Post('vehicles/:id/dispatch')
