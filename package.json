@@ -5,6 +5,7 @@
   "workspaces": [
     "simulators/shipping-simulator-service",
     "simulators/picking-simulator-service",
+    "simulators/order-simulator-service",
     "frontend",
     "simulators/inventory-simulator-service",
     "inventory-service",

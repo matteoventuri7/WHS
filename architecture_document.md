@@ -30,11 +30,13 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 
 ### 3.2. Order Service
 - **Responsabilità:** Gestione del ciclo di vita degli ordini in uscita (Outbound).
-- **Comandi Principali:** `PlaceOrder` (inserimento nuovo ordine di uscita), `CancelOrder` (annullamento di un ordine esistente).
+- **Comandi Principali:** `PlaceOrder` (inserimento nuovo ordine di uscita, `POST /orders`), `CancelOrder` (annullamento di un ordine esistente, `PATCH /orders/:id/cancel`), `ResumeOrder` (ripresa di un ordine sospeso, `PATCH /orders/:id/resume`).
 - **Stati Possibili:** `PENDING`, `SUSPENDED`, `ALLOCATED`, `PICKING_COMPLETED`, `SHIPPED`, **`CANCELLED`**.
-- **Eventi Emessi:** `OrderPlaced`, `OrderSuspended`, `OrderReadyForPicking`.
-- **Logica Core:** Una volta emesso l'evento `OrderPlaced`, resta in attesa di risposta dall'Inventory Service. Se riceve `OutOfStock`, emette `OrderSuspended`. Se riceve un riassortimento scatenato da un `ItemStored`, reinnesca automaticamente il tentativo di allocazione.
+- **Eventi Emessi:** `OrderPlaced`, `OrderSuspended`, `OrderReadyForPicking`, `OrderCancelled`.
+- **Eventi Consumati (Ascoltati):** `InventoryAllocated`, `OutOfStock`, `ItemStored`, `PickingTaskCompleted`, `ShipmentAssigned`.
+- **Logica Core:** Una volta emesso l'evento `OrderPlaced`, resta in attesa di risposta dall'Inventory Service. Se riceve `OutOfStock`, transisce a `SUSPENDED` ed emette `OrderSuspended`. Se riceve un riassortimento scatenato da un `ItemStored`, reinnesca automaticamente il tentativo di allocazione. Una volta ricevuti eventi di task picking e spedizioni concluse (`PickingTaskCompleted`, `ShipmentAssigned`), aggiorna lo stato dell'ordine.
 - **Logica di Cancellazione:** Prima di segnare un ordine come `CANCELLED`, l'Order Service effettua una chiamata HTTP sincrona al Picking Service (`POST /picking/tasks/order/:orderId/cancel`). Il Picking Service funge da guardia: se il task è ancora `PENDING`, lo annulla e restituisce `200 OK`; se è già `IN_PROGRESS` o `COMPLETED`, risponde con `400 Bad Request` e l'ordine non viene annullato.
+- **Logica di Ripresa (Resume):** Se un ordine è `SUSPENDED`, può essere forzata la ripresa. L'Order Service lo rimetterà in processamento emettendo nuovamente `OrderPlaced`.
 
 ### 3.3. Picking Service
 - **Responsabilità:** Generazione e gestione delle task operative di magazzino in base agli ordini confermati (istruzioni di reperimento su locazioni fisiche).
@@ -45,9 +47,9 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 
 ### 3.4. Shipping Service
 - **Responsabilità:** Assegnazione della merce prelevata ai veicoli disponibili e spedizione.
-- **Comandi Principali:** `RegisterVehicle` (registrazione di un furgone con capienza max "X items"), `DispatchVehicle` (partenza del veicolo).
+- **Comandi Principali:** `RegisterVehicle` (registrazione di un furgone con capienza max "X items"), `DispatchVehicle` (partenza del veicolo), `GetPendingShipments` (recupero delle spedizioni in sospeso).
 - **Eventi Emessi:** `VehicleRegistered`, `ShipmentAssigned`, `VehicleDispatched`.
-- **Logica Core:** Appena sente `PickingTaskCompleted`, tenta di inserire i materiali nei veicoli in attesa rispettando i limiti capienza (items parametrizzati).
+- **Logica Core:** Appena sente `PickingTaskCompleted`, tenta di inserire i materiali nei veicoli in attesa rispettando i limiti capienza (items parametrizzati). La UI e i simulatori interrogano l'API `GET /shipping/pending` per visionare la merce da spedire e `POST /shipping/vehicles/:id/dispatch` per confermare le spedizioni.
 
 ### 3.5. Simulatori (Inbound, Order, Dispatch & Picking)
 - **Responsabilità:** Generazione automatica di carichi di lavoro e automazione di processi per testare e mostrare il sistema in funzione.
@@ -154,7 +156,7 @@ To add a new topic (e.g., `OrderCompleted`):
 ### 4.2. Flusso di Cancellazione Ordine
 
 1. **(UI -> API)** L'operatore clicca "Annulla" su un ordine nella pagina Ordini.
-2. **Order Service** riceve la richiesta `DELETE /orders/:orderId`.
+2. **Order Service** riceve la richiesta `PATCH /orders/:id/cancel`.
 3. **Order Service** effettua una chiamata HTTP sincrona a **Picking Service**: `POST /picking/tasks/order/:orderId/cancel`.
 4. **Picking Service** verifica lo stato del task associato all'ordine:
    - Se `PENDING` → marca il task come `CANCELLED` e risponde `200 OK`.
