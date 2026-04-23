@@ -1,0 +1,11 @@
+auth:
+  type: DISABLED
+kafka:
+  clusters:
+  - bootstrapServers: host.docker.internal:9092
+    name: locale
+    properties: {}
+    readOnly: true
+rbac:
+  roles: []
+webclient: {}

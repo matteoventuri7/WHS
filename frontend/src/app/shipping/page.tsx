@@ -1,16 +1,13 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Truck, Plus, Send, PackageCheck, Clock, Package } from 'lucide-react';
+import { Truck, Send, PackageCheck, Clock, Package } from 'lucide-react';
 import { useRealtimeData } from '../useRealtimeData';
 import DispatchSimulatorToggle from '../components/DispatchSimulatorToggle';
 
 export default function ShippingPage() {
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const [vehicleId, setVehicleId] = useState('');
-    const [maxCapacity, setMaxCapacity] = useState('');
 
     const [pendingShipments, setPendingShipments] = useState<any[]>([]);
 
@@ -35,16 +32,6 @@ export default function ShippingPage() {
     useEffect(() => { fetchData(); }, []);
     useRealtimeData('http://localhost:3004', fetchData);
 
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        await fetch('http://localhost:3004/shipping/vehicles', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ vehicleId, maxCapacity: Number(maxCapacity) })
-        });
-        setVehicleId(''); setMaxCapacity('');
-        fetchData();
-    };
 
     const dispatchVehicle = async (id: string) => {
         await fetch(`http://localhost:3004/shipping/vehicles/${id}/dispatch`, { method: 'POST' });
@@ -66,28 +53,8 @@ export default function ShippingPage() {
                 </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="md:col-span-1">
-                    <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Plus className="w-5 h-5 text-purple-400" /> Register Vehicle</h2>
-                        <form onSubmit={handleRegister} className="space-y-4 relative z-10">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Vehicle Info</label>
-                                <input required value={vehicleId} onChange={e => setVehicleId(e.target.value)} type="text" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all" placeholder="e.g. TRUCK-A-123" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Max Capacity (items)</label>
-                                <input required value={maxCapacity} onChange={e => setMaxCapacity(e.target.value)} type="number" min="1" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all" placeholder="e.g. 50" />
-                            </div>
-                            <button type="submit" className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white rounded-lg font-medium shadow-[0_0_20px_rgba(168,85,247,0.2)] hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] transition-all transform active:scale-[0.98]">
-                                Add Vehicle
-                            </button>
-                        </form>
-                    </div>
-                </motion.div>
-
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="md:col-span-2 space-y-4">
+            <div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
                     <h2 className="text-xl font-semibold mb-6">Dispatch Yard</h2>
 
                     <div className="grid gap-4">

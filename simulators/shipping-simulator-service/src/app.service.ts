@@ -76,8 +76,8 @@ export class AppService implements OnModuleInit {
   private async simulateDispatch() {
     this.logger.log('Controllo veicoli pronti per la spedizione...');
 
-    // Genera randomicamente un nuovo camion (30% di probabilità)
-    if (Math.random() < 0.3) {
+    // Genera randomicamente un nuovo camion (50% di probabilità)
+    if (Math.random() < 0.5) {
       this.logger.log('Generazione di un nuovo camion random...');
       await this.generateTruck().catch(() => {});
     }
