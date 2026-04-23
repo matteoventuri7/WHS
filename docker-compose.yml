@@ -1,10 +1,4 @@
 services:
-  zookeeper:
-    image: zookeeper:latest
-    ports:
-      - "2181:2181"
-    environment:
-      - ZOO_MY_ID=1
 
   kafka:
     image: apache/kafka:latest
@@ -25,8 +19,6 @@ services:
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
       - KAFKA_MIN_INSYNC_REPLICAS=1
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
-    depends_on:
-      - zookeeper
     healthcheck:
       test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
       interval: 10s
@@ -320,7 +312,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - PORT_TO_SERVICE={"3001":"inventory-service","3002":"order-service","3003":"picking-service","3004":"shipping-service","3005":"inventory-simulator-service","3006":"shipping-simulator-service","3007":"order-simulator-service","3008":"picking-simulator-service", "5080":"openobserve","9092":"kafka","2181":"zookeeper","24224":"fluent-bit"}
+      - PORT_TO_SERVICE={"3001":"inventory-service","3002":"order-service","3003":"picking-service","3004":"shipping-service","3005":"inventory-simulator-service","3006":"shipping-simulator-service","3007":"order-simulator-service","3008":"picking-simulator-service", "5080":"openobserve","9092":"kafka","24224":"fluent-bit"}
       - KAFKA_BROKER=kafka:9092
     depends_on:
       kafka:
