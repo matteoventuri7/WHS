@@ -66,7 +66,7 @@ describe('AppService', () => {
       expect(mockInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
         { productId: 'P1', location: 'A1' },
         { $inc: { quantity: 15 }, $setOnInsert: { reservedQuantity: 0 } },
-        { new: true, upsert: true }
+        { returnDocument: 'after', upsert: true }
       );
 
       expect(mockKafkaClient.emit).toHaveBeenCalledWith('ItemStored', {
@@ -120,7 +120,7 @@ describe('AppService', () => {
           $expr: { $gte: [{ $subtract: ['$quantity', '$reservedQuantity'] }, 5] },
         },
         { $inc: { reservedQuantity: 5 } },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
       expect(mockKafkaClient.emit).toHaveBeenCalledWith('InventoryAllocated', {

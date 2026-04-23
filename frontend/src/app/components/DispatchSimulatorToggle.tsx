@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Plus } from 'lucide-react';
 
 export default function DispatchSimulatorToggle() {
     const [isSimulating, setIsSimulating] = useState(false);
@@ -48,12 +49,31 @@ export default function DispatchSimulatorToggle() {
         }
     };
 
+    const addRandomTruck = async () => {
+        try {
+            await fetch('http://localhost:3006/dispatch/truck', {
+                method: 'POST',
+            });
+        } catch (err) {
+            console.error('Failed to add random truck:', err);
+        }
+    };
+
     if (loading && !isSimulating) {
         return <div className="h-6 w-12 bg-slate-800 rounded-full animate-pulse"></div>;
     }
 
     return (
         <div className="flex items-center gap-4 bg-slate-900/50 px-4 py-2 rounded-xl border border-white/5">
+            <button
+                onClick={addRandomTruck}
+                className="flex items-center gap-1 text-xs font-medium bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-colors"
+                title="Add Random Truck via Simulator"
+            >
+                <Plus className="w-3 h-3" />
+                Add Truck
+            </button>
+            <div className="w-px h-8 bg-white/10"></div>
             <div className="flex flex-col items-end">
                 <span className="text-sm font-medium text-slate-300">
                     Dispatch Simulator

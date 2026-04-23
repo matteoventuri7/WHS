@@ -24,4 +24,9 @@ export class AppController {
   stopSimulation() {
     return this.appService.stopSimulation();
   }
+
+  @Post('truck')
+  generateTruck() {
+    return this.appService.generateTruck();
+  }
 }

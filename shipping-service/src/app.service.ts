@@ -121,7 +121,7 @@ export class AppService implements OnModuleInit {
     const v = await this.vehicleModel.findOneAndUpdate(
       { vehicleId, status: 'AVAILABLE' },
       { $set: { status: 'DISPATCHED' } },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (v) {

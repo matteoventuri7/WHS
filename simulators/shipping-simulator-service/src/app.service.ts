@@ -73,6 +73,12 @@ export class AppService implements OnModuleInit {
   private async simulateDispatch() {
     this.logger.log('Controllo veicoli pronti per la spedizione...');
 
+    // Genera randomicamente un nuovo camion (30% di probabilità)
+    if (Math.random() < 0.3) {
+      this.logger.log('Generazione di un nuovo camion random...');
+      await this.generateTruck().catch(() => {});
+    }
+
     try {
       // 1. Recupera i veicoli dallo shipping-service
       const response = await firstValueFrom(
@@ -114,6 +120,26 @@ export class AppService implements OnModuleInit {
 
     } catch (error: any) {
       this.logger.error(`Impossibile contattare shipping-service: ${error.message}`);
+    }
+  }
+
+  async generateTruck() {
+    const randomId = Math.floor(Math.random() * 10000);
+    const vehicleId = `SIM-TRUCK-${randomId}`;
+    const maxCapacity = Math.floor(Math.random() * 50) + 50; // Random capacity between 50 and 100
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(`${this.shippingServiceUrl}/vehicles`, {
+          vehicleId,
+          maxCapacity
+        })
+      );
+      this.logger.log(`Nuovo camion generato dal simulatore: ${vehicleId} (Capacity: ${maxCapacity})`);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`Errore durante la generazione del camion: ${error.message}`);
+      throw error;
     }
   }
 }

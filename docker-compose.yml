@@ -45,6 +45,16 @@ services:
       - KAFKA_BROKER=kafka:9092
     entrypoint: ["/bin/bash", "/init-kafka-topics.sh"]
 
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8090:8080
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    volumes:
+      - ./deploy/observability/kafka-ui.yml:/etc/kafkaui/dynamic_config.yaml
+
   openobserve:
     image: openobserve/openobserve:latest
     ports:
@@ -68,6 +78,7 @@ services:
       - "24224:24224"
     volumes:
       - ./deploy/observability/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./deploy/observability/clean_ansi.lua:/fluent-bit/etc/clean_ansi.lua:ro
     depends_on:
       openobserve:
         condition: service_started
@@ -308,6 +319,8 @@ services:
     build: ./frontend
     ports:
       - "3000:3000"
+    environment:
+      - PORT_TO_SERVICE={"3001":"inventory-service","3002":"order-service","3003":"picking-service","3004":"shipping-service","3005":"inventory-simulator-service","3006":"shipping-simulator-service","3007":"order-simulator-service","3008":"picking-simulator-service", "5080":"openobserve","9092":"kafka","2181":"zookeeper","24224":"fluent-bit"}
     depends_on:
       - inventory-simulator-service
       - inventory-service

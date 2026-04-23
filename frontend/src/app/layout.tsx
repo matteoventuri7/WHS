@@ -30,6 +30,7 @@ export default function RootLayout({
                   </span>
                 </div>
                 <div className="hidden md:flex space-x-1">
+                  <NavLink href="/dashboard" label="Dashboard" activeColor="text-rose-400" />
                   <NavLink href="/inventory" label="Inventory & Inbound" activeColor="text-blue-400" />
                   <NavLink href="/orders" label="Orders" activeColor="text-amber-400" />
                   <NavLink href="/picking" label="Picking Tasks" activeColor="text-green-400" />

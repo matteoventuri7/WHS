@@ -24,7 +24,7 @@ export class AppService implements OnModuleInit {
     const item = await this.inventoryModel.findOneAndUpdate(
       { productId, location },
       { $inc: { quantity: quantity }, $setOnInsert: { reservedQuantity: 0 } },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
 
     this.logger.log(`Ricevute ${quantity} unità di ${productId} nella locazione ${location}.`);
@@ -72,7 +72,7 @@ export class AppService implements OnModuleInit {
             $expr: { $gte: [{ $subtract: ['$quantity', '$reservedQuantity'] }, toReserve] }
           },
           { $inc: { reservedQuantity: toReserve } },
-          { new: true }
+          { returnDocument: 'after' }
         );
 
         if (updatedStock) {

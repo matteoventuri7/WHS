@@ -20,15 +20,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - inventory-service
-          - order-service
-          - picking-service
-          - shipping-service
-          - inventory-simulator-service
-          - shipping-simulator-service
-          - order-simulator-service
-          - picking-simulator-service
+        include:
+          - service: inventory-service
+            path: inventory-service
+          - service: order-service
+            path: order-service
+          - service: picking-service
+            path: picking-service
+          - service: shipping-service
+            path: shipping-service
+          - service: inventory-simulator-service
+            path: simulators/inventory-simulator-service
+          - service: shipping-simulator-service
+            path: simulators/shipping-simulator-service
+          - service: order-simulator-service
+            path: simulators/order-simulator-service
+          - service: picking-simulator-service
+            path: simulators/picking-simulator-service
 
     steps:
       - name: Checkout repository
@@ -39,14 +47,14 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: ./${{ matrix.service }}/package-lock.json
+          cache-dependency-path: ./${{ matrix.path }}/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./${{ matrix.service }}
+        working-directory: ./${{ matrix.path }}
         run: npm ci
 
       - name: Run unit tests
-        working-directory: ./${{ matrix.service }}
+        working-directory: ./${{ matrix.path }}
         run: npm test
 
   build-and-push:
@@ -60,16 +68,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: 
-          - inventory-service
-          - order-service
-          - picking-service
-          - shipping-service
-          - inventory-simulator-service
-          - shipping-simulator-service
-          - order-simulator-service
-          - picking-simulator-service
-          - frontend
+        include:
+          - service: inventory-service
+            path: inventory-service
+          - service: order-service
+            path: order-service
+          - service: picking-service
+            path: picking-service
+          - service: shipping-service
+            path: shipping-service
+          - service: inventory-simulator-service
+            path: simulators/inventory-simulator-service
+          - service: shipping-simulator-service
+            path: simulators/shipping-simulator-service
+          - service: order-simulator-service
+            path: simulators/order-simulator-service
+          - service: picking-simulator-service
+            path: simulators/picking-simulator-service
+          - service: frontend
+            path: frontend
 
     steps:
       - name: Checkout repository
@@ -98,7 +115,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.service }}
+          context: ./${{ matrix.path }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
