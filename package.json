@@ -18,6 +18,7 @@
     "test:all": "npm --workspaces --if-present run test",
     "docker:start": "docker compose up -d --build",
     "docker:stop": "docker compose down --remove-orphans",
-    "docker:restart": "npm run docker:stop && npm run docker:start"
+    "docker:restart": "npm run docker:stop && npm run docker:start",
+    "docker:restart:fe": "docker compose up -d --no-deps --build frontend"
   }
 }

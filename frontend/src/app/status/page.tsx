@@ -23,7 +23,6 @@ const INITIAL_SERVICES: ServiceStatus[] = [
 const INFRA_SERVICES: ServiceStatus[] = [
     { name: 'OpenObserve', url: 'http://localhost:5080', port: 5080, status: 'loading' },
     { name: 'Kafka Broker', url: 'http://localhost:9092', port: 9092, status: 'loading' },
-    { name: 'Zookeeper', url: 'http://localhost:2181', port: 2181, status: 'loading' },
     { name: 'Fluent-Bit', url: 'http://localhost:24224', port: 24224, status: 'loading' }
 ];
 
@@ -59,7 +58,7 @@ export default function StatusPage() {
         const [updatedServices, updatedInfra] = await Promise.all([
             Promise.all(services.map(s => checkServiceStatus({ ...s, status: 'loading' }, 'http'))),
             Promise.all(infraServices.map(s => {
-                const isTcp = [9092, 2181, 24224].includes(s.port);
+                const isTcp = [9092, 24224].includes(s.port);
                 return checkServiceStatus({ ...s, status: 'loading' }, isTcp ? 'tcp' : 'http');
             }))
         ]);
