@@ -89,16 +89,6 @@ describe('AppService', () => {
   });
 
   describe('cancelOrder', () => {
-    let mockFetch: jest.SpyInstance;
-
-    beforeEach(() => {
-      mockFetch = jest.spyOn(global, 'fetch');
-    });
-
-    afterEach(() => {
-      mockFetch.mockRestore();
-    });
-
     it('should throw Error if order is not found', async () => {
       orderModel.findOne.mockResolvedValue(null);
       await expect(appService.cancelOrder('O1')).rejects.toThrow(
@@ -156,7 +146,7 @@ describe('AppService', () => {
       expect(result).toBe(order);
     });
 
-    it('should try to cancel picking task if order is ALLOCATED', async () => {
+    it('should emit CancelPickingTask if order is ALLOCATED', async () => {
       const order = {
         orderId: 'O1',
         status: 'ALLOCATED',
@@ -164,19 +154,12 @@ describe('AppService', () => {
         save: jest.fn().mockResolvedValue(true),
       };
       orderModel.findOne.mockResolvedValue(order);
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({ success: true }),
-      });
 
       const result = await appService.cancelOrder('O1');
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://picking-service:3003/picking/tasks/order/O1/cancel',
-        {
-          method: 'POST',
-        },
-      );
+      expect(kafkaClient.emit).toHaveBeenCalledWith('CancelPickingTask', {
+        orderId: 'O1',
+      });
       expect(order.status).toBe('CANCELLED');
       expect(order.save).toHaveBeenCalled();
       expect(kafkaClient.emit).toHaveBeenCalledWith('OrderCancelled', {
@@ -186,26 +169,6 @@ describe('AppService', () => {
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toBe(order);
-    });
-
-    it('should throw Error if picking task cancellation fails for ALLOCATED order', async () => {
-      const order = {
-        orderId: 'O1',
-        status: 'ALLOCATED',
-        allocations: [],
-        save: jest.fn().mockResolvedValue(true),
-      };
-      orderModel.findOne.mockResolvedValue(order);
-      mockFetch.mockResolvedValue({
-        ok: false,
-        json: jest
-          .fn()
-          .mockResolvedValue({ message: 'Task already completed' }),
-      });
-
-      await expect(appService.cancelOrder('O1')).rejects.toThrow(
-        'Impossibile annullare ordine: Task already completed',
-      );
     });
   });
 

@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from '../src/app.controller';
 import { AppService } from '../src/app.service';
-import { HttpException, HttpStatus } from '@nestjs/common';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -73,29 +72,21 @@ describe('AppController', () => {
     });
   });
 
-  describe('cancelTaskForOrder', () => {
-    it('should cancel the task successfully', async () => {
-      const orderId = 'O123';
-      const result = { success: true, message: 'Task cancelled' };
-      (appService.cancelPickingTask as jest.Mock).mockResolvedValue(result);
+  describe('handleCancelPickingTask', () => {
+    it('should dispatch cancellation if message includes orderId', async () => {
+      const message = { orderId: 'O123' };
 
-      expect(await appController.cancelTaskForOrder(orderId)).toBe(result);
-      expect(appService.cancelPickingTask).toHaveBeenCalledWith(orderId);
+      await appController.handleCancelPickingTask(message);
+
+      expect(appService.cancelPickingTask).toHaveBeenCalledWith('O123');
     });
 
-    it('should throw HttpException if service throws an Error', async () => {
-      const orderId = 'O123';
-      const errorMessage = 'Impossibile annullare';
-      (appService.cancelPickingTask as jest.Mock).mockRejectedValue(
-        new Error(errorMessage),
-      );
+    it('should ignore message when orderId is missing', async () => {
+      const message = { otherField: 'value' };
 
-      await expect(appController.cancelTaskForOrder(orderId)).rejects.toThrow(
-        HttpException,
-      );
-      await expect(appController.cancelTaskForOrder(orderId)).rejects.toThrow(
-        errorMessage,
-      );
+      await appController.handleCancelPickingTask(message);
+
+      expect(appService.cancelPickingTask).not.toHaveBeenCalled();
     });
   });
 });

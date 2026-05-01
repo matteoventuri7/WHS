@@ -56,26 +56,7 @@ export class AppService implements OnModuleInit {
     }
 
     if (order.status === 'ALLOCATED') {
-      try {
-        const response = await fetch(
-          `http://picking-service:3003/picking/tasks/order/${orderId}/cancel`,
-          {
-            method: 'POST',
-          },
-        );
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.message ||
-              'Il task di picking è già in progress o completato.',
-          );
-        }
-      } catch (error: any) {
-        this.logger.error(
-          `Impossibile annullare picking task: ${error.message}`,
-        );
-        throw new Error(`Impossibile annullare ordine: ${error.message}`);
-      }
+      this.kafkaClient.emit('CancelPickingTask', { orderId: order.orderId });
     }
 
     const previousStatus = order.status;
