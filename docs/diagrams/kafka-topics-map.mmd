@@ -4,7 +4,6 @@ graph LR
         INV_P[Inventory Service]
         PICK_P[Picking Service]
         SHIP_P[Shipping Service]
-        INVSIM_P[Inventory Simulator]
     end
 
     subgraph Topics["Kafka Topics"]
@@ -15,7 +14,6 @@ graph LR
         IA[InventoryAllocated]
         OOS[OutOfStock]
         IS[ItemStored]
-        GA[GoodsArriving]
         PTC[PickingTaskCreated]
         PTCO[PickingTaskCompleted]
         CPT[CancelPickingTask]
@@ -40,7 +38,6 @@ graph LR
     INV_P --> IA
     INV_P --> OOS
     INV_P --> IS
-    INVSIM_P --> GA
     PICK_P --> PTC
     PICK_P --> PTCO
     SHIP_P --> SA
@@ -50,7 +47,6 @@ graph LR
     %% Topics → Consumers
     OP --> INV_C
     OC --> INV_C
-    GA --> INV_C
     IA --> ORD_C
     OOS --> ORD_C
     IS --> ORD_C

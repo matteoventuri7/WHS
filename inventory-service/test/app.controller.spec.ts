@@ -130,23 +130,6 @@ describe('AppController', () => {
       });
     });
 
-    describe('GoodsArriving', () => {
-      it('should call receiveGoods on appService if message is valid', async () => {
-        const message = { productId: 'P1', quantity: 20, location: 'B2' };
-        await appController.handleGoodsArriving(message);
-        expect(appService.receiveGoods).toHaveBeenCalledWith('P1', 20, 'B2');
-      });
 
-      it('should not call receiveGoods if payload is incomplete', async () => {
-        await appController.handleGoodsArriving(null as any);
-        expect(appService.receiveGoods).not.toHaveBeenCalled();
-
-        await appController.handleGoodsArriving({
-          productId: 'P1',
-          quantity: 10,
-        } as any); // Missing location
-        expect(appService.receiveGoods).not.toHaveBeenCalled();
-      });
-    });
   });
 });

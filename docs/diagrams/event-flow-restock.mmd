@@ -4,7 +4,7 @@ sequenceDiagram
     participant INV as Inventory Service
     participant ORD as Order Service
 
-    SIM->>INV: GoodsArriving
+    SIM->>INV: POST /inventory/receive
     INV-->>INV: Immagazzina merce
     INV->>ORD: ItemStored
     ORD-->>ORD: Trova ordini SUSPENDED per quel prodotto

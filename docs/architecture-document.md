@@ -25,9 +25,9 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 ### 3.1. Inventory Service
 - **Responsabilità:** Gestione delle quantità di prodotto e delle locazioni (zone, corsie, scaffali). Ricezione merci in entrata (Inbound).
 - **Comandi Principali:** `ReceiveGoods` (riceve merce dal fornitore tramite `POST /inventory/receive`), `StoreItem` (salva la merce in una specifica locazione).
-- **Eventi Consumati (Ascoltati):** `OrderPlaced`, `OrderCancelled`, `GoodsArriving`.
+- **Eventi Consumati (Ascoltati):** `OrderPlaced`, `OrderCancelled`.
 - **Eventi Emessi:** `ItemStored` (confermato l'immagazzinamento della merce), `InventoryAllocated` (merce riservata per un ordine), `OutOfStock` (quando l'ordine richiede più merce di quella disponibile).
-- **Logica Core:** Reagisce agli eventi di nuovi ordini (`OrderPlaced`) provando ad allocare le risorse disponibili e comunicando l'esito al resto del sistema. Al ricevimento di `OrderCancelled`, rilascia le prenotazioni di stock corrispondenti ed emette `ItemStored`. Al ricevimento di `GoodsArriving`, immagazzina la merce ed emette `ItemStored`.
+- **Logica Core:** Reagisce agli eventi di nuovi ordini (`OrderPlaced`) provando ad allocare le risorse disponibili e comunicando l'esito al resto del sistema. Al ricevimento di `OrderCancelled`, rilascia le prenotazioni di stock corrispondenti ed emette `ItemStored`. La ricezione di merce avviene tramite `POST /inventory/receive` (dal simulatore inbound), non via evento Kafka.
 
 ### 3.2. Order Service
 - **Responsabilità:** Gestione del ciclo di vita degli ordini in uscita (Outbound).
@@ -55,7 +55,7 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 
 ### 3.5. Simulatori (Inbound, Order, Dispatch & Picking)
 - **Responsabilità:** Generazione automatica di carichi di lavoro e automazione di processi per testare e mostrare il sistema in funzione.
-- **Inventory Simulator (`inventory-simulator-service`):** Genera periodicamente merce in arrivo (simulando i fornitori), emettendo direttamente eventi Kafka `GoodsArriving` o simili.
+- **Inventory Simulator (`inventory-simulator-service`):** Genera periodicamente merce in arrivo (simulando i fornitori), inviando richieste HTTP `POST /inventory/receive` all'Inventory Service.
 - **Order Simulator (`order-simulator-service`):** Crea automaticamente ordini di prova tramite chiamate HTTP al servizio Order (`POST /orders`). Recupera l'inventario disponibile via `GET /inventory` e seleziona prodotti con stock sufficiente. Cancella randomicamente (~10%) ordini non completati via `PATCH /orders/:id/cancel`.
 - **Shipping Simulator (`shipping-simulator-service`):** Interroga periodicamente le API dello `Shipping Service` per trovare veicoli carichi pronti alla partenza e invia il comando di dispatch in automatico.
 - **Picking Simulator (`picking-simulator-service`):** Interroga periodicamente le API del `Picking Service`, seleziona casualmente un task `PENDING` e invia il completamento automatico (`POST /picking/tasks/:taskId/complete`).

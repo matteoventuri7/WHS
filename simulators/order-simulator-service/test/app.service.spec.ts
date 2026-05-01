@@ -9,10 +9,6 @@ describe('AppService', () => {
   let warnSpy: jest.SpyInstance;
   let errorSpy: jest.SpyInstance;
 
-  const mockKafkaClient = {
-    emit: jest.fn(),
-  };
-
   const mockHttpService = {
     get: jest.fn(),
     post: jest.fn(),
@@ -23,10 +19,6 @@ describe('AppService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AppService,
-        {
-          provide: 'KAFKA_CLIENT',
-          useValue: mockKafkaClient,
-        },
         {
           provide: HttpService,
           useValue: mockHttpService,
@@ -53,13 +45,6 @@ describe('AppService', () => {
   afterEach(() => {
     service.stopSimulation();
     jest.restoreAllMocks();
-  });
-
-  describe('onModuleInit', () => {
-    it('should log initialization message', () => {
-      service.onModuleInit();
-      expect(logSpy).toHaveBeenCalledWith('Order simulator inizializzato.');
-    });
   });
 
   describe('getStatus', () => {

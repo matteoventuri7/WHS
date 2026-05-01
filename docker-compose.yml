@@ -213,10 +213,10 @@ services:
       - "3005:3005"
     environment:
       - PORT=3005
-      - KAFKA_BROKER=kafka:9092
+      - INVENTORY_SERVICE_URL=http://inventory-service:3001/inventory
     depends_on:
-      kafka-init:
-        condition: service_completed_successfully
+      inventory-service:
+        condition: service_started
 
   shipping-simulator-service:
     build: ./simulators/shipping-simulator-service
@@ -224,11 +224,10 @@ services:
       - "3006:3006"
     environment:
       - PORT=3006
-      - KAFKA_BROKER=kafka:9092
       - SHIPPING_SERVICE_URL=http://shipping-service:3004/shipping
     depends_on:
-      kafka-init:
-        condition: service_completed_successfully
+      shipping-service:
+        condition: service_started
 
   order-simulator-service:
     build: ./simulators/order-simulator-service
@@ -236,12 +235,13 @@ services:
       - "3007:3007"
     environment:
       - PORT=3007
-      - KAFKA_BROKER=kafka:9092
       - INVENTORY_SERVICE_URL=http://inventory-service:3001/inventory
       - ORDER_SERVICE_URL=http://order-service:3002/orders
     depends_on:
-      kafka-init:
-        condition: service_completed_successfully
+      inventory-service:
+        condition: service_started
+      order-service:
+        condition: service_started
 
   picking-simulator-service:
     build: ./simulators/picking-simulator-service
@@ -249,11 +249,10 @@ services:
       - "3008:3008"
     environment:
       - PORT=3008
-      - KAFKA_BROKER=kafka:9092
       - PICKING_SERVICE_URL=http://picking-service:3003/picking
     depends_on:
-      kafka-init:
-        condition: service_completed_successfully
+      picking-service:
+        condition: service_started
 
   frontend:
     build: ./frontend

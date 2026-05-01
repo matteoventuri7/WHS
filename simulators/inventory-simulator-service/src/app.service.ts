@@ -1,22 +1,19 @@
-import { Injectable, Inject, OnModuleInit, Logger } from '@nestjs/common';
-import { ClientKafka } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
-export class AppService implements OnModuleInit {
+export class AppService {
   private readonly logger = new Logger(AppService.name);
 
   private simulationInterval: NodeJS.Timeout | null = null;
   private isSimulating: boolean = false;
   private currentInterval: number | null = null;
 
-  constructor(
-    @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
-  ) {}
+  private readonly inventoryServiceUrl =
+    process.env.INVENTORY_SERVICE_URL || 'http://localhost:3001/inventory';
 
-  async onModuleInit() {
-    await this.kafkaClient.connect();
-    this.logger.log('Connessione Kafka Producer (Inbound) inizializzata.');
-  }
+  constructor(private readonly httpService: HttpService) {}
 
   getStatus() {
     return {
@@ -87,9 +84,17 @@ export class AppService implements OnModuleInit {
 
       const payload = { productId, quantity, location };
       this.logger.log(
-        `Emissione evento GoodsArriving: ${JSON.stringify(payload)}`,
+        `Invio merce in arrivo via HTTP: ${JSON.stringify(payload)}`,
       );
-      this.kafkaClient.emit('GoodsArriving', payload);
+      try {
+        await firstValueFrom(
+          this.httpService.post(`${this.inventoryServiceUrl}/receive`, payload),
+        );
+      } catch (error: any) {
+        this.logger.error(
+          `Errore durante l'invio a inventory-service: ${error.message}`,
+        );
+      }
     }
   }
 }

@@ -6,10 +6,6 @@ import { of, throwError } from 'rxjs';
 describe('AppService', () => {
   let service: AppService;
 
-  const mockKafkaClient = {
-    emit: jest.fn(),
-  };
-
   const mockHttpService = {
     get: jest.fn(),
     post: jest.fn(),
@@ -19,10 +15,6 @@ describe('AppService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AppService,
-        {
-          provide: 'KAFKA_CLIENT',
-          useValue: mockKafkaClient,
-        },
         {
           provide: HttpService,
           useValue: mockHttpService,
@@ -43,16 +35,6 @@ describe('AppService', () => {
   afterEach(() => {
     service.stopSimulation();
     jest.restoreAllMocks();
-  });
-
-  describe('onModuleInit', () => {
-    it('should log initialization message', async () => {
-      const loggerSpy = service['logger'].log as jest.Mock;
-      await service.onModuleInit();
-      expect(loggerSpy).toHaveBeenCalledWith(
-        'Picking simulator inizializzato.',
-      );
-    });
   });
 
   describe('getStatus', () => {

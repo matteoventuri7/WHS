@@ -1,5 +1,4 @@
-import { Injectable, Inject, OnModuleInit, Logger } from '@nestjs/common';
-import { ClientKafka } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
@@ -9,7 +8,7 @@ type PickingTaskRecord = {
 };
 
 @Injectable()
-export class AppService implements OnModuleInit {
+export class AppService {
   private readonly logger = new Logger(AppService.name);
 
   private simulationInterval: NodeJS.Timeout | null = null;
@@ -19,14 +18,7 @@ export class AppService implements OnModuleInit {
   private readonly pickingServiceUrl =
     process.env.PICKING_SERVICE_URL || 'http://localhost:3003/picking';
 
-  constructor(
-    @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
-    private readonly httpService: HttpService,
-  ) {}
-
-  async onModuleInit() {
-    this.logger.log('Picking simulator inizializzato.');
-  }
+  constructor(private readonly httpService: HttpService) {}
 
   getStatus() {
     return {

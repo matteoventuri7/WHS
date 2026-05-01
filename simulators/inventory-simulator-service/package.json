@@ -23,11 +23,9 @@
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
-    "@nestjs/microservices": "^11.1.16",
-    "@nestjs/mongoose": "^11.0.4",
+    "@nestjs/axios": "^4.0.0",
     "@nestjs/platform-express": "^11.0.1",
-    "kafkajs": "^2.2.4",
-    "mongoose": "^9.2.4",
+    "axios": "^1.7.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

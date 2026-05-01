@@ -21,7 +21,6 @@ create_topic() {
 }
 
 # Create all topics
-create_topic "GoodsArriving"
 create_topic "OrderPlaced"
 create_topic "OrderCancelled"
 create_topic "OrderReadyForPicking"

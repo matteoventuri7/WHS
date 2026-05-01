@@ -29,7 +29,6 @@ Documento di riepilogo completo degli endpoint REST e messaggi Kafka per ogni mi
 |--------|---------|-------------|
 | `OrderPlaced` | `{orderId, items: [{productId, quantity}]}` | Tentativo di allocazione stock per un nuovo ordine |
 | `OrderCancelled` | `{orderId, previousStatus, allocations}` | Rilascio delle prenotazioni di stock |
-| `GoodsArriving` | `{productId, quantity, location}` | Ricezione di merce in arrivo |
 
 #### Kafka - Messaggi Inviati
 
@@ -135,9 +134,9 @@ Documento di riepilogo completo degli endpoint REST e messaggi Kafka per ogni mi
 
 ---
 
-## Servizi Simulatori (HTTP-Based + Kafka)
+## Servizi Simulatori (HTTP-Only)
 
-> **Nota**: I servizi simulatori controllano i servizi principali tramite HTTP API. Non comunicano direttamente via Kafka con gli altri servizi (ad eccezione dell'inventory-simulator che emette direttamente).
+> **Nota**: I servizi simulatori controllano i servizi principali esclusivamente tramite HTTP REST API. Non emettono né consumano eventi Kafka.
 
 ---
 
@@ -156,19 +155,11 @@ Documento di riepilogo completo degli endpoint REST e messaggi Kafka per ogni mi
 
 #### Comportamento
 
-- **Simulazione**: Ogni intervallo genera 1-5 eventi `GoodsArriving` con prodotti casuali (PROD-001 a PROD-005)
-- **Payload evento**: `{productId, quantity, location}`
+- **Simulazione**: Ogni intervallo genera 1-5 richieste `POST /inventory/receive` con prodotti casuali (PROD-001 a PROD-005)
+- **Payload**: `{productId, quantity, location}`
 - **Locazioni**: A1, A2, B1, B2, C1
-
-#### Kafka - Messaggi Consumati
-
-Nessuno (simulatore puro).
-
-#### Kafka - Messaggi Inviati
-
-| Evento | Payload | Descrizione |
-|--------|---------|-------------|
-| `GoodsArriving` | `{productId, quantity, location}` | Evento simulato di merce in arrivo |
+- **HTTP Calls**:
+  - `POST http://inventory-service:3001/inventory/receive`
 
 ---
 
@@ -198,13 +189,6 @@ Nessuno (simulatore puro).
   - `GET http://order-service:3002/orders`
   - `PATCH http://order-service:3002/orders/{orderId}/cancel`
 
-#### Kafka - Messaggi Consumati
-
-Nessuno (simulatore puro).
-
-#### Kafka - Messaggi Inviati
-
-Nessuno (comunica via HTTP con order-service).
 
 ---
 
@@ -230,14 +214,6 @@ Nessuno (comunica via HTTP con order-service).
 - **HTTP Calls**:
   - `GET http://picking-service:3003/picking/tasks`
   - `POST http://picking-service:3003/picking/tasks/{taskId}/complete`
-
-#### Kafka - Messaggi Consumati
-
-Nessuno (simulatore puro).
-
-#### Kafka - Messaggi Inviati
-
-Nessuno (comunica via HTTP con picking-service).
 
 ---
 
@@ -334,10 +310,10 @@ Nessuno (comunica via HTTP con shipping-service).
    └─→ emit: OrderSuspended
 
 2. (Arriva merce: Inbound Simulator)
-   └─→ emit: GoodsArriving
+   └─→ POST /inventory/receive (HTTP)
 
-3. Inventory Service (consuma: GoodsArriving)
-   ├─→ Riceve e immagazzina
+3. Inventory Service (riceve merce via HTTP)
+   ├─→ Immagazzina
    └─→ emit: ItemStored
 
 4. Order Service (consuma: ItemStored)

@@ -1,5 +1,4 @@
-import { Injectable, Inject, OnModuleInit, Logger } from '@nestjs/common';
-import { ClientKafka } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
@@ -19,7 +18,7 @@ type CreatedOrderResponse = {
 };
 
 @Injectable()
-export class AppService implements OnModuleInit {
+export class AppService {
   private readonly logger = new Logger(AppService.name);
   private static readonly RANDOM_CANCEL_PROBABILITY = 0.1;
   private static readonly NON_CANCELLABLE_STATUSES = new Set([
@@ -37,14 +36,7 @@ export class AppService implements OnModuleInit {
   private readonly orderServiceUrl =
     process.env.ORDER_SERVICE_URL || 'http://localhost:3002/orders';
 
-  constructor(
-    @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
-    private readonly httpService: HttpService,
-  ) {}
-
-  onModuleInit() {
-    this.logger.log('Order simulator inizializzato.');
-  }
+  constructor(private readonly httpService: HttpService) {}
 
   getStatus() {
     return {

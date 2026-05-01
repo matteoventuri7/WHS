@@ -1,33 +1,34 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppService } from '../src/app.service';
-import { ClientKafka } from '@nestjs/microservices';
+import { HttpService } from '@nestjs/axios';
 import { Logger } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
 
 describe('AppService', () => {
   let appService: AppService;
-  let kafkaClient: jest.Mocked<ClientKafka>;
+  let httpService: jest.Mocked<Record<string, jest.Mock>>;
 
   beforeEach(async () => {
-    const kafkaClientMock = {
-      connect: jest.fn(),
-      emit: jest.fn(),
+    const httpServiceMock = {
+      post: jest.fn().mockReturnValue(of({ data: {} })),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AppService,
         {
-          provide: 'KAFKA_CLIENT',
-          useValue: kafkaClientMock,
+          provide: HttpService,
+          useValue: httpServiceMock,
         },
       ],
     }).compile();
 
     appService = module.get<AppService>(AppService);
-    kafkaClient = module.get('KAFKA_CLIENT');
+    httpService = module.get(HttpService);
 
     // Suppress logs during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -37,13 +38,6 @@ describe('AppService', () => {
 
   it('should be defined', () => {
     expect(appService).toBeDefined();
-  });
-
-  describe('onModuleInit', () => {
-    it('should connect to kafka client', async () => {
-      await appService.onModuleInit();
-      expect(kafkaClient.connect).toHaveBeenCalled();
-    });
   });
 
   describe('getStatus', () => {
@@ -68,7 +62,7 @@ describe('AppService', () => {
       jest.useRealTimers();
     });
 
-    it('should start simulation and emit immediately', () => {
+    it('should start simulation and call HTTP immediately', () => {
       const result = appService.startSimulation(5000);
       expect(result).toEqual({
         message: 'Inbound simulation started',
@@ -76,7 +70,7 @@ describe('AppService', () => {
         intervalMs: 5000,
       });
       expect(appService.getStatus().isSimulating).toBe(true);
-      expect(kafkaClient.emit).toHaveBeenCalled();
+      expect(httpService.post).toHaveBeenCalled();
     });
 
     it('should not start simulation if already running', () => {
@@ -89,20 +83,19 @@ describe('AppService', () => {
         isSimulating: true,
       });
       expect(appService.getStatus().intervalMs).toBe(5000); // Should remain the old interval
-      expect(kafkaClient.emit).not.toHaveBeenCalled(); // No additional immediate emit
+      expect(httpService.post).not.toHaveBeenCalled(); // No additional immediate call
     });
 
-    it('should emit events on interval', () => {
+    it('should call HTTP on interval', () => {
       appService.startSimulation(5000);
-      kafkaClient.emit.mockClear();
+      httpService.post.mockClear();
 
       jest.advanceTimersByTime(5000);
-      expect(kafkaClient.emit).toHaveBeenCalled();
+      expect(httpService.post).toHaveBeenCalled();
 
-      kafkaClient.emit.mockClear();
+      httpService.post.mockClear();
       jest.advanceTimersByTime(10000); // Advance 2 more intervals
-      expect(kafkaClient.emit).toHaveBeenCalled();
-      // Emits could be multiple per interval, but at least it should be called
+      expect(httpService.post).toHaveBeenCalled();
     });
   });
 
@@ -123,6 +116,31 @@ describe('AppService', () => {
       expect(result).toEqual({
         message: 'Simulation is not currently running',
       });
+    });
+  });
+
+  describe('simulateInbound', () => {
+    it('should POST to inventory-service /receive endpoint', async () => {
+      await appService['simulateInbound']();
+      expect(httpService.post).toHaveBeenCalled();
+      const callArgs = httpService.post.mock.calls[0];
+      expect(callArgs[0]).toBe('http://localhost:3001/inventory/receive');
+      expect(callArgs[1]).toHaveProperty('productId');
+      expect(callArgs[1]).toHaveProperty('quantity');
+      expect(callArgs[1]).toHaveProperty('location');
+    });
+
+    it('should log error if HTTP call fails', async () => {
+      httpService.post.mockReturnValue(
+        throwError(() => new Error('Connection refused')),
+      );
+      const errorSpy = jest.spyOn(appService['logger'], 'error');
+
+      await appService['simulateInbound']();
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Connection refused'),
+      );
     });
   });
 });

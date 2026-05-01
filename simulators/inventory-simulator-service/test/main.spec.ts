@@ -1,5 +1,3 @@
-import { Transport } from '@nestjs/microservices';
-
 describe('main bootstrap', () => {
   const originalPort = process.env.PORT;
 
@@ -13,11 +11,9 @@ describe('main bootstrap', () => {
     process.env.PORT = originalPort;
   });
 
-  it('should bootstrap kafka microservice and listen on default port', async () => {
+  it('should bootstrap app and listen on default port', async () => {
     const app = {
-      connectMicroservice: jest.fn(),
       enableCors: jest.fn(),
-      startAllMicroservices: jest.fn().mockResolvedValue(undefined),
       listen: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -28,16 +24,7 @@ describe('main bootstrap', () => {
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(createSpy).toHaveBeenCalledTimes(1);
-    expect(app.connectMicroservice).toHaveBeenCalledWith(
-      expect.objectContaining({
-        transport: Transport.KAFKA,
-        options: expect.objectContaining({
-          consumer: expect.objectContaining({ groupId: 'inbound-consumer' }),
-        }),
-      }),
-    );
     expect(app.enableCors).toHaveBeenCalledTimes(1);
-    expect(app.startAllMicroservices).toHaveBeenCalledTimes(1);
     expect(app.listen).toHaveBeenCalledWith(3005);
   });
 
@@ -45,9 +32,7 @@ describe('main bootstrap', () => {
     process.env.PORT = '3555';
 
     const app = {
-      connectMicroservice: jest.fn(),
       enableCors: jest.fn(),
-      startAllMicroservices: jest.fn().mockResolvedValue(undefined),
       listen: jest.fn().mockResolvedValue(undefined),
     };
 

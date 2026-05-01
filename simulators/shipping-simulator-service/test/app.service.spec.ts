@@ -7,10 +7,6 @@ describe('AppService', () => {
   let service: AppService;
   let httpService: HttpService;
 
-  const mockKafkaClient = {
-    emit: jest.fn(),
-  };
-
   const mockHttpService = {
     get: jest.fn(),
     post: jest.fn(),
@@ -24,10 +20,6 @@ describe('AppService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AppService,
-        {
-          provide: 'KAFKA_CLIENT',
-          useValue: mockKafkaClient,
-        },
         {
           provide: HttpService,
           useValue: mockHttpService,
@@ -51,16 +43,6 @@ describe('AppService', () => {
     // Ensure simulation is stopped after each test to prevent open handles
     service.stopSimulation();
     mathRandomSpy.mockRestore();
-  });
-
-  describe('onModuleInit', () => {
-    it('should log initialization message', async () => {
-      const loggerSpy = service['logger'].log as jest.Mock;
-      await service.onModuleInit();
-      expect(loggerSpy).toHaveBeenCalledWith(
-        'Connessione Kafka Producer (Dispatch) inizializzata.',
-      );
-    });
   });
 
   describe('getStatus', () => {

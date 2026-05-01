@@ -1,10 +1,9 @@
-import { Injectable, Inject, OnModuleInit, Logger } from '@nestjs/common';
-import { ClientKafka } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
-export class AppService implements OnModuleInit {
+export class AppService {
   private readonly logger = new Logger(AppService.name);
 
   private simulationInterval: NodeJS.Timeout | null = null;
@@ -15,14 +14,7 @@ export class AppService implements OnModuleInit {
   private readonly shippingServiceUrl =
     process.env.SHIPPING_SERVICE_URL || 'http://localhost:3004/shipping';
 
-  constructor(
-    @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
-    private readonly httpService: HttpService,
-  ) {}
-
-  async onModuleInit() {
-    this.logger.log('Connessione Kafka Producer (Dispatch) inizializzata.');
-  }
+  constructor(private readonly httpService: HttpService) {}
 
   getStatus() {
     return {

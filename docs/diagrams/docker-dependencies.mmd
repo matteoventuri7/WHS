@@ -4,10 +4,11 @@ graph TD
     KINIT --> ORD[order-service]
     KINIT --> PICK[picking-service]
     KINIT --> SHIP[shipping-service]
-    KINIT --> INVSIM[inventory-simulator]
-    KINIT --> SHIPSIM[shipping-simulator]
-    KINIT --> ORDSIM[order-simulator]
-    KINIT --> PICKSIM[picking-simulator]
+    INV --> INVSIM[inventory-simulator]
+    SHIP --> SHIPSIM[shipping-simulator]
+    INV --> ORDSIM[order-simulator]
+    ORD --> ORDSIM
+    PICK --> PICKSIM[picking-simulator]
 
     INVDB[inventory-db] --> INV
     ORDDB[order-db] --> ORD

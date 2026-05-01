@@ -40,28 +40,4 @@ export class AppController {
       await this.appService.handleOrderCancelled(message);
     }
   }
-
-  @EventPattern('GoodsArriving')
-  async handleGoodsArriving(
-    @Payload()
-    message: {
-      productId: string;
-      quantity: number;
-      location: string;
-    },
-  ) {
-    console.log('--- EVENTO RICEVUTO: GoodsArriving ---', message);
-    if (message && message.productId && message.quantity && message.location) {
-      await this.appService.receiveGoods(
-        message.productId,
-        Number(message.quantity),
-        message.location,
-      );
-    } else {
-      console.warn(
-        '--- EVENTO RICEVUTO: Scartato (Payload incompleto) ---',
-        message,
-      );
-    }
-  }
 }
