@@ -2,6 +2,7 @@
   "name": "whs-monorepo",
   "private": true,
   "version": "1.0.0",
+  "engines": { "node": "22.22.2" },
   "workspaces": [
     "simulators/shipping-simulator-service",
     "simulators/picking-simulator-service",
@@ -19,6 +20,7 @@
     "docker:start": "docker compose up -d --build",
     "docker:stop": "docker compose down --remove-orphans",
     "docker:restart": "npm run docker:stop && npm run docker:start",
-    "docker:restart:fe": "docker compose up -d --no-deps --build frontend"
+    "docker:restart:fe": "docker compose up -d --no-deps --build frontend",
+    "docker:clean:db": "npm run docker:stop && docker volume rm whs_inventory_mongodb_data whs_order_mongodb_data whs_picking_mongodb_data whs_shipping_mongodb_data whs_inbound_mongodb_data whs_dispatch_mongodb_data whs_shipping_simulator_mongodb_data whs_order_simulator_mongodb_data whs_picking_simulator_mongodb_data"
   }
 }

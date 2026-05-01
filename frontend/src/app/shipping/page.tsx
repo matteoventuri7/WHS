@@ -5,9 +5,12 @@ import { Truck, Send, PackageCheck, Clock, Package } from 'lucide-react';
 import { useRealtimeData } from '../useRealtimeData';
 import DispatchSimulatorToggle from '../components/DispatchSimulatorToggle';
 
+type VehicleFilter = 'ALL' | 'AVAILABLE' | 'DISPATCHED';
+
 export default function ShippingPage() {
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('ALL');
 
     const [pendingShipments, setPendingShipments] = useState<any[]>([]);
 
@@ -55,10 +58,26 @@ export default function ShippingPage() {
 
             <div>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
-                    <h2 className="text-xl font-semibold mb-6">Dispatch Yard</h2>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold">Dispatch Yard</h2>
+                        <div className="flex items-center gap-1 bg-slate-900/60 border border-slate-700/60 rounded-lg p-1">
+                            {(['ALL', 'AVAILABLE', 'DISPATCHED'] as VehicleFilter[]).map((f) => (
+                                <button
+                                    key={f}
+                                    onClick={() => setVehicleFilter(f)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${vehicleFilter === f ? 'bg-purple-500/20 text-purple-300 shadow' : 'text-slate-400 hover:text-slate-200'}`}
+                                >
+                                    {f === 'ALL' ? 'All' : f === 'AVAILABLE' ? 'Loading' : 'On Route'}
+                                    <span className="ml-1.5 opacity-60">
+                                        {f === 'ALL' ? vehicles.length : vehicles.filter(v => f === 'AVAILABLE' ? v.status === 'AVAILABLE' : v.status !== 'AVAILABLE').length}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
                     <div className="grid gap-4">
-                        {vehicles.map((v, idx) => (
+                        {vehicles.filter(v => vehicleFilter === 'ALL' ? true : vehicleFilter === 'AVAILABLE' ? v.status === 'AVAILABLE' : v.status !== 'AVAILABLE').map((v, idx) => (
                             <motion.div key={v._id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }} className={`w-full p-5 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 ${v.status === 'AVAILABLE' ? 'bg-slate-900/40 border-slate-700/60 hover:border-purple-500/30' : 'bg-slate-900/10 border-slate-800/40 opacity-60'}`}>
 
                                 <div className="flex items-center gap-5">
@@ -94,10 +113,12 @@ export default function ShippingPage() {
                             </motion.div>
                         ))}
 
-                        {vehicles.length === 0 && !loading && (
+                        {vehicles.filter(v => vehicleFilter === 'ALL' ? true : vehicleFilter === 'AVAILABLE' ? v.status === 'AVAILABLE' : v.status !== 'AVAILABLE').length === 0 && !loading && (
                             <div className="text-center py-16 border border-slate-800 border-dashed rounded-2xl bg-slate-900/10">
                                 <Truck className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                                <p className="text-slate-400">No vehicles available. Register a truck to begin shipping.</p>
+                                <p className="text-slate-400">
+                                    {vehicles.length === 0 ? 'No vehicles available. Register a truck to begin shipping.' : 'No vehicles match the selected filter.'}
+                                </p>
                             </div>
                         )}
                     </div>

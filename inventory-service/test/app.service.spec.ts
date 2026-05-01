@@ -126,6 +126,7 @@ describe('AppService', () => {
 
       expect(mockInventoryModel.findOne).toHaveBeenCalledWith({
         productId: 'P1',
+        quantity: { $gt: 0 },
         $expr: { $gt: [{ $subtract: ['$quantity', '$reservedQuantity'] }, 0] },
       });
 

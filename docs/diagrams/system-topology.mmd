@@ -1,0 +1,90 @@
+graph TB
+    %% Frontend
+    subgraph Frontend["Frontend (Next.js :3000)"]
+        UI[Dashboard UI]
+    end
+
+    %% Message Broker
+    subgraph Kafka["Apache Kafka (KRaft :29092)"]
+        direction LR
+        KI[kafka-init]
+        Topics[(Event Topics)]
+    end
+
+    %% Core Microservices
+    subgraph Core["Core Microservices"]
+        direction TB
+        INV[Inventory Service :3001]
+        ORD[Order Service :3002]
+        PICK[Picking Service :3003]
+        SHIP[Shipping Service :3004]
+    end
+
+    %% Simulators
+    subgraph Simulators["Simulator Services"]
+        direction TB
+        INVSIM[Inventory Simulator :3005]
+        SHIPSIM[Shipping Simulator :3006]
+        ORDSIM[Order Simulator :3007]
+        PICKSIM[Picking Simulator :3008]
+    end
+
+    %% Databases
+    subgraph Databases["MongoDB Instances"]
+        direction TB
+        INVDB[(inventory-db :27017)]
+        ORDDB[(order-db :27018)]
+        PICKDB[(picking-db :27019)]
+        SHIPDB[(shipping-db :27020)]
+        INBDB[(inbound-db :27021)]
+        SHIPSIMDB[(shipping-sim-db :27022)]
+        ORDSIMDB[(order-sim-db :27023)]
+        PICKSIMDB[(picking-sim-db :27024)]
+    end
+
+    %% Observability
+    subgraph Observability["Observability Stack"]
+        FB[Fluent Bit :24224]
+        OO[OpenObserve :5080]
+        KUI[Kafka UI :8090]
+    end
+
+    %% Frontend connections
+    UI -->|REST + WebSocket| INV
+    UI -->|REST + WebSocket| ORD
+    UI -->|REST + WebSocket| PICK
+    UI -->|REST + WebSocket| SHIP
+
+    %% Core to Kafka
+    INV <-->|pub/sub| Topics
+    ORD <-->|pub/sub| Topics
+    PICK <-->|pub/sub| Topics
+    SHIP <-->|pub/sub| Topics
+
+    %% Simulators to Kafka
+    INVSIM -->|pub| Topics
+    SHIPSIM -->|HTTP| SHIP
+    ORDSIM -->|HTTP| ORD
+    ORDSIM -->|HTTP| INV
+    PICKSIM -->|HTTP| PICK
+
+    %% DB connections
+    INV --- INVDB
+    ORD --- ORDDB
+    PICK --- PICKDB
+    SHIP --- SHIPDB
+    INVSIM --- INBDB
+    SHIPSIM --- SHIPSIMDB
+    ORDSIM --- ORDSIMDB
+    PICKSIM --- PICKSIMDB
+
+    %% Observability
+    INV -.->|fluentd| FB
+    ORD -.->|fluentd| FB
+    PICK -.->|fluentd| FB
+    SHIP -.->|fluentd| FB
+    FB -.-> OO
+    KUI -.-> Topics
+
+    %% Kafka init
+    KI -->|creates topics| Topics

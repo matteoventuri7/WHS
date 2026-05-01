@@ -68,6 +68,7 @@ export class AppService implements OnModuleInit {
       while (required > 0) {
         const stockDocument = await this.inventoryModel.findOne({
           productId: reqItem.productId,
+          quantity: { $gt: 0 },
           $expr: {
             $gt: [{ $subtract: ['$quantity', '$reservedQuantity'] }, 0],
           },

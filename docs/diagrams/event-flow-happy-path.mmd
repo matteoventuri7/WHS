@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    participant UI as Frontend / Simulator
+    participant ORD as Order Service
+    participant K as Kafka
+    participant INV as Inventory Service
+    participant PICK as Picking Service
+    participant SHIP as Shipping Service
+    participant DISP as Shipping Simulator
+
+    UI->>ORD: POST /orders (PlaceOrder)
+    ORD->>K: OrderPlaced
+    K->>INV: OrderPlaced
+    
+    alt Stock sufficiente
+        INV->>K: InventoryAllocated
+        K->>ORD: InventoryAllocated
+        ORD->>K: OrderReadyForPicking
+        K->>PICK: OrderReadyForPicking
+        PICK->>K: PickingTaskCreated
+        
+        UI->>PICK: POST /picking/tasks/:id/complete
+        PICK->>K: PickingTaskCompleted
+        K->>ORD: PickingTaskCompleted
+        K->>SHIP: PickingTaskCompleted
+        SHIP->>K: ShipmentAssigned
+        K->>ORD: ShipmentAssigned
+        
+        DISP->>SHIP: POST /shipping/vehicles/:id/dispatch
+        SHIP->>K: VehicleDispatched
+    else Stock insufficiente
+        INV->>K: OutOfStock
+        K->>ORD: OutOfStock
+        ORD->>K: OrderSuspended
+    end

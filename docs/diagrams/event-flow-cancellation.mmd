@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant UI as Frontend
+    participant ORD as Order Service
+    participant K as Kafka
+    participant INV as Inventory Service
+    participant PICK as Picking Service
+
+    UI->>ORD: PATCH /orders/:id/cancel
+    
+    alt Ordine in stato ALLOCATED
+        ORD->>K: CancelPickingTask
+        K->>PICK: CancelPickingTask
+        PICK-->>PICK: Task → CANCELLED (se PENDING)
+    end
+
+    ORD->>K: OrderCancelled (previousStatus, allocations)
+    K->>INV: OrderCancelled
+    INV-->>INV: Rilascio stock allocato
+    INV->>K: ItemStored
