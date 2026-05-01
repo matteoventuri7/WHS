@@ -24,26 +24,28 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 
 ### 3.1. Inventory Service
 - **Responsabilità:** Gestione delle quantità di prodotto e delle locazioni (zone, corsie, scaffali). Ricezione merci in entrata (Inbound).
-- **Comandi Principali:** `ReceiveGoods` (riceve merce dal fornitore), `StoreItem` (salva la merce in una specifica locazione).
-- **Eventi Emessi:** `GoodsReceived`, `ItemStored`, `InventoryAllocated` (merce riservata per un ordine), `OutOfStock` (quando l'ordine richiede più merce di quella disponibile).
-- **Logica Core:** Reagisce agli eventi di nuovi ordini provando ad allocare le risorse disponibili e comunicando l'esito al resto del sistema.
+- **Comandi Principali:** `ReceiveGoods` (riceve merce dal fornitore tramite `POST /inventory/receive`), `StoreItem` (salva la merce in una specifica locazione).
+- **Eventi Consumati (Ascoltati):** `OrderPlaced`, `OrderCancelled`, `GoodsArriving`.
+- **Eventi Emessi:** `ItemStored` (confermato l'immagazzinamento della merce), `InventoryAllocated` (merce riservata per un ordine), `OutOfStock` (quando l'ordine richiede più merce di quella disponibile).
+- **Logica Core:** Reagisce agli eventi di nuovi ordini (`OrderPlaced`) provando ad allocare le risorse disponibili e comunicando l'esito al resto del sistema. Al ricevimento di `OrderCancelled`, rilascia le prenotazioni di stock corrispondenti ed emette `ItemStored`. Al ricevimento di `GoodsArriving`, immagazzina la merce ed emette `ItemStored`.
 
 ### 3.2. Order Service
 - **Responsabilità:** Gestione del ciclo di vita degli ordini in uscita (Outbound).
 - **Comandi Principali:** `PlaceOrder` (inserimento nuovo ordine di uscita, `POST /orders`), `CancelOrder` (annullamento di un ordine esistente, `PATCH /orders/:id/cancel`), `ResumeOrder` (ripresa di un ordine sospeso, `PATCH /orders/:id/resume`).
 - **Stati Possibili:** `PENDING`, `SUSPENDED`, `ALLOCATED`, `PICKING_COMPLETED`, `SHIPPED`, **`CANCELLED`**.
-- **Eventi Emessi:** `OrderPlaced`, `OrderSuspended`, `OrderReadyForPicking`, `OrderCancelled`.
+- **Eventi Emessi:** `OrderPlaced`, `OrderSuspended`, `OrderReadyForPicking`, `OrderCancelled`, `CancelPickingTask`.
 - **Eventi Consumati (Ascoltati):** `InventoryAllocated`, `OutOfStock`, `ItemStored`, `PickingTaskCompleted`, `ShipmentAssigned`.
 - **Logica Core:** Una volta emesso l'evento `OrderPlaced`, resta in attesa di risposta dall'Inventory Service. Se riceve `OutOfStock`, transisce a `SUSPENDED` ed emette `OrderSuspended`. Se riceve un riassortimento scatenato da un `ItemStored`, reinnesca automaticamente il tentativo di allocazione. Una volta ricevuti eventi di task picking e spedizioni concluse (`PickingTaskCompleted`, `ShipmentAssigned`), aggiorna lo stato dell'ordine.
-- **Logica di Cancellazione:** Prima di segnare un ordine come `CANCELLED`, l'Order Service effettua una chiamata HTTP sincrona al Picking Service (`POST /picking/tasks/order/:orderId/cancel`). Il Picking Service funge da guardia: se il task è ancora `PENDING`, lo annulla e restituisce `200 OK`; se è già `IN_PROGRESS` o `COMPLETED`, risponde con `400 Bad Request` e l'ordine non viene annullato.
+- **Logica di Cancellazione:** L'Order Service verifica localmente se l'ordine è in uno stato cancellabile (non `SHIPPED`, non `PICKING_COMPLETED`). Se l'ordine è in stato `ALLOCATED`, emette l'evento Kafka `CancelPickingTask` per richiedere l'annullamento asincrono del picking task associato. Successivamente marca l'ordine come `CANCELLED` ed emette `OrderCancelled` (con `previousStatus` e `allocations`) per triggerare il rilascio dello stock sull'Inventory Service.
 - **Logica di Ripresa (Resume):** Se un ordine è `SUSPENDED`, può essere forzata la ripresa. L'Order Service lo rimetterà in processamento emettendo nuovamente `OrderPlaced`.
 
 ### 3.3. Picking Service
 - **Responsabilità:** Generazione e gestione delle task operative di magazzino in base agli ordini confermati (istruzioni di reperimento su locazioni fisiche).
-- **Comandi Principali:** `CompletePickingTask` (input dell'operatore nel simulatore per segnalare l'avvenuto prelievo), `CancelPickingTask` (annullamento sincrono richiesto dall'Order Service).
+- **Comandi Principali:** `CompletePickingTask` (input dell'operatore nel simulatore per segnalare l'avvenuto prelievo, `POST /picking/tasks/:taskId/complete`).
 - **Stati Possibili:** `PENDING`, `IN_PROGRESS`, `COMPLETED`, **`CANCELLED`**.
+- **Eventi Consumati (Ascoltati):** `OrderReadyForPicking`, `CancelPickingTask`.
 - **Eventi Emessi:** `PickingTaskCreated`, `PickingTaskCompleted`.
-- **Logica di Cancellazione:** Espone l'endpoint `POST /picking/tasks/order/:orderId/cancel`. Se il task associato è `PENDING`, viene portato in stato `CANCELLED` e viene risposto `200 OK`. Se il task è `IN_PROGRESS` o `COMPLETED`, risponde `400 Bad Request` bloccando la cancellazione dell'ordine padre.
+- **Logica di Cancellazione:** Consuma l'evento Kafka `CancelPickingTask` emesso dall'Order Service. Se il task associato all'ordine è in stato `PENDING`, viene portato in stato `CANCELLED` in modo asincrono e idempotente.
 
 ### 3.4. Shipping Service
 - **Responsabilità:** Assegnazione della merce prelevata ai veicoli disponibili e spedizione.
@@ -54,7 +56,7 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 ### 3.5. Simulatori (Inbound, Order, Dispatch & Picking)
 - **Responsabilità:** Generazione automatica di carichi di lavoro e automazione di processi per testare e mostrare il sistema in funzione.
 - **Inventory Simulator (`inventory-simulator-service`):** Genera periodicamente merce in arrivo (simulando i fornitori), emettendo direttamente eventi Kafka `GoodsArriving` o simili.
-- **Order Simulator (`order-simulator-service`):** Crea automaticamente ordini di prova, emettendo eventi `OrderPlaced` per avviare il flusso di processing nel sistema.
+- **Order Simulator (`order-simulator-service`):** Crea automaticamente ordini di prova tramite chiamate HTTP al servizio Order (`POST /orders`). Recupera l'inventario disponibile via `GET /inventory` e seleziona prodotti con stock sufficiente. Cancella randomicamente (~10%) ordini non completati via `PATCH /orders/:id/cancel`.
 - **Shipping Simulator (`shipping-simulator-service`):** Interroga periodicamente le API dello `Shipping Service` per trovare veicoli carichi pronti alla partenza e invia il comando di dispatch in automatico.
 - **Picking Simulator (`picking-simulator-service`):** Interroga periodicamente le API del `Picking Service`, seleziona casualmente un task `PENDING` e invia il completamento automatico (`POST /picking/tasks/:taskId/complete`).
 
@@ -76,7 +78,7 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 3. kafka-init container starts
    - Waits 5s for broker stabilization
    - Runs: /opt/kafka/bin/kafka-topics.sh --create --if-not-exists
-   - Pre-creates all 13 topics (idempotent)
+   - Pre-creates all 14 topics (idempotent)
                         ↓
 4. kafka-init exits with status 0 (service_completed_successfully)
                         ↓
@@ -121,7 +123,7 @@ inventory-service:
 |---|---|
 | **Order Flow** | OrderPlaced, OrderCancelled, OrderReadyForPicking, OrderSuspended |
 | **Inventory** | InventoryAllocated, OutOfStock, ItemStored, GoodsArriving |
-| **Picking Operations** | PickingTaskCreated, PickingTaskCompleted |
+| **Picking Operations** | PickingTaskCreated, PickingTaskCompleted, CancelPickingTask |
 | **Shipping** | ShipmentAssigned, VehicleDispatched, VehicleRegistered |
 
 ### Adding New Topics
@@ -157,13 +159,12 @@ To add a new topic (e.g., `OrderCompleted`):
 
 1. **(UI -> API)** L'operatore clicca "Annulla" su un ordine nella pagina Ordini.
 2. **Order Service** riceve la richiesta `PATCH /orders/:id/cancel`.
-3. **Order Service** effettua una chiamata HTTP sincrona a **Picking Service**: `POST /picking/tasks/order/:orderId/cancel`.
-4. **Picking Service** verifica lo stato del task associato all'ordine:
-   - Se `PENDING` → marca il task come `CANCELLED` e risponde `200 OK`.
-   - Se `IN_PROGRESS` o `COMPLETED` → risponde `400 Bad Request` con messaggio di errore.
-5. **Order Service** in caso di `200 OK` marca l'ordine come `CANCELLED` nel proprio MongoDB.
-6. **Order Service** in caso di `400` propaga l'errore alla UI che mostra un alert con la motivazione del blocco.
-7. **(UI)** Il badge dell'ordine diventa `CANCELLED` (grigio); il badge del task di picking diventa `CANCELLED` (rosso con icona alert).
+3. **Order Service** verifica localmente se l'ordine è cancellabile (non `SHIPPED`, non `PICKING_COMPLETED`).
+4. Se l'ordine è in stato `ALLOCATED`, emette l'evento Kafka `CancelPickingTask` per annullare il picking task in modo asincrono.
+5. **Order Service** marca l'ordine come `CANCELLED` ed emette `OrderCancelled` (con `previousStatus` e `allocations`).
+6. **Inventory Service** (consuma `OrderCancelled`) rilascia le prenotazioni di stock associate ed emette `ItemStored`.
+7. **Picking Service** (consuma `CancelPickingTask`) annulla il picking task se in stato `PENDING`.
+8. **(UI)** Il badge dell'ordine diventa `CANCELLED`; il badge del task di picking diventa `CANCELLED`.
 
 ## 5. La UI di Next.js (Simulatore)
 
