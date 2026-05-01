@@ -29,6 +29,6 @@
     "docker:restart:order-sim": "docker compose up -d --no-deps --build order-simulator-service",
     "docker:restart:picking-sim": "docker compose up -d --no-deps --build picking-simulator-service",
     "docker:restart:shipping-sim": "docker compose up -d --no-deps --build shipping-simulator-service",
-    "docker:clean:db": "npm run docker:stop && docker volume rm whs_inventory_mongodb_data whs_order_mongodb_data whs_picking_mongodb_data whs_shipping_mongodb_data whs_inbound_mongodb_data whs_dispatch_mongodb_data whs_shipping_simulator_mongodb_data whs_order_simulator_mongodb_data whs_picking_simulator_mongodb_data"
+    "docker:clean:db": "npm run docker:stop && docker volume rm whs_inventory_mongodb_data whs_order_mongodb_data whs_picking_mongodb_data whs_shipping_mongodb_data"
   }
 }

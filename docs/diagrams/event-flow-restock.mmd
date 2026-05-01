@@ -1,17 +1,13 @@
 sequenceDiagram
     autonumber
     participant SIM as Inventory Simulator
-    participant K as Kafka
     participant INV as Inventory Service
     participant ORD as Order Service
 
-    SIM->>K: GoodsArriving
-    K->>INV: GoodsArriving
+    SIM->>INV: GoodsArriving
     INV-->>INV: Immagazzina merce
-    INV->>K: ItemStored
-    K->>ORD: ItemStored
+    INV->>ORD: ItemStored
     ORD-->>ORD: Trova ordini SUSPENDED per quel prodotto
-    ORD->>K: OrderPlaced (retry allocazione)
-    K->>INV: OrderPlaced
-    INV->>K: InventoryAllocated
+    ORD->>INV: OrderPlaced (retry allocazione)
+    INV->>ORD: InventoryAllocated
     Note over ORD,INV: Riprende il flusso Happy Path

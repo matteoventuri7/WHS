@@ -428,7 +428,7 @@ Response: { status: 'ok', service: '{service-name}' }
 | Order Simulator | (varia) | NestJS |
 | Picking Simulator | (varia) | NestJS |
 | Kafka Broker | 9092 (localhost), 29092 (docker) | Message Broker |
-| MongoDB Services | 27017–27024 | Database (una per servizio) |
+| MongoDB Services | 27017–27020 | Database (una per servizio core) |
 
 ---
 

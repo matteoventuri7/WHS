@@ -36,10 +36,6 @@ graph TB
         ORDDB[(order-db :27018)]
         PICKDB[(picking-db :27019)]
         SHIPDB[(shipping-db :27020)]
-        INBDB[(inbound-db :27021)]
-        SHIPSIMDB[(shipping-sim-db :27022)]
-        ORDSIMDB[(order-sim-db :27023)]
-        PICKSIMDB[(picking-sim-db :27024)]
     end
 
     %% Observability
@@ -73,10 +69,6 @@ graph TB
     ORD --- ORDDB
     PICK --- PICKDB
     SHIP --- SHIPDB
-    INVSIM --- INBDB
-    SHIPSIM --- SHIPSIMDB
-    ORDSIM --- ORDSIMDB
-    PICKSIM --- PICKSIMDB
 
     %% Observability
     INV -.->|fluentd| FB

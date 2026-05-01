@@ -1,31 +1,27 @@
 graph TD
-    KAFKA[Kafka KRaft] -->|service_healthy| KINIT[kafka-init]
-    KINIT -->|service_completed_successfully| INV[inventory-service]
-    KINIT -->|service_completed_successfully| ORD[order-service]
-    KINIT -->|service_completed_successfully| PICK[picking-service]
-    KINIT -->|service_completed_successfully| SHIP[shipping-service]
-    KINIT -->|service_completed_successfully| INVSIM[inventory-simulator]
-    KINIT -->|service_completed_successfully| SHIPSIM[shipping-simulator]
-    KINIT -->|service_completed_successfully| ORDSIM[order-simulator]
-    KINIT -->|service_completed_successfully| PICKSIM[picking-simulator]
+    KAFKA[Kafka KRaft] --> KINIT[kafka-init]
+    KINIT --> INV[inventory-service]
+    KINIT --> ORD[order-service]
+    KINIT --> PICK[picking-service]
+    KINIT --> SHIP[shipping-service]
+    KINIT --> INVSIM[inventory-simulator]
+    KINIT --> SHIPSIM[shipping-simulator]
+    KINIT --> ORDSIM[order-simulator]
+    KINIT --> PICKSIM[picking-simulator]
 
-    INVDB[inventory-db] -->|service_started| INV
-    ORDDB[order-db] -->|service_started| ORD
-    PICKDB[picking-db] -->|service_started| PICK
-    SHIPDB[shipping-db] -->|service_started| SHIP
-    INBDB[inbound-db] -->|service_started| INVSIM
-    SSDB[shipping-sim-db] -->|service_started| SHIPSIM
-    OSDB[order-sim-db] -->|service_started| ORDSIM
-    PSDB[picking-sim-db] -->|service_started| PICKSIM
+    INVDB[inventory-db] --> INV
+    ORDDB[order-db] --> ORD
+    PICKDB[picking-db] --> PICK
+    SHIPDB[shipping-db] --> SHIP
 
-    INV -->|service_started| FE[frontend]
-    ORD -->|service_started| FE
-    PICK -->|service_started| FE
-    SHIP -->|service_started| FE
-    ORDSIM -->|service_started| FE
-    PICKSIM -->|service_started| FE
-    INVSIM -->|service_started| FE
-    KAFKA -->|service_healthy| FE
-    KINIT -->|service_completed_successfully| FE
+    INV --> FE[frontend]
+    ORD --> FE
+    PICK --> FE
+    SHIP --> FE
+    ORDSIM --> FE
+    PICKSIM --> FE
+    INVSIM --> FE
+    KAFKA --> FE
+    KINIT --> FE
 
-    OO[OpenObserve] -->|service_started| FB[Fluent Bit]
+    OO[OpenObserve] --> FB[Fluent Bit]
