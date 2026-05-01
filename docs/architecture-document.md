@@ -10,7 +10,7 @@ Il sistema è strutturato a microservizi al fine di garantire un alto disaccoppi
 - **Microservizi Backend:** NestJS (Node.js/TypeScript). Ottimo ecosistema per l'integrazione nativa con Kafka e pattern strutturati (es. CQRS).
 - **Database (Microservizi):** MongoDB. Ogni microservizio avrà il proprio database MongoDB isolato. Come richiesto da un'architettura event-driven, l'unica fonte di verità (Source of Truth) ed Event Store sarà unicamente l'Event Stream di Apache Kafka. I database MongoDB locali serviranno solo ai microservizi per salvare il proprio stato corrente, calcolato consumando i messaggi dal broker.
 - **Frontend / BFF (Backend for Frontend):** Next.js (React/TypeScript). Gestirà l'interfaccia utente (il simulatore didattico) e comunicherà con i servizi/API, oppure invierà direttamente "Comandi" e farà query ai Read Models.
-- **Infrastruttura:** Docker e Docker Compose per containerizzare e orchestrare Kafka (e Zookeeper/KRaft), MongoDB, i vari Microservizi NestJS e l'applicazione Next.js.
+- **Infrastruttura:** Docker e Docker Compose per containerizzare e orchestrare Kafka (KRaft mode), MongoDB, i vari Microservizi NestJS e l'applicazione Next.js.
 
 ## 2. Pattern Architetturali
 
@@ -71,7 +71,7 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 ### Architettura del Kafka Init
 
 ```
-1. Kafka + Zookeeper → avvio container
+1. Kafka (KRaft) → avvio container
                         ↓
 2. Kafka reaches healthcheck (service_healthy)
                         ↓
