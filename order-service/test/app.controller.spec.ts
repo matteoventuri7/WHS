@@ -1,28 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from '../src/app.controller';
-import { AppService } from '../src/app.service';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { HttpException } from '@nestjs/common';
+import { PlaceOrderCommand } from '../src/commands/place-order.command';
+import { CancelOrderCommand } from '../src/commands/cancel-order.command';
+import { ResumeOrderCommand } from '../src/commands/resume-order.command';
+import { HandleInventoryAllocatedCommand } from '../src/commands/handle-inventory-allocated.command';
+import { HandleOutOfStockCommand } from '../src/commands/handle-out-of-stock.command';
+import { HandleItemStoredCommand } from '../src/commands/handle-item-stored.command';
+import { HandleShipmentAssignedCommand } from '../src/commands/handle-shipment-assigned.command';
+import { HandlePickingCompletedCommand } from '../src/commands/handle-picking-completed.command';
+import { GetAllOrdersQuery } from '../src/queries/get-all-orders.query';
 
 describe('AppController', () => {
   let appController: AppController;
-  let appService: jest.Mocked<Partial<AppService>>;
+  let commandBus: jest.Mocked<CommandBus>;
+  let queryBus: jest.Mocked<QueryBus>;
 
   beforeEach(async () => {
-    appService = {
-      placeOrder: jest.fn(),
-      getAllOrders: jest.fn(),
-      cancelOrder: jest.fn(),
-      resumeOrder: jest.fn(),
-      handleInventoryAllocated: jest.fn(),
-      handleOutOfStock: jest.fn(),
-      handleItemStored: jest.fn(),
-      handleShipmentAssigned: jest.fn(),
-      handlePickingTaskCompleted: jest.fn(),
-    };
+    commandBus = { execute: jest.fn() } as any;
+    queryBus = { execute: jest.fn() } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [{ provide: AppService, useValue: appService }],
+      providers: [
+        { provide: CommandBus, useValue: commandBus },
+        { provide: QueryBus, useValue: queryBus },
+      ],
     }).compile();
 
     appController = module.get<AppController>(AppController);
@@ -33,27 +37,29 @@ describe('AppController', () => {
   });
 
   describe('placeOrder', () => {
-    it('should place an order', async () => {
+    it('should execute PlaceOrderCommand', async () => {
       const body = { items: [{ productId: 'p1', quantity: 2 }] };
       const expectedResult = {
         orderId: 'O1',
         items: body.items,
         status: 'PENDING',
       };
-      (appService.placeOrder as jest.Mock).mockResolvedValue(expectedResult);
+      commandBus.execute.mockResolvedValue(expectedResult);
 
       expect(await appController.placeOrder(body)).toBe(expectedResult);
-      expect(appService.placeOrder).toHaveBeenCalledWith(body.items);
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new PlaceOrderCommand(body.items),
+      );
     });
   });
 
   describe('getOrders', () => {
-    it('should return all orders', async () => {
+    it('should execute GetAllOrdersQuery', async () => {
       const expectedResult = [{ orderId: 'O1', status: 'PENDING' }];
-      (appService.getAllOrders as jest.Mock).mockResolvedValue(expectedResult);
+      queryBus.execute.mockResolvedValue(expectedResult);
 
       expect(await appController.getOrders()).toBe(expectedResult);
-      expect(appService.getAllOrders).toHaveBeenCalled();
+      expect(queryBus.execute).toHaveBeenCalledWith(new GetAllOrdersQuery());
     });
   });
 
@@ -67,18 +73,20 @@ describe('AppController', () => {
   });
 
   describe('cancelOrder', () => {
-    it('should cancel the order', async () => {
+    it('should execute CancelOrderCommand', async () => {
       const orderId = 'O1';
       const expectedResult = { orderId, status: 'CANCELLED' };
-      (appService.cancelOrder as jest.Mock).mockResolvedValue(expectedResult);
+      commandBus.execute.mockResolvedValue(expectedResult);
 
       expect(await appController.cancelOrder(orderId)).toBe(expectedResult);
-      expect(appService.cancelOrder).toHaveBeenCalledWith(orderId);
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new CancelOrderCommand(orderId),
+      );
     });
 
-    it('should throw HttpException if cancelOrder fails', async () => {
+    it('should throw HttpException if command fails', async () => {
       const orderId = 'O1';
-      (appService.cancelOrder as jest.Mock).mockRejectedValue(
+      commandBus.execute.mockRejectedValue(
         new Error('Cannot cancel a shipped order'),
       );
 
@@ -92,18 +100,20 @@ describe('AppController', () => {
   });
 
   describe('resumeOrder', () => {
-    it('should resume the order', async () => {
+    it('should execute ResumeOrderCommand', async () => {
       const orderId = 'O1';
       const expectedResult = { orderId, status: 'PENDING' };
-      (appService.resumeOrder as jest.Mock).mockResolvedValue(expectedResult);
+      commandBus.execute.mockResolvedValue(expectedResult);
 
       expect(await appController.resumeOrder(orderId)).toBe(expectedResult);
-      expect(appService.resumeOrder).toHaveBeenCalledWith(orderId);
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new ResumeOrderCommand(orderId),
+      );
     });
 
-    it('should throw HttpException if resumeOrder fails', async () => {
+    it('should throw HttpException if command fails', async () => {
       const orderId = 'O1';
-      (appService.resumeOrder as jest.Mock).mockRejectedValue(
+      commandBus.execute.mockRejectedValue(
         new Error('Can only resume suspended orders'),
       );
 
@@ -117,67 +127,75 @@ describe('AppController', () => {
   });
 
   describe('handleInventoryAllocated', () => {
-    it('should handle inventory allocated if message has orderId', async () => {
+    it('should execute HandleInventoryAllocatedCommand if message has orderId', async () => {
       const message = { orderId: 'O1', allocations: [] };
       await appController.handleInventoryAllocated(message);
-      expect(appService.handleInventoryAllocated).toHaveBeenCalledWith(message);
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new HandleInventoryAllocatedCommand('O1', []),
+      );
     });
 
-    it('should not call service if message is missing orderId', async () => {
+    it('should not execute command if message is missing orderId', async () => {
       const message = { other: 'data' };
       await appController.handleInventoryAllocated(message);
-      expect(appService.handleInventoryAllocated).not.toHaveBeenCalled();
+      expect(commandBus.execute).not.toHaveBeenCalled();
     });
   });
 
   describe('handleOutOfStock', () => {
-    it('should handle out of stock if message has orderId', async () => {
+    it('should execute HandleOutOfStockCommand if message has orderId', async () => {
       const message = { orderId: 'O1' };
       await appController.handleOutOfStock(message);
-      expect(appService.handleOutOfStock).toHaveBeenCalledWith(message);
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new HandleOutOfStockCommand('O1'),
+      );
     });
 
-    it('should not call service if message is missing orderId', async () => {
+    it('should not execute command if message is missing orderId', async () => {
       const message = { other: 'data' };
       await appController.handleOutOfStock(message);
-      expect(appService.handleOutOfStock).not.toHaveBeenCalled();
+      expect(commandBus.execute).not.toHaveBeenCalled();
     });
   });
 
   describe('handleItemStored', () => {
-    it('should handle item stored', async () => {
+    it('should execute HandleItemStoredCommand', async () => {
       await appController.handleItemStored();
-      expect(appService.handleItemStored).toHaveBeenCalled();
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new HandleItemStoredCommand(),
+      );
     });
   });
 
   describe('handleShipmentAssigned', () => {
-    it('should handle shipment assigned if message has orderId', async () => {
+    it('should execute HandleShipmentAssignedCommand if message has orderId', async () => {
       const message = { orderId: 'O1' };
       await appController.handleShipmentAssigned(message);
-      expect(appService.handleShipmentAssigned).toHaveBeenCalledWith(message);
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new HandleShipmentAssignedCommand('O1'),
+      );
     });
 
-    it('should not call service if message is missing orderId', async () => {
+    it('should not execute command if message is missing orderId', async () => {
       const message = { other: 'data' };
       await appController.handleShipmentAssigned(message);
-      expect(appService.handleShipmentAssigned).not.toHaveBeenCalled();
+      expect(commandBus.execute).not.toHaveBeenCalled();
     });
   });
 
   describe('handlePickingTaskCompleted', () => {
-    it('should handle picking task completed if message has orderId', async () => {
+    it('should execute HandlePickingCompletedCommand if message has orderId', async () => {
       const message = { orderId: 'O1' };
       await appController.handlePickingTaskCompleted(message);
-      expect(appService.handlePickingTaskCompleted).toHaveBeenCalledWith(
-        message,
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new HandlePickingCompletedCommand('O1'),
       );
     });
 
-    it('should not call service if message is missing orderId', async () => {
+    it('should not execute command if message is missing orderId', async () => {
       const message = { other: 'data' };
       await appController.handlePickingTaskCompleted(message);
-      expect(appService.handlePickingTaskCompleted).not.toHaveBeenCalled();
+      expect(commandBus.execute).not.toHaveBeenCalled();
     });
   });
 });

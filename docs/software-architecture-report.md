@@ -1319,7 +1319,6 @@ The cancellation flow could have been implemented as an **orchestrated saga** (a
 
 ### 13.4. CQRS — Explicitly Rejected
 
-The architecture document declares this explicitly:
 Each service exposes its read model as a simple `GET /<resource>` over the same database that handles writes. The cost is small (a few collection scans), and the benefit is a substantial reduction in moving parts, in line with the constraints in §2.4.
 
 ### 13.5. Single Broker, RF=1
@@ -1341,8 +1340,6 @@ Single-stage was chosen for simplicity and faster iteration during development. 
 ---
 
 ## 14. Architectural Decision Records (ADRs)
-
-The decisions below are documented inline in compact form (Context / Decision / Consequences), tied to actual artifacts in the codebase.
 
 ### ADR-001 — Apache Kafka as the Primary Broker
 

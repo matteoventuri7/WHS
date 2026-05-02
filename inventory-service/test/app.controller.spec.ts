@@ -1,52 +1,44 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from '../src/app.controller';
-import { AppService } from '../src/app.service';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { ReceiveGoodsCommand } from '../src/commands/receive-goods.command';
+import { HandleOrderPlacedCommand } from '../src/commands/handle-order-placed.command';
+import { HandleOrderCancelledCommand } from '../src/commands/handle-order-cancelled.command';
+import { GetAllInventoryQuery } from '../src/queries/get-all-inventory.query';
 
 describe('AppController', () => {
   let appController: AppController;
-  let appService: AppService;
-  let consoleLogSpy: jest.SpyInstance;
-  let consoleWarnSpy: jest.SpyInstance;
+  let commandBus: jest.Mocked<CommandBus>;
+  let queryBus: jest.Mocked<QueryBus>;
+  let kafkaClient: any;
 
   beforeEach(async () => {
-    const mockAppService = {
-      receiveGoods: jest.fn(),
-      getAllInventory: jest.fn(),
-      handleOrderPlaced: jest.fn(),
-      handleOrderCancelled: jest.fn(),
-    };
+    commandBus = { execute: jest.fn() } as any;
+    queryBus = { execute: jest.fn() } as any;
+    kafkaClient = { connect: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
       providers: [
-        {
-          provide: AppService,
-          useValue: mockAppService,
-        },
+        { provide: CommandBus, useValue: commandBus },
+        { provide: QueryBus, useValue: queryBus },
+        { provide: 'KAFKA_CLIENT', useValue: kafkaClient },
       ],
     }).compile();
 
     appController = module.get<AppController>(AppController);
-    appService = module.get<AppService>(AppService);
-
-    // Silence expected console output from controller event handlers.
-    consoleLogSpy = jest
-      .spyOn(console, 'log')
-      .mockImplementation(() => undefined);
-    consoleWarnSpy = jest
-      .spyOn(console, 'warn')
-      .mockImplementation(() => undefined);
   });
 
-  afterEach(() => {
-    consoleLogSpy.mockRestore();
-    consoleWarnSpy.mockRestore();
-    jest.clearAllMocks();
+  describe('onModuleInit', () => {
+    it('should connect to kafka client', async () => {
+      await appController.onModuleInit();
+      expect(kafkaClient.connect).toHaveBeenCalled();
+    });
   });
 
   describe('REST Endpoints', () => {
     describe('POST /inventory/receive', () => {
-      it('should call appService.receiveGoods with correct parameters', async () => {
+      it('should execute ReceiveGoodsCommand', async () => {
         const body = { productId: 'P1', quantity: 10, location: 'A1' };
         const mockResult = {
           productId: 'P1',
@@ -54,82 +46,83 @@ describe('AppController', () => {
           location: 'A1',
           reservedQuantity: 0,
         };
-        jest
-          .spyOn(appService, 'receiveGoods')
-          .mockResolvedValue(mockResult as any);
+        commandBus.execute.mockResolvedValue(mockResult);
 
         const result = await appController.receiveGoods(body);
 
-        expect(appService.receiveGoods).toHaveBeenCalledWith('P1', 10, 'A1');
+        expect(commandBus.execute).toHaveBeenCalledWith(
+          new ReceiveGoodsCommand('P1', 10, 'A1'),
+        );
         expect(result).toEqual(mockResult);
       });
     });
 
     describe('GET /inventory', () => {
-      it('should call appService.getAllInventory', async () => {
+      it('should execute GetAllInventoryQuery', async () => {
         const mockInventory = [
-          {
-            productId: 'P1',
-            quantity: 10,
-            location: 'A1',
-            reservedQuantity: 0,
-          },
+          { productId: 'P1', quantity: 10, location: 'A1', reservedQuantity: 0 },
         ];
-        jest
-          .spyOn(appService, 'getAllInventory')
-          .mockResolvedValue(mockInventory as any);
+        queryBus.execute.mockResolvedValue(mockInventory);
 
         const result = await appController.getInventory();
 
-        expect(appService.getAllInventory).toHaveBeenCalled();
+        expect(queryBus.execute).toHaveBeenCalledWith(new GetAllInventoryQuery());
         expect(result).toEqual(mockInventory);
       });
     });
 
     describe('GET /inventory/health', () => {
       it('should return health status', () => {
-        const expectedResult = { status: 'ok', service: 'inventory' };
-        expect(appController.getHealth()).toEqual(expectedResult);
+        expect(appController.getHealth()).toEqual({
+          status: 'ok',
+          service: 'inventory',
+        });
       });
     });
   });
 
   describe('Kafka Event Handlers', () => {
     describe('OrderPlaced', () => {
-      it('should call handleOrderPlaced on appService if message is valid', async () => {
+      it('should execute HandleOrderPlacedCommand if message is valid', async () => {
         const message = {
           orderId: 'O1',
           items: [{ productId: 'P1', quantity: 5 }],
         };
         await appController.handleOrderPlaced(message);
-        expect(appService.handleOrderPlaced).toHaveBeenCalledWith(message);
+        expect(commandBus.execute).toHaveBeenCalledWith(
+          new HandleOrderPlacedCommand('O1', message.items),
+        );
       });
 
-      it('should not call handleOrderPlaced if message is invalid', async () => {
+      it('should not execute command if message is invalid', async () => {
         await appController.handleOrderPlaced(null);
-        expect(appService.handleOrderPlaced).not.toHaveBeenCalled();
+        expect(commandBus.execute).not.toHaveBeenCalled();
 
         await appController.handleOrderPlaced({});
-        expect(appService.handleOrderPlaced).not.toHaveBeenCalled();
+        expect(commandBus.execute).not.toHaveBeenCalled();
       });
     });
 
     describe('OrderCancelled', () => {
-      it('should call handleOrderCancelled on appService if message is valid', async () => {
-        const message = { orderId: 'O1', previousStatus: 'ALLOCATED' };
+      it('should execute HandleOrderCancelledCommand if message is valid', async () => {
+        const message = {
+          orderId: 'O1',
+          previousStatus: 'ALLOCATED',
+          allocations: [{ productId: 'P1', quantity: 5, location: 'A1' }],
+        };
         await appController.handleOrderCancelled(message);
-        expect(appService.handleOrderCancelled).toHaveBeenCalledWith(message);
+        expect(commandBus.execute).toHaveBeenCalledWith(
+          new HandleOrderCancelledCommand('O1', 'ALLOCATED', message.allocations),
+        );
       });
 
-      it('should not call handleOrderCancelled if message is invalid', async () => {
+      it('should not execute command if message is invalid', async () => {
         await appController.handleOrderCancelled(null);
-        expect(appService.handleOrderCancelled).not.toHaveBeenCalled();
+        expect(commandBus.execute).not.toHaveBeenCalled();
 
         await appController.handleOrderCancelled({});
-        expect(appService.handleOrderCancelled).not.toHaveBeenCalled();
+        expect(commandBus.execute).not.toHaveBeenCalled();
       });
     });
-
-
   });
 });

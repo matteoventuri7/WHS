@@ -1,22 +1,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from '../src/app.controller';
-import { AppService } from '../src/app.service';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { CompletePickingTaskCommand } from '../src/commands/complete-picking-task.command';
+import { HandleOrderReadyForPickingCommand } from '../src/commands/handle-order-ready-for-picking.command';
+import { CancelPickingTaskCommand } from '../src/commands/cancel-picking-task.command';
+import { GetAllTasksQuery } from '../src/queries/get-all-tasks.query';
 
 describe('AppController', () => {
   let appController: AppController;
-  let appService: jest.Mocked<Partial<AppService>>;
+  let commandBus: jest.Mocked<CommandBus>;
+  let queryBus: jest.Mocked<QueryBus>;
 
   beforeEach(async () => {
-    appService = {
-      getAllTasks: jest.fn(),
-      completePickingTask: jest.fn(),
-      handleOrderReadyForPicking: jest.fn(),
-      cancelPickingTask: jest.fn(),
-    };
+    commandBus = { execute: jest.fn() } as any;
+    queryBus = { execute: jest.fn() } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [{ provide: AppService, useValue: appService }],
+      providers: [
+        { provide: CommandBus, useValue: commandBus },
+        { provide: QueryBus, useValue: queryBus },
+      ],
     }).compile();
 
     appController = module.get<AppController>(AppController);
@@ -27,12 +31,12 @@ describe('AppController', () => {
   });
 
   describe('getTasks', () => {
-    it('should return an array of tasks', async () => {
+    it('should execute GetAllTasksQuery', async () => {
       const result = [{ taskId: '1', orderId: 'O1', status: 'PENDING' }];
-      (appService.getAllTasks as jest.Mock).mockResolvedValue(result);
+      queryBus.execute.mockResolvedValue(result);
 
       expect(await appController.getTasks()).toBe(result);
-      expect(appService.getAllTasks).toHaveBeenCalled();
+      expect(queryBus.execute).toHaveBeenCalledWith(new GetAllTasksQuery());
     });
   });
 
@@ -46,47 +50,47 @@ describe('AppController', () => {
   });
 
   describe('completeTask', () => {
-    it('should complete a task', async () => {
+    it('should execute CompletePickingTaskCommand', async () => {
       const taskId = 'task-123';
       const result = { taskId, status: 'COMPLETED' };
-      (appService.completePickingTask as jest.Mock).mockResolvedValue(result);
+      commandBus.execute.mockResolvedValue(result);
 
       expect(await appController.completeTask(taskId)).toBe(result);
-      expect(appService.completePickingTask).toHaveBeenCalledWith(taskId);
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new CompletePickingTaskCommand(taskId),
+      );
     });
   });
 
   describe('handleOrderReadyForPicking', () => {
-    it('should handle order ready event if orderId is provided', async () => {
+    it('should execute HandleOrderReadyForPickingCommand if orderId is provided', async () => {
       const message = { orderId: 'O123', allocations: [] };
       await appController.handleOrderReadyForPicking(message);
-      expect(appService.handleOrderReadyForPicking).toHaveBeenCalledWith(
-        message,
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new HandleOrderReadyForPickingCommand('O123', []),
       );
     });
 
-    it('should not call service if message is missing orderId', async () => {
+    it('should not execute command if message is missing orderId', async () => {
       const message = { otherField: 'something' };
       await appController.handleOrderReadyForPicking(message);
-      expect(appService.handleOrderReadyForPicking).not.toHaveBeenCalled();
+      expect(commandBus.execute).not.toHaveBeenCalled();
     });
   });
 
   describe('handleCancelPickingTask', () => {
-    it('should dispatch cancellation if message includes orderId', async () => {
+    it('should execute CancelPickingTaskCommand if message includes orderId', async () => {
       const message = { orderId: 'O123' };
-
       await appController.handleCancelPickingTask(message);
-
-      expect(appService.cancelPickingTask).toHaveBeenCalledWith('O123');
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new CancelPickingTaskCommand('O123'),
+      );
     });
 
-    it('should ignore message when orderId is missing', async () => {
+    it('should not execute command when orderId is missing', async () => {
       const message = { otherField: 'value' };
-
       await appController.handleCancelPickingTask(message);
-
-      expect(appService.cancelPickingTask).not.toHaveBeenCalled();
+      expect(commandBus.execute).not.toHaveBeenCalled();
     });
   });
 });

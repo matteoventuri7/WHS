@@ -16,7 +16,7 @@ Il sistema è strutturato a microservizi al fine di garantire un alto disaccoppi
 
 - **Event-Driven Architecture (EDA):** I servizi non comunicano tramite chiamate sincrone dirette (REST/gRPC), ma reagiscono asincronicamente agli eventi pubblicati su Kafka.
 - **Event Sourcing:** Lo stato di ogni entità (un ordine, lo stato dell'inventario) non è salvato in modo puramente relazionale, ma è il risultato della serie di eventi (immutabili) presenti su Kafka. Kafka fungerà direttamente da Event Store.
-- **Gestione dello Stato Semplificata:** Non utilizzeremo il pattern CQRS. Mantenere l'architettura semplice è prioritario: ogni microservizio aggiornerà il proprio stato locale in MongoDB consumando gli eventi da Kafka. Per le letture (es. da parte della UI), i microservizi esporranno delle API (REST/GraphQL) che interrogheranno direttamente il proprio database isolato.
+- **CQRS (Command Query Responsibility Segregation) — Code-Level:** Ogni microservizio adotta il pattern CQRS a livello di codice tramite il modulo `@nestjs/cqrs`. Le operazioni di scrittura (creazione ordini, gestione eventi Kafka, aggiornamenti di stato) sono modellate come **Command + CommandHandler**, mentre le letture (interrogazione dati per la UI) sono modellate come **Query + QueryHandler**. Tuttavia, entrambi i percorsi (read e write) condividono lo stesso database MongoDB — non c'è separazione infrastrutturale tra read store e write store. Il controller è un thin dispatcher che instrada le richieste verso il `CommandBus` o `QueryBus` appropriato.
 
 ## 3. Topologia dei Servizi (Bounded Contexts)
 

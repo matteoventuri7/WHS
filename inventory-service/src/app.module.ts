@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { CqrsModule } from '@nestjs/cqrs';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { EventsGateway } from './events.gateway';
 import { Inventory, InventorySchema } from './schemas/inventory.schema';
+import { CommandHandlers } from './commands';
+import { QueryHandlers } from './queries';
 
 @Module({
   imports: [
@@ -37,8 +39,9 @@ import { Inventory, InventorySchema } from './schemas/inventory.schema';
         },
       },
     ]),
+    CqrsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, EventsGateway],
+  providers: [EventsGateway, ...CommandHandlers, ...QueryHandlers],
 })
 export class AppModule {}

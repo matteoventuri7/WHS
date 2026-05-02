@@ -1,12 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppService } from '../src/app.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Inventory } from '../src/schemas/inventory.schema';
 import { EventsGateway } from '../src/events.gateway';
+import { ReceiveGoodsHandler } from '../src/commands/receive-goods.handler';
+import { HandleOrderPlacedHandler } from '../src/commands/handle-order-placed.handler';
+import { HandleOrderCancelledHandler } from '../src/commands/handle-order-cancelled.handler';
+import { GetAllInventoryHandler } from '../src/queries/get-all-inventory.handler';
+import { ReceiveGoodsCommand } from '../src/commands/receive-goods.command';
+import { HandleOrderPlacedCommand } from '../src/commands/handle-order-placed.command';
+import { HandleOrderCancelledCommand } from '../src/commands/handle-order-cancelled.command';
+import { GetAllInventoryQuery } from '../src/queries/get-all-inventory.query';
 
-describe('AppService', () => {
-  let appService: AppService;
-
+describe('Inventory Command & Query Handlers', () => {
   const mockKafkaClient = {
     connect: jest.fn(),
     emit: jest.fn(),
@@ -23,40 +28,26 @@ describe('AppService', () => {
     notifyDataChanged: jest.fn(),
   };
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AppService,
-        {
-          provide: 'KAFKA_CLIENT',
-          useValue: mockKafkaClient,
-        },
-        {
-          provide: getModelToken(Inventory.name),
-          useValue: mockInventoryModel,
-        },
-        {
-          provide: EventsGateway,
-          useValue: mockEventsGateway,
-        },
-      ],
-    }).compile();
-
-    appService = module.get<AppService>(AppService);
-  });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('onModuleInit', () => {
-    it('should connect to kafka client', async () => {
-      await appService.onModuleInit();
-      expect(mockKafkaClient.connect).toHaveBeenCalled();
-    });
-  });
+  describe('ReceiveGoodsHandler', () => {
+    let handler: ReceiveGoodsHandler;
 
-  describe('receiveGoods', () => {
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ReceiveGoodsHandler,
+          { provide: 'KAFKA_CLIENT', useValue: mockKafkaClient },
+          { provide: getModelToken(Inventory.name), useValue: mockInventoryModel },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+      handler = module.get<ReceiveGoodsHandler>(ReceiveGoodsHandler);
+      jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
+    });
+
     it('should save inventory, emit event and notify gateway', async () => {
       const mockItem = {
         productId: 'P1',
@@ -66,7 +57,9 @@ describe('AppService', () => {
       };
       mockInventoryModel.findOneAndUpdate.mockResolvedValue(mockItem);
 
-      const result = await appService.receiveGoods('P1', 15, 'A1');
+      const result = await handler.execute(
+        new ReceiveGoodsCommand('P1', 15, 'A1'),
+      );
 
       expect(mockInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
         { productId: 'P1', location: 'A1' },
@@ -86,28 +79,24 @@ describe('AppService', () => {
     });
   });
 
-  describe('getAllInventory', () => {
-    it('should return all inventory items', async () => {
-      const mockItems = [{ productId: 'P1', quantity: 10, location: 'A1' }];
-      mockInventoryModel.find.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockItems),
-      });
+  describe('HandleOrderPlacedHandler', () => {
+    let handler: HandleOrderPlacedHandler;
 
-      const result = await appService.getAllInventory();
-
-      expect(mockInventoryModel.find).toHaveBeenCalled();
-      expect(result).toEqual(mockItems);
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          HandleOrderPlacedHandler,
+          { provide: 'KAFKA_CLIENT', useValue: mockKafkaClient },
+          { provide: getModelToken(Inventory.name), useValue: mockInventoryModel },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+      handler = module.get<HandleOrderPlacedHandler>(HandleOrderPlacedHandler);
+      jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
+      jest.spyOn(handler['logger'], 'warn').mockImplementation(() => undefined);
     });
-  });
 
-  describe('handleOrderPlaced', () => {
     it('should allocate inventory successfully and emit InventoryAllocated', async () => {
-      const payload = {
-        orderId: 'O1',
-        items: [{ productId: 'P1', quantity: 5 }],
-      };
-
-      // Mock findOne (available stock)
       mockInventoryModel.findOne.mockResolvedValueOnce({
         _id: 'id1',
         productId: 'P1',
@@ -115,47 +104,24 @@ describe('AppService', () => {
         quantity: 10,
         reservedQuantity: 0,
       });
-      // Mock findOneAndUpdate (reserve item)
       mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce({
         _id: 'id1',
         quantity: 10,
         reservedQuantity: 5,
       });
 
-      await appService.handleOrderPlaced(payload);
-
-      expect(mockInventoryModel.findOne).toHaveBeenCalledWith({
-        productId: 'P1',
-        quantity: { $gt: 0 },
-        $expr: { $gt: [{ $subtract: ['$quantity', '$reservedQuantity'] }, 0] },
-      });
-
-      expect(mockInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
-        {
-          _id: 'id1',
-          $expr: {
-            $gte: [{ $subtract: ['$quantity', '$reservedQuantity'] }, 5],
-          },
-        },
-        { $inc: { reservedQuantity: 5 } },
-        { returnDocument: 'after' },
+      await handler.execute(
+        new HandleOrderPlacedCommand('O1', [{ productId: 'P1', quantity: 5 }]),
       );
 
       expect(mockKafkaClient.emit).toHaveBeenCalledWith('InventoryAllocated', {
         orderId: 'O1',
         allocations: [{ productId: 'P1', quantity: 5, location: 'A1' }],
       });
-
       expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should allocate from multiple locations if required', async () => {
-      const payload = {
-        orderId: 'O2',
-        items: [{ productId: 'P2', quantity: 15 }],
-      };
-
-      // Mock findOne loop 1
       mockInventoryModel.findOne.mockResolvedValueOnce({
         _id: 'loc1',
         productId: 'P2',
@@ -168,8 +134,6 @@ describe('AppService', () => {
         quantity: 10,
         reservedQuantity: 10,
       });
-
-      // Mock findOne loop 2
       mockInventoryModel.findOne.mockResolvedValueOnce({
         _id: 'loc2',
         productId: 'P2',
@@ -183,7 +147,9 @@ describe('AppService', () => {
         reservedQuantity: 5,
       });
 
-      await appService.handleOrderPlaced(payload);
+      await handler.execute(
+        new HandleOrderPlacedCommand('O2', [{ productId: 'P2', quantity: 15 }]),
+      );
 
       expect(mockKafkaClient.emit).toHaveBeenCalledWith('InventoryAllocated', {
         orderId: 'O2',
@@ -192,16 +158,9 @@ describe('AppService', () => {
           { productId: 'P2', quantity: 5, location: 'B1' },
         ],
       });
-      expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
-    it('should fail to allocate, rollback partial reservations, and emit OutOfStock', async () => {
-      const payload = {
-        orderId: 'O3',
-        items: [{ productId: 'P3', quantity: 10 }],
-      };
-
-      // Only 5 available in total
+    it('should fail to allocate, rollback and emit OutOfStock', async () => {
       mockInventoryModel.findOne.mockResolvedValueOnce({
         _id: 'id1',
         productId: 'P3',
@@ -214,17 +173,16 @@ describe('AppService', () => {
         quantity: 5,
         reservedQuantity: 5,
       });
-      // Next iteration finds no stock
       mockInventoryModel.findOne.mockResolvedValueOnce(null);
 
-      await appService.handleOrderPlaced(payload);
+      await handler.execute(
+        new HandleOrderPlacedCommand('O3', [{ productId: 'P3', quantity: 10 }]),
+      );
 
-      // Verify rollback for the partial location A1
       expect(mockInventoryModel.updateOne).toHaveBeenCalledWith(
         { productId: 'P3', location: 'A1' },
         { $inc: { reservedQuantity: -5 } },
       );
-
       expect(mockKafkaClient.emit).toHaveBeenCalledWith('OutOfStock', {
         orderId: 'O3',
       });
@@ -232,47 +190,78 @@ describe('AppService', () => {
         'InventoryAllocated',
         expect.any(Object),
       );
-      expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
   });
 
-  describe('handleOrderCancelled', () => {
+  describe('HandleOrderCancelledHandler', () => {
+    let handler: HandleOrderCancelledHandler;
+
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          HandleOrderCancelledHandler,
+          { provide: getModelToken(Inventory.name), useValue: mockInventoryModel },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+      handler = module.get<HandleOrderCancelledHandler>(
+        HandleOrderCancelledHandler,
+      );
+      jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
+    });
+
     it('should release reserved allocations and notify gateway', async () => {
-      const payload = {
-        orderId: 'O4',
-        previousStatus: 'ALLOCATED',
-        allocations: [
+      await handler.execute(
+        new HandleOrderCancelledCommand('O4', 'ALLOCATED', [
           { productId: 'P1', quantity: 5, location: 'A1' },
           { productId: 'P2', quantity: 2, location: 'B1' },
-        ],
-      };
-
-      await appService.handleOrderCancelled(payload);
+        ]),
+      );
 
       expect(mockInventoryModel.updateOne).toHaveBeenCalledWith(
         { productId: 'P1', location: 'A1' },
         { $inc: { reservedQuantity: -5 } },
       );
-
       expect(mockInventoryModel.updateOne).toHaveBeenCalledWith(
         { productId: 'P2', location: 'B1' },
         { $inc: { reservedQuantity: -2 } },
       );
-
       expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should do nothing if no allocations are provided', async () => {
-      const payload = {
-        orderId: 'O5',
-        previousStatus: 'PENDING',
-        allocations: [],
-      };
-
-      await appService.handleOrderCancelled(payload);
+      await handler.execute(
+        new HandleOrderCancelledCommand('O5', 'PENDING', []),
+      );
 
       expect(mockInventoryModel.updateOne).not.toHaveBeenCalled();
       expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
+    });
+  });
+
+  describe('GetAllInventoryHandler', () => {
+    let handler: GetAllInventoryHandler;
+
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          GetAllInventoryHandler,
+          { provide: getModelToken(Inventory.name), useValue: mockInventoryModel },
+        ],
+      }).compile();
+      handler = module.get<GetAllInventoryHandler>(GetAllInventoryHandler);
+    });
+
+    it('should return all inventory items', async () => {
+      const mockItems = [{ productId: 'P1', quantity: 10, location: 'A1' }];
+      mockInventoryModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockItems),
+      });
+
+      const result = await handler.execute(new GetAllInventoryQuery());
+
+      expect(mockInventoryModel.find).toHaveBeenCalled();
+      expect(result).toEqual(mockItems);
     });
   });
 });

@@ -1,54 +1,54 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from '../src/app.controller';
-import { AppService } from '../src/app.service';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { RegisterVehicleCommand } from '../src/commands/register-vehicle.command';
+import { DispatchVehicleCommand } from '../src/commands/dispatch-vehicle.command';
+import { HandlePickingCompletedCommand } from '../src/commands/handle-picking-completed.command';
+import { GetAllVehiclesQuery } from '../src/queries/get-all-vehicles.query';
+import { GetPendingShipmentsQuery } from '../src/queries/get-pending-shipments.query';
 
 describe('AppController', () => {
   let appController: AppController;
-  let appService: AppService;
-
-  const mockAppService = {
-    getAllVehicles: jest.fn(),
-    getPendingShipments: jest.fn(),
-    registerVehicle: jest.fn(),
-    dispatchVehicle: jest.fn(),
-    handlePickingTaskCompleted: jest.fn(),
-  };
+  let commandBus: { execute: jest.Mock };
+  let queryBus: { execute: jest.Mock };
 
   beforeEach(async () => {
+    commandBus = { execute: jest.fn() };
+    queryBus = { execute: jest.fn() };
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
       providers: [
-        {
-          provide: AppService,
-          useValue: mockAppService,
-        },
+        { provide: CommandBus, useValue: commandBus },
+        { provide: QueryBus, useValue: queryBus },
       ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
-    appService = app.get<AppService>(AppService);
     jest.clearAllMocks();
   });
 
   describe('getVehicles', () => {
-    it('should return all vehicles', async () => {
+    it('should execute GetAllVehiclesQuery', async () => {
       const mockVehicles = [{ vehicleId: 'V1', maxCapacity: 10 }];
-      mockAppService.getAllVehicles.mockResolvedValue(mockVehicles);
+      queryBus.execute.mockResolvedValue(mockVehicles);
 
       const result = await appController.getVehicles();
       expect(result).toEqual(mockVehicles);
-      expect(mockAppService.getAllVehicles).toHaveBeenCalledTimes(1);
+      expect(queryBus.execute).toHaveBeenCalledWith(new GetAllVehiclesQuery());
     });
   });
 
   describe('getPendingShipments', () => {
-    it('should return all pending shipments', async () => {
+    it('should execute GetPendingShipmentsQuery', async () => {
       const mockShipments = [{ taskId: 'T1' }];
-      mockAppService.getPendingShipments.mockResolvedValue(mockShipments);
+      queryBus.execute.mockResolvedValue(mockShipments);
 
       const result = await appController.getPendingShipments();
       expect(result).toEqual(mockShipments);
-      expect(mockAppService.getPendingShipments).toHaveBeenCalledTimes(1);
+      expect(queryBus.execute).toHaveBeenCalledWith(
+        new GetPendingShipmentsQuery(),
+      );
     });
   });
 
@@ -60,41 +60,50 @@ describe('AppController', () => {
   });
 
   describe('registerVehicle', () => {
-    it('should register a new vehicle', async () => {
+    it('should execute RegisterVehicleCommand', async () => {
       const body = { vehicleId: 'V1', maxCapacity: 10 };
-      mockAppService.registerVehicle.mockResolvedValue(body);
+      commandBus.execute.mockResolvedValue(body);
 
       const result = await appController.registerVehicle(body);
       expect(result).toEqual(body);
-      expect(mockAppService.registerVehicle).toHaveBeenCalledWith('V1', 10);
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new RegisterVehicleCommand('V1', 10),
+      );
     });
   });
 
   describe('dispatchVehicle', () => {
-    it('should dispatch an existing vehicle', async () => {
+    it('should execute DispatchVehicleCommand', async () => {
       const mockDispatched = { vehicleId: 'V1', status: 'DISPATCHED' };
-      mockAppService.dispatchVehicle.mockResolvedValue(mockDispatched);
+      commandBus.execute.mockResolvedValue(mockDispatched);
 
       const result = await appController.dispatchVehicle('V1');
       expect(result).toEqual(mockDispatched);
-      expect(mockAppService.dispatchVehicle).toHaveBeenCalledWith('V1');
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new DispatchVehicleCommand('V1'),
+      );
     });
   });
 
   describe('handlePickingTaskCompleted', () => {
-    it('should handle picking task completed event', async () => {
-      const message = { taskId: 'T1', orderId: 'O1', allocations: [] };
+    it('should execute HandlePickingCompletedCommand', async () => {
+      const message = {
+        taskId: 'T1',
+        orderId: 'O1',
+        allocations: [{ quantity: 3 }],
+      };
+      commandBus.execute.mockResolvedValue(undefined);
 
       await appController.handlePickingTaskCompleted(message);
-      expect(mockAppService.handlePickingTaskCompleted).toHaveBeenCalledWith(
-        message,
+      expect(commandBus.execute).toHaveBeenCalledWith(
+        new HandlePickingCompletedCommand('T1', 'O1', [{ quantity: 3 }]),
       );
     });
 
-    it('should not call service if message or taskId is absent', async () => {
+    it('should not execute command if message or taskId is absent', async () => {
       await appController.handlePickingTaskCompleted(null);
       await appController.handlePickingTaskCompleted({});
-      expect(mockAppService.handlePickingTaskCompleted).not.toHaveBeenCalled();
+      expect(commandBus.execute).not.toHaveBeenCalled();
     });
   });
 });

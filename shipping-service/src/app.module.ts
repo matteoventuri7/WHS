@@ -1,14 +1,17 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { CqrsModule } from '@nestjs/cqrs';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { EventsGateway } from './events.gateway';
 import { Vehicle, VehicleSchema } from './schemas/vehicle.schema';
 import {
   PendingShipment,
   PendingShipmentSchema,
 } from './schemas/pending-shipment.schema';
+import { CommandHandlers } from './commands';
+import { QueryHandlers } from './queries';
+import { ShipmentAssignmentService } from './services/shipment-assignment.service';
 
 @Module({
   imports: [
@@ -42,8 +45,14 @@ import {
         },
       },
     ]),
+    CqrsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, EventsGateway],
+  providers: [
+    EventsGateway,
+    ShipmentAssignmentService,
+    ...CommandHandlers,
+    ...QueryHandlers,
+  ],
 })
 export class AppModule {}

@@ -1,9 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { AppService } from '../src/app.service';
 import { EventsGateway } from '../src/events.gateway';
 import { Vehicle } from '../src/schemas/vehicle.schema';
 import { PendingShipment } from '../src/schemas/pending-shipment.schema';
+import { RegisterVehicleHandler } from '../src/commands/register-vehicle.handler';
+import { DispatchVehicleHandler } from '../src/commands/dispatch-vehicle.handler';
+import { HandlePickingCompletedHandler } from '../src/commands/handle-picking-completed.handler';
+import { GetAllVehiclesHandler } from '../src/queries/get-all-vehicles.handler';
+import { GetPendingShipmentsHandler } from '../src/queries/get-pending-shipments.handler';
+import { ShipmentAssignmentService } from '../src/services/shipment-assignment.service';
+import { RegisterVehicleCommand } from '../src/commands/register-vehicle.command';
+import { DispatchVehicleCommand } from '../src/commands/dispatch-vehicle.command';
+import { HandlePickingCompletedCommand } from '../src/commands/handle-picking-completed.command';
+import { GetAllVehiclesQuery } from '../src/queries/get-all-vehicles.query';
+import { GetPendingShipmentsQuery } from '../src/queries/get-pending-shipments.query';
 
 const mockSave = jest.fn();
 
@@ -41,8 +51,13 @@ class MockPendingShipmentModel {
   static deleteOne = jest.fn();
 }
 
-describe('AppService', () => {
-  let service: AppService;
+describe('Shipping Handlers', () => {
+  let registerVehicleHandler: RegisterVehicleHandler;
+  let dispatchVehicleHandler: DispatchVehicleHandler;
+  let handlePickingCompletedHandler: HandlePickingCompletedHandler;
+  let getAllVehiclesHandler: GetAllVehiclesHandler;
+  let getPendingShipmentsHandler: GetPendingShipmentsHandler;
+  let shipmentAssignment: ShipmentAssignmentService;
   let kafkaClient: any;
   let eventsGateway: any;
 
@@ -65,7 +80,12 @@ describe('AppService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AppService,
+        RegisterVehicleHandler,
+        DispatchVehicleHandler,
+        HandlePickingCompletedHandler,
+        GetAllVehiclesHandler,
+        GetPendingShipmentsHandler,
+        ShipmentAssignmentService,
         {
           provide: getModelToken(Vehicle.name),
           useValue: MockVehicleModel,
@@ -85,49 +105,48 @@ describe('AppService', () => {
       ],
     }).compile();
 
-    service = module.get<AppService>(AppService);
+    registerVehicleHandler = module.get(RegisterVehicleHandler);
+    dispatchVehicleHandler = module.get(DispatchVehicleHandler);
+    handlePickingCompletedHandler = module.get(HandlePickingCompletedHandler);
+    getAllVehiclesHandler = module.get(GetAllVehiclesHandler);
+    getPendingShipmentsHandler = module.get(GetPendingShipmentsHandler);
+    shipmentAssignment = module.get(ShipmentAssignmentService);
     kafkaClient = module.get('KAFKA_CLIENT');
     eventsGateway = module.get(EventsGateway);
 
     jest.clearAllMocks();
   });
 
-  describe('onModuleInit', () => {
-    it('should log on init', async () => {
-      const loggerSpy = jest
-        .spyOn(service['logger'], 'log')
-        .mockImplementation();
-      await service.onModuleInit();
-      expect(loggerSpy).toHaveBeenCalledWith(
-        'Connessione Kafka Producer per Shipping Service inizializzata.',
-      );
-    });
-  });
-
-  describe('getAllVehicles', () => {
+  describe('GetAllVehiclesHandler', () => {
     it('should return all vehicles', async () => {
       mockQuery.exec.mockResolvedValueOnce([{ vehicleId: 'V1' }]);
-      const result = await service.getAllVehicles();
+      const result = await getAllVehiclesHandler.execute(
+        new GetAllVehiclesQuery(),
+      );
       expect(result).toEqual([{ vehicleId: 'V1' }]);
       expect(MockVehicleModel.find).toHaveBeenCalled();
     });
   });
 
-  describe('getPendingShipments', () => {
+  describe('GetPendingShipmentsHandler', () => {
     it('should return pending shipments', async () => {
       mockQuery.exec.mockResolvedValueOnce([{ taskId: 'T1' }]);
-      const result = await service.getPendingShipments();
+      const result = await getPendingShipmentsHandler.execute(
+        new GetPendingShipmentsQuery(),
+      );
       expect(result).toEqual([{ taskId: 'T1' }]);
       expect(MockPendingShipmentModel.find).toHaveBeenCalled();
     });
   });
 
-  describe('registerVehicle', () => {
+  describe('RegisterVehicleHandler', () => {
     it('should save vehicle and emit events', async () => {
       // Mock pending shipments empty to simplify
       mockQuery.sort.mockResolvedValueOnce([]);
 
-      const result = await service.registerVehicle('V1', 10);
+      const result = await registerVehicleHandler.execute(
+        new RegisterVehicleCommand('V1', 10),
+      );
       expect(mockSave).toHaveBeenCalledTimes(1);
       expect(kafkaClient.emit).toHaveBeenCalledWith('VehicleRegistered', {
         vehicleId: 'V1',
@@ -146,7 +165,6 @@ describe('AppService', () => {
       };
       mockQuery.sort.mockResolvedValueOnce([mockPending]); // from pending ship
 
-      // the processPendingShipments accesses vehicleModel.find()
       const mockVehicle = new MockVehicleModel({
         _id: '1',
         vehicleId: 'V1',
@@ -158,7 +176,9 @@ describe('AppService', () => {
       // Second sort is from vehicleModel.find()
       mockQuery.sort.mockResolvedValueOnce([mockVehicle]);
 
-      await service.registerVehicle('V1', 10);
+      await registerVehicleHandler.execute(
+        new RegisterVehicleCommand('V1', 10),
+      );
 
       expect(mockVehicle.currentLoad).toBe(5);
       expect(MockPendingShipmentModel.deleteOne).toHaveBeenCalledWith({
@@ -172,7 +192,7 @@ describe('AppService', () => {
     });
   });
 
-  describe('dispatchVehicle', () => {
+  describe('DispatchVehicleHandler', () => {
     it('should dispatch successfully', async () => {
       const v = {
         vehicleId: 'V1',
@@ -181,7 +201,9 @@ describe('AppService', () => {
       };
       MockVehicleModel.findOneAndUpdate.mockResolvedValueOnce(v);
 
-      const result = await service.dispatchVehicle('V1');
+      const result = await dispatchVehicleHandler.execute(
+        new DispatchVehicleCommand('V1'),
+      );
       expect(result).toEqual(v);
       expect(kafkaClient.emit).toHaveBeenCalledWith('VehicleDispatched', {
         vehicleId: 'V1',
@@ -193,23 +215,20 @@ describe('AppService', () => {
     it('should throw an error if vehicle not found', async () => {
       MockVehicleModel.findOneAndUpdate.mockResolvedValueOnce(null);
 
-      await expect(service.dispatchVehicle('V2')).rejects.toThrow(
-        'Veicolo non trovato o non pronto',
-      );
+      await expect(
+        dispatchVehicleHandler.execute(new DispatchVehicleCommand('V2')),
+      ).rejects.toThrow('Veicolo non trovato o non pronto');
     });
   });
 
-  describe('handlePickingTaskCompleted', () => {
+  describe('HandlePickingCompletedHandler', () => {
     it('should save as pending shipment if no vehicle available', async () => {
       mockQuery.sort.mockResolvedValueOnce([]);
       MockPendingShipmentModel.findOne.mockResolvedValueOnce(null);
 
-      const payload = {
-        taskId: 'T1',
-        orderId: 'O1',
-        allocations: [{ quantity: 5 }],
-      };
-      await service.handlePickingTaskCompleted(payload);
+      await handlePickingCompletedHandler.execute(
+        new HandlePickingCompletedCommand('T1', 'O1', [{ quantity: 5 }]),
+      );
 
       expect(mockSave).toHaveBeenCalledTimes(1);
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
@@ -225,12 +244,9 @@ describe('AppService', () => {
       });
       mockQuery.sort.mockResolvedValueOnce([mockVehicle]);
 
-      const payload = {
-        taskId: 'T1',
-        orderId: 'O1',
-        allocations: [{ quantity: 5 }],
-      };
-      await service.handlePickingTaskCompleted(payload);
+      await handlePickingCompletedHandler.execute(
+        new HandlePickingCompletedCommand('T1', 'O1', [{ quantity: 5 }]),
+      );
 
       expect(mockVehicle.currentLoad).toBe(5);
       expect(mockVehicle.assignedTaskIds).toContain('T1');
