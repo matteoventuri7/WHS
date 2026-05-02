@@ -140,7 +140,7 @@ Documento di riepilogo completo degli endpoint REST e messaggi Kafka per ogni mi
 
 ---
 
-### 5. Inventory Simulator Service (Porta 3008 - Inbound)
+### 5. Inventory Simulator Service (Porta 3005 - Inbound)
 
 **Descrizione**: Simula l'arrivo di merci nel magazzino con intervalli regolabili.
 
@@ -291,13 +291,17 @@ Nessuno (comunica via HTTP con shipping-service).
 ```
 1. Order Service
    ├─→ PATCH /orders/{id}/cancel
-   └─→ emit: OrderCancelled
+   ├─→ emit: CancelPickingTask  (solo se ordine era in stato ALLOCATED)
+   └─→ emit: OrderCancelled (previousStatus, allocations)
 
-2. Inventory Service (consuma: OrderCancelled)
+2. Picking Service (consuma: CancelPickingTask)
+   └─→ Task → CANCELLED (se in stato PENDING, idempotente)
+
+3. Inventory Service (consuma: OrderCancelled)
    ├─→ Rilascia le prenotazioni di stock
    └─→ emit: ItemStored
 
-3. Order Service (consuma: ItemStored)
+4. Order Service (consuma: ItemStored)
    ├─→ Riprova allocazione ordini SUSPENDED
    └─→ emit: OrderPlaced (per i sospesi)
 ```
@@ -347,12 +351,16 @@ SHIPPING_SERVICE_URL=http://shipping-service:3004/shipping
 Tutti i servizi usano variabile `MONGODB_URI` (injected in docker-compose):
 
 ```
-mongodb://root:example@mongodb:27017/{service-name}?authSource=admin
+# Ogni servizio usa il proprio container DB dedicato:
+mongodb://root:example@inventory-db:27017/inventory?authSource=admin
+mongodb://root:example@order-db:27018/order?authSource=admin
+mongodb://root:example@picking-db:27019/picking?authSource=admin
+mongodb://root:example@shipping-db:27020/shipping?authSource=admin
 ```
 
 ### Kafka Broker
 
-- **Broker**: `kafka:29092` (interno docker-compose)
+- **Broker**: `kafka:9092` (interno docker-compose, listener PLAINTEXT)
 - **Topics**: Pre-creati da `kafka-init` container
 
 ---
@@ -399,10 +407,10 @@ Response: { status: 'ok', service: '{service-name}' }
 | Order Service | 3002 | NestJS + WebSocket |
 | Picking Service | 3003 | NestJS + WebSocket |
 | Shipping Service | 3004 | NestJS + WebSocket |
-| Inbound Simulator | 3008 | NestJS |
+| Inbound Simulator | 3005 | NestJS |
 | Dispatch Simulator | 3006 | NestJS |
-| Order Simulator | (varia) | NestJS |
-| Picking Simulator | (varia) | NestJS |
+| Order Simulator | 3007 | NestJS |
+| Picking Simulator | 3008 | NestJS |
 | Kafka Broker | 9092 (localhost), 29092 (docker) | Message Broker |
 | MongoDB Services | 27017–27020 | Database (una per servizio core) |
 

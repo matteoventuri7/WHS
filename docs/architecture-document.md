@@ -78,7 +78,7 @@ Il dominio è suddiviso in microservizi core autonomi, affiancati da servizi di 
 3. kafka-init container starts
    - Waits 5s for broker stabilization
    - Runs: /opt/kafka/bin/kafka-topics.sh --create --if-not-exists
-   - Pre-creates all 14 topics (idempotent)
+   - Pre-creates all 13 topics (idempotent)
                         ↓
 4. kafka-init exits with status 0 (service_completed_successfully)
                         ↓
@@ -122,7 +122,7 @@ inventory-service:
 | Topic Category | Topic Names |
 |---|---|
 | **Order Flow** | OrderPlaced, OrderCancelled, OrderReadyForPicking, OrderSuspended |
-| **Inventory** | InventoryAllocated, OutOfStock, ItemStored, GoodsArriving |
+| **Inventory** | InventoryAllocated, OutOfStock, ItemStored |
 | **Picking Operations** | PickingTaskCreated, PickingTaskCompleted, CancelPickingTask |
 | **Shipping** | ShipmentAssigned, VehicleDispatched, VehicleRegistered |
 
@@ -149,11 +149,12 @@ To add a new topic (e.g., `OrderCompleted`):
 1. **(UI -> API)** L'operatore simula un ordine inviando `PlaceOrder(Acqua: 24)`.
 2. **Order Service** emette l'evento `OrderPlaced`.
 3. **Inventory Service** cattura l'evento. Se sufficiente disponibilità, emette `InventoryAllocated(Locazione: B-12-33)`. Se no, `OutOfStock(Sospeso)`.
-4. (Se Allocato) **Picking Service** cattura l'aggregazione di allocazioni e genera una entry, emettendo `PickingTaskCreated`.
-5. **(UI -> API)** L'operatore visualizza il task e clicca su "Completa". Il Picking emette `PickingTaskCompleted`.
-6. **Shipping Service** cattura il task completato e lo assegna al primo veicolo con capacità residua sufficiente emettendo `ShipmentAssigned`.
-7. **Dispatch Simulator** (o operatore da UI) individua i veicoli carichi pronti e innesca la spedizione.
-8. **Shipping Service** elabora il dispatch ed emette `VehicleDispatched`.
+4. (Se Allocato) **Order Service** riceve `InventoryAllocated`, transisce in `ALLOCATED` ed emette `OrderReadyForPicking`.
+5. **Picking Service** cattura `OrderReadyForPicking` e genera una entry, emettendo `PickingTaskCreated`.
+6. **(UI -> API)** L'operatore visualizza il task e clicca su "Completa". Il Picking emette `PickingTaskCompleted`.
+7. **Shipping Service** cattura il task completato e lo assegna al primo veicolo con capacità residua sufficiente emettendo `ShipmentAssigned`.
+8. **Dispatch Simulator** (o operatore da UI) individua i veicoli carichi pronti e innesca la spedizione.
+9. **Shipping Service** elabora il dispatch ed emette `VehicleDispatched`.
 
 ### 4.2. Flusso di Cancellazione Ordine
 
