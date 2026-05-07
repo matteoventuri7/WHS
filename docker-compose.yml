@@ -56,12 +56,6 @@ services:
       - ZO_ROOT_USER_PASSWORD=Complexpass#123
     volumes:
       - openobserve_data:/data
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:5080/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
 
   fluent-bit:
     build:
