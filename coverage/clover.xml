@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1778159517638" clover="3.2.0">
+  <project timestamp="1778159517639" name="All files">
+    <metrics statements="146" coveredstatements="146" conditionals="74" coveredconditionals="62" methods="22" coveredmethods="22" elements="242" coveredelements="230" complexity="0" loc="146" ncloc="146" packages="4" files="15" classes="15"/>
+    <package name="src">
+      <metrics statements="51" coveredstatements="51" conditionals="28" coveredconditionals="25" methods="10" coveredmethods="10"/>
+      <file name="app.controller.ts" path="E:\uni\WHS\picking-service\src\app.controller.ts">
+        <metrics statements="22" coveredstatements="22" conditionals="16" coveredconditionals="14" methods="6" coveredmethods="6"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="10" count="4" type="stmt"/>
+        <line num="12" count="8" type="cond" truecount="6" falsecount="2"/>
+        <line num="13" count="8" type="stmt"/>
+        <line num="17" count="4" type="stmt"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="22" count="4" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="27" count="4" type="stmt"/>
+        <line num="28" count="1" type="stmt"/>
+        <line num="32" count="4" type="stmt"/>
+        <line num="33" count="2" type="cond" truecount="4" falsecount="0"/>
+        <line num="34" count="1" type="stmt"/>
+        <line num="44" count="4" type="stmt"/>
+        <line num="45" count="2" type="cond" truecount="4" falsecount="0"/>
+        <line num="46" count="1" type="stmt"/>
+      </file>
+      <file name="app.module.ts" path="E:\uni\WHS\picking-service\src\app.module.ts">
+        <metrics statements="10" coveredstatements="10" conditionals="4" coveredconditionals="4" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="2" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="4" count="3" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+        <line num="6" count="3" type="stmt"/>
+        <line num="7" count="3" type="stmt"/>
+        <line num="8" count="3" type="stmt"/>
+        <line num="9" count="3" type="stmt"/>
+        <line num="47" count="3" type="stmt"/>
+      </file>
+      <file name="events.gateway.ts" path="E:\uni\WHS\picking-service\src\events.gateway.ts">
+        <metrics statements="9" coveredstatements="9" conditionals="4" coveredconditionals="3" methods="3" coveredmethods="3"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="7" count="5" type="stmt"/>
+        <line num="8" count="5" type="stmt"/>
+        <line num="11" count="5" type="stmt"/>
+        <line num="12" count="4" type="stmt"/>
+        <line num="15" count="5" type="cond" truecount="3" falsecount="1"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+      </file>
+      <file name="main.ts" path="E:\uni\WHS\picking-service\src\main.ts">
+        <metrics statements="10" coveredstatements="10" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="2" count="2" type="stmt"/>
+        <line num="3" count="2" type="stmt"/>
+        <line num="6" count="2" type="stmt"/>
+        <line num="8" count="2" type="stmt"/>
+        <line num="32" count="2" type="stmt"/>
+        <line num="33" count="2" type="stmt"/>
+        <line num="34" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="35" count="2" type="stmt"/>
+        <line num="37" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.commands">
+      <metrics statements="76" coveredstatements="76" conditionals="42" coveredconditionals="34" methods="9" coveredmethods="9"/>
+      <file name="cancel-picking-task.command.ts" path="E:\uni\WHS\picking-service\src\commands\cancel-picking-task.command.ts">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="2" count="5" type="stmt"/>
+      </file>
+      <file name="cancel-picking-task.handler.ts" path="E:\uni\WHS\picking-service\src\commands\cancel-picking-task.handler.ts">
+        <metrics statements="23" coveredstatements="23" conditionals="12" coveredconditionals="10" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="10" count="4" type="stmt"/>
+        <line num="13" count="3" type="stmt"/>
+        <line num="17" count="3" type="cond" truecount="6" falsecount="2"/>
+        <line num="18" count="3" type="stmt"/>
+        <line num="22" count="3" type="stmt"/>
+        <line num="23" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="27" count="1" type="stmt"/>
+        <line num="30" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="40" count="1" type="stmt"/>
+        <line num="43" count="1" type="stmt"/>
+      </file>
+      <file name="complete-picking-task.command.ts" path="E:\uni\WHS\picking-service\src\commands\complete-picking-task.command.ts">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="2" count="5" type="stmt"/>
+      </file>
+      <file name="complete-picking-task.handler.ts" path="E:\uni\WHS\picking-service\src\commands\complete-picking-task.handler.ts">
+        <metrics statements="22" coveredstatements="22" conditionals="16" coveredconditionals="13" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="14" count="3" type="stmt"/>
+        <line num="17" count="3" type="cond" truecount="6" falsecount="2"/>
+        <line num="19" count="3" type="cond" truecount="3" falsecount="1"/>
+        <line num="20" count="3" type="stmt"/>
+        <line num="24" count="3" type="stmt"/>
+        <line num="25" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="27" count="1" type="stmt"/>
+        <line num="28" count="1" type="stmt"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="35" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="38" count="2" type="stmt"/>
+      </file>
+      <file name="handle-order-ready-for-picking.command.ts" path="E:\uni\WHS\picking-service\src\commands\handle-order-ready-for-picking.command.ts">
+        <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+      </file>
+      <file name="handle-order-ready-for-picking.handler.ts" path="E:\uni\WHS\picking-service\src\commands\handle-order-ready-for-picking.handler.ts">
+        <metrics statements="20" coveredstatements="20" conditionals="14" coveredconditionals="11" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="14" count="2" type="stmt"/>
+        <line num="17" count="2" type="cond" truecount="6" falsecount="2"/>
+        <line num="19" count="2" type="cond" truecount="3" falsecount="1"/>
+        <line num="20" count="2" type="stmt"/>
+        <line num="24" count="2" type="stmt"/>
+        <line num="25" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="41" count="1" type="stmt"/>
+      </file>
+      <file name="index.ts" path="E:\uni\WHS\picking-service\src\commands\index.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="2" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.queries">
+      <metrics statements="11" coveredstatements="11" conditionals="4" coveredconditionals="3" methods="2" coveredmethods="2"/>
+      <file name="get-all-tasks.handler.ts" path="E:\uni\WHS\picking-service\src\queries\get-all-tasks.handler.ts">
+        <metrics statements="8" coveredstatements="8" conditionals="4" coveredconditionals="3" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="15" count="1" type="stmt"/>
+      </file>
+      <file name="get-all-tasks.query.ts" path="E:\uni\WHS\picking-service\src\queries\get-all-tasks.query.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="5" type="stmt"/>
+      </file>
+      <file name="index.ts" path="E:\uni\WHS\picking-service\src\queries\index.ts">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.schemas">
+      <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+      <file name="picking.schema.ts" path="E:\uni\WHS\picking-service\src\schemas\picking.schema.ts">
+        <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="7" count="5" type="stmt"/>
+        <line num="8" count="1" type="stmt"/>
+        <line num="9" count="5" type="stmt"/>
+        <line num="12" count="5" type="stmt"/>
+        <line num="15" count="5" type="stmt"/>
+        <line num="22" count="5" type="stmt"/>
+        <line num="25" count="5" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>

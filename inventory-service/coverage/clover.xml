@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1778159507957" clover="3.2.0">
+  <project timestamp="1778159507957" name="All files">
+    <metrics statements="162" coveredstatements="162" conditionals="80" coveredconditionals="66" methods="22" coveredmethods="22" elements="264" coveredelements="250" complexity="0" loc="162" ncloc="162" packages="4" files="15" classes="15"/>
+    <package name="src">
+      <metrics statements="54" coveredstatements="54" conditionals="32" coveredconditionals="28" methods="11" coveredmethods="11"/>
+      <file name="app.controller.ts" path="E:\uni\WHS\inventory-service\src\app.controller.ts">
+        <metrics statements="25" coveredstatements="25" conditionals="20" coveredconditionals="17" methods="7" coveredmethods="7"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="13" count="8" type="cond" truecount="6" falsecount="2"/>
+        <line num="14" count="8" type="cond" truecount="3" falsecount="1"/>
+        <line num="15" count="8" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="23" count="4" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="32" count="4" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="37" count="4" type="stmt"/>
+        <line num="38" count="1" type="stmt"/>
+        <line num="42" count="4" type="stmt"/>
+        <line num="43" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="44" count="1" type="stmt"/>
+        <line num="51" count="4" type="stmt"/>
+        <line num="52" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="53" count="1" type="stmt"/>
+      </file>
+      <file name="app.module.ts" path="E:\uni\WHS\inventory-service\src\app.module.ts">
+        <metrics statements="10" coveredstatements="10" conditionals="4" coveredconditionals="4" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="2" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="4" count="3" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+        <line num="6" count="3" type="stmt"/>
+        <line num="7" count="3" type="stmt"/>
+        <line num="8" count="3" type="stmt"/>
+        <line num="9" count="3" type="stmt"/>
+        <line num="47" count="3" type="stmt"/>
+      </file>
+      <file name="events.gateway.ts" path="E:\uni\WHS\inventory-service\src\events.gateway.ts">
+        <metrics statements="9" coveredstatements="9" conditionals="4" coveredconditionals="3" methods="3" coveredmethods="3"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="7" count="5" type="stmt"/>
+        <line num="8" count="5" type="stmt"/>
+        <line num="11" count="5" type="stmt"/>
+        <line num="12" count="4" type="stmt"/>
+        <line num="15" count="5" type="cond" truecount="3" falsecount="1"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+      </file>
+      <file name="main.ts" path="E:\uni\WHS\inventory-service\src\main.ts">
+        <metrics statements="10" coveredstatements="10" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="2" count="2" type="stmt"/>
+        <line num="3" count="2" type="stmt"/>
+        <line num="6" count="2" type="stmt"/>
+        <line num="8" count="2" type="stmt"/>
+        <line num="32" count="2" type="stmt"/>
+        <line num="33" count="2" type="stmt"/>
+        <line num="34" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="35" count="2" type="stmt"/>
+        <line num="37" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.commands">
+      <metrics statements="90" coveredstatements="90" conditionals="44" coveredconditionals="35" methods="9" coveredmethods="9"/>
+      <file name="handle-order-cancelled.command.ts" path="E:\uni\WHS\inventory-service\src\commands\handle-order-cancelled.command.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+      </file>
+      <file name="handle-order-cancelled.handler.ts" path="E:\uni\WHS\inventory-service\src\commands\handle-order-cancelled.handler.ts">
+        <metrics statements="18" coveredstatements="18" conditionals="12" coveredconditionals="10" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="10" count="4" type="stmt"/>
+        <line num="13" count="2" type="stmt"/>
+        <line num="17" count="2" type="cond" truecount="6" falsecount="2"/>
+        <line num="18" count="2" type="stmt"/>
+        <line num="22" count="2" type="stmt"/>
+        <line num="25" count="2" type="cond" truecount="4" falsecount="0"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="30" count="2" type="stmt"/>
+        <line num="35" count="1" type="stmt"/>
+        <line num="39" count="2" type="stmt"/>
+      </file>
+      <file name="handle-order-placed.command.ts" path="E:\uni\WHS\inventory-service\src\commands\handle-order-placed.command.ts">
+        <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="3" count="5" type="stmt"/>
+        <line num="4" count="5" type="stmt"/>
+      </file>
+      <file name="handle-order-placed.handler.ts" path="E:\uni\WHS\inventory-service\src\commands\handle-order-placed.handler.ts">
+        <metrics statements="39" coveredstatements="39" conditionals="20" coveredconditionals="16" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="14" count="3" type="stmt"/>
+        <line num="17" count="3" type="cond" truecount="6" falsecount="2"/>
+        <line num="19" count="3" type="cond" truecount="3" falsecount="1"/>
+        <line num="20" count="3" type="stmt"/>
+        <line num="24" count="3" type="stmt"/>
+        <line num="31" count="3" type="stmt"/>
+        <line num="32" count="3" type="stmt"/>
+        <line num="34" count="3" type="stmt"/>
+        <line num="35" count="3" type="stmt"/>
+        <line num="37" count="3" type="stmt"/>
+        <line num="38" count="5" type="stmt"/>
+        <line num="46" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="47" count="1" type="stmt"/>
+        <line num="51" count="4" type="stmt"/>
+        <line num="52" count="4" type="stmt"/>
+        <line num="54" count="4" type="stmt"/>
+        <line num="68" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="69" count="4" type="stmt"/>
+        <line num="74" count="4" type="stmt"/>
+        <line num="78" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="79" count="1" type="stmt"/>
+        <line num="80" count="1" type="stmt"/>
+        <line num="84" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="85" count="2" type="stmt"/>
+        <line num="86" count="2" type="stmt"/>
+        <line num="91" count="1" type="stmt"/>
+        <line num="94" count="1" type="stmt"/>
+        <line num="95" count="1" type="stmt"/>
+        <line num="100" count="1" type="stmt"/>
+        <line num="102" count="3" type="stmt"/>
+      </file>
+      <file name="index.ts" path="E:\uni\WHS\inventory-service\src\commands\index.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="2" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+      </file>
+      <file name="receive-goods.command.ts" path="E:\uni\WHS\inventory-service\src\commands\receive-goods.command.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="4" count="3" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+      </file>
+      <file name="receive-goods.handler.ts" path="E:\uni\WHS\inventory-service\src\commands\receive-goods.handler.ts">
+        <metrics statements="18" coveredstatements="18" conditionals="12" coveredconditionals="9" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="14" count="1" type="stmt"/>
+        <line num="17" count="1" type="cond" truecount="6" falsecount="2"/>
+        <line num="19" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="44" count="1" type="stmt"/>
+        <line num="45" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.queries">
+      <metrics statements="11" coveredstatements="11" conditionals="4" coveredconditionals="3" methods="2" coveredmethods="2"/>
+      <file name="get-all-inventory.handler.ts" path="E:\uni\WHS\inventory-service\src\queries\get-all-inventory.handler.ts">
+        <metrics statements="8" coveredstatements="8" conditionals="4" coveredconditionals="3" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="13" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="17" count="1" type="stmt"/>
+      </file>
+      <file name="get-all-inventory.query.ts" path="E:\uni\WHS\inventory-service\src\queries\get-all-inventory.query.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="5" type="stmt"/>
+      </file>
+      <file name="index.ts" path="E:\uni\WHS\inventory-service\src\queries\index.ts">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.schemas">
+      <metrics statements="7" coveredstatements="7" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <file name="inventory.schema.ts" path="E:\uni\WHS\inventory-service\src\schemas\inventory.schema.ts">
+        <metrics statements="7" coveredstatements="7" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="9" count="4" type="stmt"/>
+        <line num="12" count="4" type="stmt"/>
+        <line num="15" count="4" type="stmt"/>
+        <line num="18" count="4" type="stmt"/>
+        <line num="21" count="4" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>

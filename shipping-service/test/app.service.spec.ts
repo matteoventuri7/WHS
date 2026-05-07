@@ -258,5 +258,26 @@ describe('Shipping Handlers', () => {
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
+
+    it('should break assignment if a pending shipment cannot be assigned', async () => {
+      const mockPending1 = { taskId: 'T1', orderId: 'O1', totalItems: 5, _id: '123' };
+      const mockPending2 = { taskId: 'T2', orderId: 'O2', totalItems: 50, _id: '124' };
+      
+      const mockVehicle = new MockVehicleModel({
+        _id: '1', vehicleId: 'V1', maxCapacity: 10, currentLoad: 0, assignedTaskIds: [],
+      });
+
+      // pendingShipments.find().sort()
+      mockQuery.sort.mockResolvedValueOnce([mockPending1, mockPending2]);
+      
+      // vehicleModel.find().sort() per ogni pending
+      mockQuery.sort.mockResolvedValueOnce([mockVehicle]);
+      mockQuery.sort.mockResolvedValueOnce([mockVehicle]);
+
+      await shipmentAssignment.processPendingShipments();
+      
+      expect(MockPendingShipmentModel.deleteOne).toHaveBeenCalledWith({ _id: '123' });
+      expect(MockPendingShipmentModel.deleteOne).not.toHaveBeenCalledWith({ _id: '124' });
+    });
   });
 });

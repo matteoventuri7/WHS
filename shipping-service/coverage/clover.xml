@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1778159522876" clover="3.2.0">
+  <project timestamp="1778159522876" name="All files">
+    <metrics statements="207" coveredstatements="207" conditionals="104" coveredconditionals="83" methods="29" coveredmethods="29" elements="340" coveredelements="319" complexity="0" loc="207" ncloc="207" packages="5" files="19" classes="19"/>
+    <package name="src">
+      <metrics statements="55" coveredstatements="55" conditionals="24" coveredconditionals="21" methods="11" coveredmethods="11"/>
+      <file name="app.controller.ts" path="E:\uni\WHS\shipping-service\src\app.controller.ts">
+        <metrics statements="24" coveredstatements="24" conditionals="12" coveredconditionals="10" methods="7" coveredmethods="7"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="13" count="7" type="cond" truecount="6" falsecount="2"/>
+        <line num="14" count="7" type="stmt"/>
+        <line num="18" count="4" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="23" count="4" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="28" count="4" type="stmt"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="33" count="4" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="42" count="4" type="stmt"/>
+        <line num="43" count="1" type="stmt"/>
+        <line num="47" count="4" type="stmt"/>
+        <line num="48" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="49" count="1" type="stmt"/>
+      </file>
+      <file name="app.module.ts" path="E:\uni\WHS\shipping-service\src\app.module.ts">
+        <metrics statements="12" coveredstatements="12" conditionals="4" coveredconditionals="4" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="2" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="4" count="3" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+        <line num="6" count="3" type="stmt"/>
+        <line num="7" count="3" type="stmt"/>
+        <line num="8" count="3" type="stmt"/>
+        <line num="12" count="3" type="stmt"/>
+        <line num="13" count="3" type="stmt"/>
+        <line num="14" count="3" type="stmt"/>
+        <line num="58" count="3" type="stmt"/>
+      </file>
+      <file name="events.gateway.ts" path="E:\uni\WHS\shipping-service\src\events.gateway.ts">
+        <metrics statements="9" coveredstatements="9" conditionals="4" coveredconditionals="3" methods="3" coveredmethods="3"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="7" count="5" type="stmt"/>
+        <line num="8" count="5" type="stmt"/>
+        <line num="11" count="5" type="stmt"/>
+        <line num="12" count="4" type="stmt"/>
+        <line num="15" count="5" type="cond" truecount="3" falsecount="1"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+      </file>
+      <file name="main.ts" path="E:\uni\WHS\shipping-service\src\main.ts">
+        <metrics statements="10" coveredstatements="10" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="2" count="2" type="stmt"/>
+        <line num="3" count="2" type="stmt"/>
+        <line num="6" count="2" type="stmt"/>
+        <line num="8" count="2" type="stmt"/>
+        <line num="32" count="2" type="stmt"/>
+        <line num="33" count="2" type="stmt"/>
+        <line num="34" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="35" count="2" type="stmt"/>
+        <line num="37" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.commands">
+      <metrics statements="78" coveredstatements="78" conditionals="46" coveredconditionals="35" methods="10" coveredmethods="10"/>
+      <file name="dispatch-vehicle.command.ts" path="E:\uni\WHS\shipping-service\src\commands\dispatch-vehicle.command.ts">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+      </file>
+      <file name="dispatch-vehicle.handler.ts" path="E:\uni\WHS\shipping-service\src\commands\dispatch-vehicle.handler.ts">
+        <metrics statements="20" coveredstatements="20" conditionals="14" coveredconditionals="11" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="14" count="9" type="stmt"/>
+        <line num="17" count="9" type="cond" truecount="6" falsecount="2"/>
+        <line num="18" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="19" count="9" type="stmt"/>
+        <line num="23" count="2" type="stmt"/>
+        <line num="29" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="35" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="38" count="1" type="stmt"/>
+      </file>
+      <file name="handle-picking-completed.command.ts" path="E:\uni\WHS\shipping-service\src\commands\handle-picking-completed.command.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+      </file>
+      <file name="handle-picking-completed.handler.ts" path="E:\uni\WHS\shipping-service\src\commands\handle-picking-completed.handler.ts">
+        <metrics statements="23" coveredstatements="23" conditionals="16" coveredconditionals="12" methods="3" coveredmethods="3"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="9" count="4" type="stmt"/>
+        <line num="10" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="14" count="4" type="stmt"/>
+        <line num="17" count="9" type="stmt"/>
+        <line num="21" count="9" type="cond" truecount="6" falsecount="2"/>
+        <line num="22" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="23" count="9" type="stmt"/>
+        <line num="27" count="2" type="stmt"/>
+        <line num="28" count="2" type="stmt"/>
+        <line num="32" count="2" type="stmt"/>
+        <line num="38" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="39" count="1" type="stmt"/>
+        <line num="42" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="43" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="50" count="1" type="stmt"/>
+        <line num="55" count="2" type="stmt"/>
+      </file>
+      <file name="index.ts" path="E:\uni\WHS\shipping-service\src\commands\index.ts">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="2" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+      </file>
+      <file name="register-vehicle.command.ts" path="E:\uni\WHS\shipping-service\src\commands\register-vehicle.command.ts">
+        <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+      </file>
+      <file name="register-vehicle.handler.ts" path="E:\uni\WHS\shipping-service\src\commands\register-vehicle.handler.ts">
+        <metrics statements="22" coveredstatements="22" conditionals="16" coveredconditionals="12" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="9" count="4" type="stmt"/>
+        <line num="12" count="4" type="stmt"/>
+        <line num="15" count="9" type="stmt"/>
+        <line num="18" count="9" type="cond" truecount="6" falsecount="2"/>
+        <line num="19" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="20" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="21" count="9" type="stmt"/>
+        <line num="25" count="2" type="stmt"/>
+        <line num="29" count="2" type="stmt"/>
+        <line num="30" count="2" type="stmt"/>
+        <line num="33" count="2" type="stmt"/>
+        <line num="37" count="2" type="stmt"/>
+        <line num="39" count="2" type="stmt"/>
+        <line num="41" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.queries">
+      <metrics statements="21" coveredstatements="21" conditionals="8" coveredconditionals="6" methods="4" coveredmethods="4"/>
+      <file name="get-all-vehicles.handler.ts" path="E:\uni\WHS\shipping-service\src\queries\get-all-vehicles.handler.ts">
+        <metrics statements="8" coveredstatements="8" conditionals="4" coveredconditionals="3" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="12" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="16" count="1" type="stmt"/>
+      </file>
+      <file name="get-all-vehicles.query.ts" path="E:\uni\WHS\shipping-service\src\queries\get-all-vehicles.query.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="5" type="stmt"/>
+      </file>
+      <file name="get-pending-shipments.handler.ts" path="E:\uni\WHS\shipping-service\src\queries\get-pending-shipments.handler.ts">
+        <metrics statements="8" coveredstatements="8" conditionals="4" coveredconditionals="3" methods="2" coveredmethods="2"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="8" count="4" type="stmt"/>
+        <line num="11" count="4" type="stmt"/>
+        <line num="16" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="20" count="1" type="stmt"/>
+      </file>
+      <file name="get-pending-shipments.query.ts" path="E:\uni\WHS\shipping-service\src\queries\get-pending-shipments.query.ts">
+        <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="5" type="stmt"/>
+      </file>
+      <file name="index.ts" path="E:\uni\WHS\shipping-service\src\queries\index.ts">
+        <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="2" count="3" type="stmt"/>
+        <line num="4" count="3" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.schemas">
+      <metrics statements="17" coveredstatements="17" conditionals="4" coveredconditionals="3" methods="1" coveredmethods="1"/>
+      <file name="pending-shipment.schema.ts" path="E:\uni\WHS\shipping-service\src\schemas\pending-shipment.schema.ts">
+        <metrics statements="9" coveredstatements="9" conditionals="4" coveredconditionals="3" methods="1" coveredmethods="1"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="7" count="5" type="stmt"/>
+        <line num="9" count="5" type="stmt"/>
+        <line num="12" count="5" type="stmt"/>
+        <line num="15" count="5" type="stmt"/>
+        <line num="18" count="5" type="stmt"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="21" count="5" type="cond" truecount="3" falsecount="1"/>
+        <line num="24" count="5" type="stmt"/>
+      </file>
+      <file name="vehicle.schema.ts" path="E:\uni\WHS\shipping-service\src\schemas\vehicle.schema.ts">
+        <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="5" type="stmt"/>
+        <line num="7" count="5" type="stmt"/>
+        <line num="9" count="5" type="stmt"/>
+        <line num="12" count="5" type="stmt"/>
+        <line num="15" count="5" type="stmt"/>
+        <line num="18" count="5" type="stmt"/>
+        <line num="25" count="5" type="stmt"/>
+        <line num="28" count="5" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.services">
+      <metrics statements="36" coveredstatements="36" conditionals="22" coveredconditionals="18" methods="3" coveredmethods="3"/>
+      <file name="shipment-assignment.service.ts" path="E:\uni\WHS\shipping-service\src\services\shipment-assignment.service.ts">
+        <metrics statements="36" coveredstatements="36" conditionals="22" coveredconditionals="18" methods="3" coveredmethods="3"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="3" count="4" type="stmt"/>
+        <line num="4" count="4" type="stmt"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="4" type="stmt"/>
+        <line num="10" count="4" type="stmt"/>
+        <line num="13" count="4" type="stmt"/>
+        <line num="14" count="9" type="stmt"/>
+        <line num="17" count="9" type="cond" truecount="6" falsecount="2"/>
+        <line num="18" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="20" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="21" count="9" type="stmt"/>
+        <line num="29" count="5" type="stmt"/>
+        <line num="33" count="5" type="stmt"/>
+        <line num="34" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="35" count="3" type="stmt"/>
+        <line num="36" count="3" type="stmt"/>
+        <line num="37" count="3" type="stmt"/>
+        <line num="38" count="3" type="stmt"/>
+        <line num="39" count="3" type="stmt"/>
+        <line num="44" count="3" type="stmt"/>
+        <line num="48" count="2" type="stmt"/>
+        <line num="51" count="2" type="stmt"/>
+        <line num="55" count="3" type="stmt"/>
+        <line num="59" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="60" count="1" type="stmt"/>
+        <line num="63" count="2" type="stmt"/>
+        <line num="67" count="2" type="stmt"/>
+        <line num="68" count="3" type="stmt"/>
+        <line num="73" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="74" count="2" type="stmt"/>
+        <line num="75" count="2" type="stmt"/>
+        <line num="78" count="2" type="stmt"/>
+        <line num="80" count="1" type="stmt"/>
+        <line num="83" count="1" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>

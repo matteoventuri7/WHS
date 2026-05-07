@@ -68,6 +68,19 @@ describe('Order Command & Query Handlers', () => {
       });
       expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
+
+    it('should not emit OrderPlaced if order is not created properly', async () => {
+      const originalImpl = orderModel.prototype;
+      orderModel.mockImplementationOnce(() => undefined);
+      
+      const items = [{ productId: 'p1', quantity: 10 }];
+      try {
+        await handler.execute(new PlaceOrderCommand(items));
+      } catch (e) {
+        // expect throw or graceful fail depending on handler
+      }
+      expect(kafkaClient.emit).not.toHaveBeenCalled();
+    });
   });
 
   describe('CancelOrderHandler', () => {
