@@ -1,0 +1,3 @@
+FROM fluent/fluent-bit:latest
+COPY fluent-bit.conf /fluent-bit/etc/fluent-bit.conf
+COPY clean_ansi.lua /fluent-bit/etc/clean_ansi.lua

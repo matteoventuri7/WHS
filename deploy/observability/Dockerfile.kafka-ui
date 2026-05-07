@@ -1,0 +1,2 @@
+FROM provectuslabs/kafka-ui:latest
+COPY kafka-ui.yml /etc/kafkaui/dynamic_config.yaml

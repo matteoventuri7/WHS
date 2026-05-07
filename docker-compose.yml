@@ -27,25 +27,24 @@ services:
       start_period: 30s
 
   kafka-init:
-    image: apache/kafka:latest
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.kafka-init
     depends_on:
       kafka:
         condition: service_healthy
-    volumes:
-      - ./scripts/init-kafka-topics.sh:/init-kafka-topics.sh
     environment:
       - KAFKA_BROKER=kafka:9092
-    entrypoint: ["/bin/bash", "/init-kafka-topics.sh"]
 
   kafka-ui:
     container_name: kafka-ui
-    image: provectuslabs/kafka-ui:latest
+    build:
+      context: ./deploy/observability
+      dockerfile: Dockerfile.kafka-ui
     ports:
       - 8090:8080
     environment:
       DYNAMIC_CONFIG_ENABLED: 'true'
-    volumes:
-      - ./deploy/observability/kafka-ui.yml:/etc/kafkaui/dynamic_config.yaml
 
   openobserve:
     image: openobserve/openobserve:latest
@@ -65,12 +64,11 @@ services:
       start_period: 20s
 
   fluent-bit:
-    image: fluent/fluent-bit:latest
+    build:
+      context: ./deploy/observability
+      dockerfile: Dockerfile.fluent-bit
     ports:
       - "24224:24224"
-    volumes:
-      - ./deploy/observability/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
-      - ./deploy/observability/clean_ansi.lua:/fluent-bit/etc/clean_ansi.lua:ro
     depends_on:
       openobserve:
         condition: service_started

@@ -1,0 +1,3 @@
+FROM apache/kafka:latest
+COPY init-kafka-topics.sh /init-kafka-topics.sh
+ENTRYPOINT ["/bin/bash", "/init-kafka-topics.sh"]
