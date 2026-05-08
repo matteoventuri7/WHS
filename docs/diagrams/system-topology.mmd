@@ -1,7 +1,13 @@
 graph TB
-    %% Frontend
-    subgraph Frontend["Frontend (Next.js :3000)"]
-        UI[Dashboard UI]
+    %% Browser Client
+    Browser["🖥️ Browser Client"]
+
+    %% Frontend (API Gateway / BFF)
+    subgraph Frontend["Frontend — API Gateway / BFF (Next.js :3000)"]
+        UI[Dashboard UI — React SPA]
+        Rewrites[Next.js Rewrites — /api/* proxy]
+        SSE[SSE Endpoint — /api/events]
+        StatusAPI[Health Aggregator — /api/status]
     end
 
     %% Message Broker
@@ -12,7 +18,7 @@ graph TB
     end
 
     %% Core Microservices
-    subgraph Core["Core Microservices"]
+    subgraph Core["Core Microservices (rete Docker interna)"]
         direction TB
         INV[Inventory Service :3001]
         ORD[Order Service :3002]
@@ -45,11 +51,22 @@ graph TB
         KUI[Kafka UI :8090]
     end
 
-    %% Frontend connections
-    UI -->|REST + WebSocket| INV
-    UI -->|REST + WebSocket| ORD
-    UI -->|REST + WebSocket| PICK
-    UI -->|REST + WebSocket| SHIP
+    %% Browser to Frontend (unico punto d'accesso pubblico)
+    Browser -->|"HTTP /api/*"| Rewrites
+    Browser -->|"SSE /api/events"| SSE
+
+    %% Frontend proxy to Core Services (server-side rewrites, rete interna)
+    Rewrites -->|proxy| INV
+    Rewrites -->|proxy| ORD
+    Rewrites -->|proxy| PICK
+    Rewrites -->|proxy| SHIP
+    Rewrites -->|proxy| INVSIM
+    Rewrites -->|proxy| SHIPSIM
+    Rewrites -->|proxy| ORDSIM
+    Rewrites -->|proxy| PICKSIM
+
+    %% SSE consumes from Kafka
+    SSE -->|Kafka consumer| Topics
 
     %% Core to Kafka
     INV <-->|pub/sub| Topics
@@ -57,7 +74,7 @@ graph TB
     PICK <-->|pub/sub| Topics
     SHIP <-->|pub/sub| Topics
 
-    %% Simulators to Services (HTTP only)
+    %% Simulators to Services (HTTP only, rete interna)
     INVSIM -->|HTTP| INV
     SHIPSIM -->|HTTP| SHIP
     ORDSIM -->|HTTP| ORD

@@ -1,4 +1,4 @@
-﻿# WHS — Software Architecture Documentation
+# WHS — Software Architecture Documentation
 
 **Project:** WHS — Event-Driven Warehouse Management System
 
@@ -36,7 +36,7 @@ WHS is a simulator of a **Warehouse Management System** (WMS) designed to demons
 - **Four simulator services** that emulate human operators or external systems by generating workload: `inventory-simulator-service`, `order-simulator-service`, `picking-simulator-service`, `shipping-simulator-service`.
 - **One Next.js frontend** acting as a domain dashboard and operator console.
 
-Asynchronous communication is mediated by **Apache Kafka** in **KRaft** mode; each core service owns a private **MongoDB** database and exposes a **Socket.IO** gateway plus a small **REST** surface. Observability is implemented as a log-centric pipeline using **Fluent Bit** and **OpenObserve**, with **Kafka UI** providing topic introspection.
+Asynchronous communication is mediated by **Apache Kafka** in **KRaft** mode; each core service owns a private **MongoDB** database and exposes a small **REST** surface. The frontend receives real-time updates through **Server-Sent Events (SSE)** via a Kafka consumer endpoint. Observability is implemented as a log-centric pipeline using **Fluent Bit** and **OpenObserve**, with **Kafka UI** providing topic introspection.
 
 The goal of the report is to make the *architecturally significant* decisions and patterns explicit, justify them against measurable quality attributes, and document the runtime topology in **Component & Connector** notation, the deployment process, the observability stack, and the automated testing strategy.
 
@@ -46,16 +46,16 @@ Headline patterns adopted:
 - **Event-Driven Architecture** with **choreography**.
 - **Event Sourcing** design: Kafka holds the authoritative event log; MongoDB stores derived read state.
 - **CQRS (code-level)** via `@nestjs/cqrs`: CommandBus/QueryBus segregation in every core service, with thin controllers as dispatchers.
-- **Backend for Frontend**: Next.js fronts the operator UX and aggregates per-service data.
-- **Real-time push to UI** via Socket.IO gateways embedded in each core service.
+- **Backend for Frontend / API Gateway**: Next.js acts as the single entry point for the browser, proxying all `/api/*` requests to backend microservices via server-side rewrites. No microservice URL is exposed to the client, making the system deploy-ready.
+- **Real-time push to UI** via Server-Sent Events (SSE) from a Kafka consumer endpoint in the frontend.
 
 ---
 
-## 2. Architectural Drivers
+## 3. Architectural Drivers
 
 Architectural drivers are the *combination* of business goals, quality attributes, and constraints that shape the most consequential design decisions. They are documented here as **Architecturally Significant Requirements (ASRs)** following the *Stimulus / Source / Environment / Response / Response Measure* template typical of the **Quality Attribute Workshop (QAW)** and **ATAM** literature.
 
-### 2.1. Business Goals & Context
+### 3.1. Business Goals & Context
 
 The primary business goal is *didactical demonstration*: the architecture must showcase, end to end, the patterns and trade-offs introduced in the course, while remaining small enough to be operated and reasoned about by a single developer on a single machine. Within that umbrella, the following sub-goals are explicit:
 
@@ -64,7 +64,7 @@ The primary business goal is *didactical demonstration*: the architecture must s
 - B3. Allow a *“god mode”* operator (the user) to exercise both the **happy path** and the **exception flows** (out-of-stock suspension, cancellation, restock-driven resume).
 - B4. Provide **runnable simulators** so that the system can be demonstrated without manual interaction.
 
-### 2.2. Quality Attributes (Prioritized)
+### 3.2. Quality Attributes (Prioritized)
 
 The following attributes are treated as **drivers**. Performance and security were explicitly *deprioritized* given the academic scope and are discussed as limitations in §15.
 
@@ -78,7 +78,7 @@ The following attributes are treated as **drivers**. Performance and security we
 | 6 | **Simulability**        | The system must run end-to-end without human input through the simulator services.                             |
 | 7 | **Deployability**       | A single command (`npm run docker:start`) must bring the entire stack up reproducibly.                         |
 
-### 2.3. ASR Scenarios
+### 3.3. ASR Scenarios
 
 #### ASR-1 — Modifiability (adding a new event)
 
@@ -150,7 +150,7 @@ The following attributes are treated as **drivers**. Performance and security we
 | **Response**      | `npm run docker:start` |
 | **Response Measure** | Entire stack (Kafka + 4 Mongo + 4 core + 4 simulators + frontend + observability) reaches steady state with no manual fix-ups |
 
-### 2.4. Constraints
+### 3.4. Constraints
 
 - **C1.** Single developer, academic budget → no managed services, no horizontal multi-host setup.
 - **C2.** Local-first deployment → Docker Compose, no Kubernetes manifests in scope (though the architecture is designed to be K8s-ready).
@@ -160,13 +160,13 @@ The following attributes are treated as **drivers**. Performance and security we
 
 ---
 
-## 3. Methods For Gathering Architectural Drivers
+## 4. Methods For Gathering Architectural Drivers
 
 WHS is a **rework** of an earlier project that addressed the WMS domain but with a narrower scope and a different architectural approach: the original system consisted of just two microservices — a **picking service** and a **picking handler** — using message-driven communication. The decision to rebuild the system from scratch was driven by a specific research question: **how do event-driven patterns and a finer microservice granularity impact quality attributes such as performance, availability, loose coupling, and observability** compared to a less decomposed, message-driven design? By expanding the domain to the full warehouse lifecycle (inbound, inventory, orders, picking, shipping) and decomposing it into four bounded-context-aligned services with a durable event log (Kafka) and choreography-based coordination, the rework provides a concrete basis for comparing the two approaches and drawing architectural lessons.
 
 The drivers in §2 emerged from pain points observed in the original project (tight coupling between modules, difficulty testing in isolation, lack of observability).
 
-### 3.1. Prior Project & Real-WMS Domain Study
+### 4.1. Prior Project & Real-WMS Domain Study
 
 The first input was the **existing project** itself. The original system covered only the **picking** sub-domain, split across two microservices (picking service and picking handler). While this provided a starting point for understanding message-driven communication between services, the domain scope was too narrow to exercise the full range of architectural patterns targeted by the rework.
 
@@ -174,7 +174,7 @@ The rework therefore **expanded the domain** to the complete warehouse lifecycle
 
 Critically, the rework was motivated by a desire to explore the trade-offs of a more granular, event-driven decomposition: the original two-service design concentrated most logic in a small number of components, limiting independent scalability and making it harder to reason about failure boundaries. By expanding to four fine-grained services connected through Kafka event choreography, the new architecture allows a direct comparison of availability (per-service failure isolation), performance (asynchronous vs. coupled processing), modifiability (single-service changes), and observability (centralized event log + log aggregation). These research-oriented goals directly shaped the quality-attribute priorities in §2.2.
 
-### 3.2. Iterative Prototyping (on the Reworked Codebase)
+### 4.2. Iterative Prototyping (on the Reworked Codebase)
 
 The second input was empirical: starting from the domain knowledge inherited from the original project, each iteration of the *new* codebase exposed quality-attribute issues that were then fed back into the architecture.
 
@@ -188,7 +188,7 @@ The second input was empirical: starting from the domain knowledge inherited fro
 
 This *grounded* the drivers: each ASR in §2 traces back either to a limitation of the original project or to a concrete iteration of the rework that either failed without it or was simplified by it.
 
-### 3.3. ADD-style Decomposition
+### 4.3. ADD-style Decomposition
 
 The third input was an application of **Attribute-Driven Design (ADD)**: starting from the prioritized quality attributes, each architectural decision was justified by the attribute it was meant to satisfy, and the *next* decomposition step was driven by the *next* attribute on the list.
 
@@ -202,11 +202,11 @@ For instance:
 
 ---
 
-## 4. Architectural Patterns
+## 5. Architectural Patterns
 
 This section enumerates the architectural and design patterns actually used in the codebase, with citations to source files. ADRs (§14) discuss the *decision* aspects in more detail; this section focuses on *what* the patterns are and *where* they manifest.
 
-### 4.1. Microservices
+### 5.1. Microservices
 
 Each bounded context is a separately deployable NestJS application with its own `Dockerfile`, `package.json`, and Mongo database.
 
@@ -214,31 +214,31 @@ Each bounded context is a separately deployable NestJS application with its own 
 - Each service has a separate Mongo container in docker-compose.yml: `inventory-db` (27017), `order-db` (27018), `picking-db` (27019), `shipping-db` (27020).
 - No service shares a database with any other.
 
-### 4.2. Event-Driven Architecture (EDA) with Choreography
+### 5.2. Event-Driven Architecture (EDA) with Choreography
 
 Services do not call each other synchronously over REST. They communicate by *publishing* domain events to Kafka topics and *reacting* to them. There is no central orchestrator: each service decides autonomously what to do when it receives an event.
 
 In NestJS terms, the producer side uses `ClientKafka` inside a `CommandHandler`, while the consumer side uses `@EventPattern(...)` on the controller to dispatch to the `CommandBus`.
 
-### 4.3. Event Sourcing
+### 5.3. Event Sourcing
 
 The system adopts an *event-sourcing* without committing to a full event-sourced data model: **Kafka is the authoritative event log**, MongoDB stores **derived read state** that each service maintains by consuming its events.
 
 In practice, replay is feasible because Kafka retains the events; the schemas in §6 are derivable from event sequences.
 
-### 4.4. CQRS — Code-Level (via `@nestjs/cqrs`)
+### 5.4. CQRS — Code-Level (via `@nestjs/cqrs`)
 
 Every core microservice adopts the **CQRS (Command Query Responsibility Segregation)** pattern *at code level* through the `@nestjs/cqrs` module. Write operations (order placement, Kafka event handling, status updates) are modelled as **Command + CommandHandler** pairs; read operations (data queries for the UI) are modelled as **Query + QueryHandler** pairs.
 
 The controller is a **thin dispatcher**: it does not contain business logic; it merely translates HTTP requests and Kafka messages into command/query objects and dispatches them via the `CommandBus` or `QueryBus`.
 
-Each `CommandHandler` encapsulates the full business logic for a single use-case: Kafka emission, MongoDB writes, and WebSocket notification.
+Each `CommandHandler` encapsulates the full business logic for a single use-case: Kafka emission and MongoDB writes.
 
 **Important:** both read and write paths share the same MongoDB instance — there is no infrastuctural separation between a write store and a read store. The CQRS is purely a *code-organization* concern that improves testability (handlers can be unit-tested in isolation from the controller) and modifiability (adding a new command does not touch the controller's existing methods).
 
 The canonical file layout per service keeps controllers thin and separates write handlers from read handlers under `commands/` and `queries/`.
 
-### 4.5. Database-per-Service
+### 5.5. Database-per-Service
 
 Each service has a private MongoDB instance with a service-specific connection string injected via `MONGODB_URI`:
 
@@ -246,21 +246,85 @@ The service-specific MongoDB connection string is injected through `MONGODB_URI`
 
 This guarantees independent schema evolution and enables the simulability driver (a service can be reset by clearing only its own database, see `npm run docker:clean:db`).
 
-### 4.6. Backend for Frontend
+### 5.6. Backend for Frontend / API Gateway
 
-The Next.js frontend at frontend/ acts as a slim BFF: it aggregates data from the four core services for the operator dashboards, and exposes its own API routes that proxy to backend services. The mapping is configured at startup via `PORT_TO_SERVICE`:
+The Next.js frontend at `frontend/` acts as both a **BFF** and an **API Gateway**: it aggregates data from the four core services for the operator dashboards, and proxies all API calls to backend microservices via **Next.js rewrites** configured in `next.config.ts`. The backend service URLs are injected as **server-side environment variables** (e.g., `INVENTORY_SERVICE_URL`, `ORDER_SERVICE_URL`), validated at startup with a `requireEnv()` helper — they are never exposed to the browser.
 
-The frontend is configured with a `PORT_TO_SERVICE` mapping so it can proxy requests to the backend services.
+All frontend API calls go through `/api/*` paths (e.g., `/api/inventory/items`), which are rewritten server-side to the actual backend service URLs:
 
-### 4.7. Real-Time Push via WebSocket Gateways
+| Browser Path | Backend Destination (server-side) |
+|---|---|
+| `/api/inventory/:path*` | `INVENTORY_SERVICE_URL/inventory/:path*` |
+| `/api/orders/:path*` | `ORDER_SERVICE_URL/orders/:path*` |
+| `/api/picking/:path*` | `PICKING_SERVICE_URL/picking/:path*` |
+| `/api/shipping/:path*` | `SHIPPING_SERVICE_URL/shipping/:path*` |
+| `/api/inbound/:path*` | `INBOUND_SIMULATOR_URL/inbound/:path*` |
+| `/api/dispatch/:path*` | `DISPATCH_SIMULATOR_URL/dispatch/:path*` |
+| `/api/order-simulator/:path*` | `ORDER_SIMULATOR_URL/order-simulator/:path*` |
+| `/api/picking-simulator/:path*` | `PICKING_SIMULATOR_URL/picking-simulator/:path*` |
 
-Each core service embeds a Socket.IO gateway emitting a `dataChanged` event whenever its read state mutates. The frontend listens and triggers re-fetches.
+In addition to rewrites, the frontend exposes two **API route handlers** implemented as Next.js route files:
 
-Each core service exposes a Socket.IO gateway that emits `dataChanged` whenever the read model changes.
+- `/api/events` — SSE endpoint that connects to Kafka and streams domain events to the browser (see §5.7).
+- `/api/status` — Health check aggregator that probes all backend services and infrastructure components, returning a consolidated status report.
 
-This avoids polling and keeps the UI eventually consistent with the read model (cf. §11 on observability).
+This pattern ensures:
 
-### 4.8. Initialization Container Pattern (`kafka-init`)
+- **Deploy-readiness:** Only port 3000 (the frontend) needs to be exposed publicly; all microservice ports remain internal to the Docker network.
+- **Security:** No microservice URL is visible to the client browser — a change from the original architecture where `localhost:300x` URLs were hardcoded in the frontend code.
+- **Portability:** Switching from local development to production requires only changing the environment variables (e.g., from `http://localhost:3001` to `http://inventory-service:3001` or a Kubernetes Service DNS name).
+
+### 5.7. Real-Time Push via Server-Sent Events (SSE)
+
+The frontend exposes an `/api/events` endpoint that connects to Kafka as a consumer and streams events to the browser via SSE. The `useRealtimeSSE(topics, fetchFn)` hook subscribes to specific Kafka topics and triggers data re-fetches when matching events arrive.
+
+This replaces the previous WebSocket/Socket.IO approach with a simpler, unidirectional SSE stream. It avoids polling and keeps the UI eventually consistent with the read model (cf. §11 on observability).
+
+#### 5.7.1. Real-Time Update Flow (Example: Order Creation)
+
+The following sequence diagram illustrates the complete flow of a real-time order update triggered by the order simulator:
+
+```mermaid
+sequenceDiagram
+    participant SIM as Order Simulator
+    participant OS as Order Service
+    participant DB as MongoDB
+    participant KF as Kafka
+    participant FE as Frontend /api/events
+    participant BR as Browser
+    
+    SIM->>OS: POST /orders (ogni 15s)
+    OS->>DB: Salva ordine
+    OS->>KF: Emette OrderPlaced
+    
+    FE->>KF: Consuma da topic
+    KF->>FE: OrderPlaced event
+    FE->>BR: SSE stream (push)
+    
+    BR->>BR: useRealtimeSSE intercetta
+    BR->>OS: fetch('/api/orders')
+    OS->>DB: Query MongoDB
+    DB->>OS: Lista ordini
+    OS->>BR: JSON response
+    
+    BR->>BR: React aggiorna stato
+    BR->>BR: Pagina si aggiorna ✨
+    
+    Note over BR: Nuovo ordine visibile!
+```
+
+**Key observations:**
+
+- The simulator drives order creation at regular intervals (e.g., every 15 seconds).
+- The Order Service persists the order in MongoDB and immediately emits the `OrderPlaced` event to Kafka.
+- The frontend's `/api/events` endpoint continuously consumes from Kafka, acting as a bridge between the broker and the browser.
+- When an event arrives at the frontend, it is streamed to the browser via **SSE** — a unidirectional, server-push mechanism. No polling is required.
+- The `useRealtimeSSE(topics, fetchFn)` hook intercepts the SSE message, verifies that it matches one of the subscribed topics, and triggers `fetchOrders()` to refresh the UI data.
+- React detects the state change and re-renders the orders list, making the new order immediately visible to the operator.
+
+This entire flow is **asynchronous and decoupled**: the Order Service does not wait for the UI to acknowledge the event; it simply produces to Kafka and continues. The frontend independently consumes and pushes to the browser. This decoupling is fundamental to the system's resilience and scalability.
+
+### 5.8. Initialization Container Pattern (`kafka-init`)
 
 At startup, a dedicated short-lived container creates all 13 topics with `--if-not-exists` before any service is allowed to start. All core services declare:
 
@@ -268,33 +332,33 @@ All core services depend on `kafka-init` completing successfully before they sta
 
 This eliminates a documented race condition where consumers could subscribe to non-existent topics and crash. See ADR-006 (§14).
 
-### 4.9. Idempotent Consumer (cancellation)
+### 5.9. Idempotent Consumer (cancellation)
 
 The cancellation flow tolerates duplicate or out-of-order events: `Order Service` checks the current order state before transitioning, and `Picking Service` only cancels a task if it is `PENDING`:
 
 The cancellation logic is idempotent: already-cancelled orders are left untouched, and allocated orders also trigger a picking-task cancellation event.
 
-### 4.10. Simulator / Test-Double Pattern
+### 5.10. Simulator / Test-Double Pattern
 
 The four simulator services are not part of the domain — they are *active test doubles* that exercise the real services in real environments. Each is a thin NestJS app that drives the core services exclusively over their public REST APIs, without interacting with Kafka directly. This satisfies the *simulability* driver without polluting the production code paths.
 
-### 4.11. Health Check Endpoint Convention
+### 5.11. Health Check Endpoint Convention
 
 Every core service exposes a health check that returns `{ status: 'ok', service: '<name>' }`. This is used both by humans and as an e2e smoke test (see §12).
 
 ---
 
-## 5. Component & Connector View
+## 6. Component & Connector View
 
 The **Component & Connector (C&C)** viewtype models the runtime structure of the system as a graph of *components* (units with runtime presence) connected by *connectors* (typed interaction mechanisms). It is the most relevant view for an event-driven system because it makes the asynchronous traffic explicit.
 
-### 5.1. Component Catalog
+### 6.1. Component Catalog
 
-| Component (Container)             | Type                | Port (host) | Role                                                                   |
+| Component (Container)             | Type                | Port (host) | Role                                                                    |
 |-----------------------------------|---------------------|-------------|-------------------------------------------------------------------------|
-| `frontend`                        | Next.js app         | 3000        | Operator dashboards & BFF                                              |
+| `frontend`                        | Next.js app         | 3000        | Operator dashboards / API Gateway / BFF                                                       |
 | `inventory-service`               | NestJS microservice | 3001        | Inventory + reservations + inbound goods                                |
-| `order-service`                   | NestJS microservice | 3002        | Order lifecycle and allocation orchestration (per-order)               |
+| `order-service`                   | NestJS microservice | 3002        | Order lifecycle and allocation orchestration (per-order)                |
 | `picking-service`                 | NestJS microservice | 3003        | Picking task lifecycle                                                  |
 | `shipping-service`                | NestJS microservice | 3004        | Vehicle assignment and dispatch                                         |
 | `inventory-simulator-service`     | NestJS service      | 3005        | Triggers inbound goods receipt                                          |
@@ -311,21 +375,21 @@ The **Component & Connector (C&C)** viewtype models the runtime structure of the
 | `fluent-bit`                      | Log shipper         | 24224 (in)  | Receives container logs over fluentd protocol, filters, forwards        |
 | `openobserve`                     | Log/observability   | 5080        | Stores and queries aggregated logs                                      |
 
-### 5.2. Connector Catalog
+### 6.2. Connector Catalog
 
 | Connector type                  | Direction                                    | Wire protocol           |
 |---------------------------------|----------------------------------------------|-------------------------|
 | **Kafka pub/sub**               | Producer → Topic → Consumer                  | Kafka binary, port 9092 |
-| **REST**                        | Frontend → Service / Simulator → Service     | HTTP/JSON               |
-| **WebSocket**                   | Service → Frontend                           | Socket.IO over HTTP     |
+| **HTTP (browser → frontend)**   | Browser → Frontend (API Gateway)             | HTTP/JSON on port 3000  |
+| **REST proxy (frontend → backend)** | Frontend rewrites → Core / Simulator Services | HTTP/JSON (server-side, Docker-internal) |
+| **REST (simulator → service)**  | Simulator → Core Service                     | HTTP/JSON (Docker-internal) |
+| **SSE**                         | Frontend `/api/events` → Browser             | Server-Sent Events over HTTP |
 | **Mongo wire protocol**         | Service → its own DB                         | TCP 27017 (per container) |
 | **Fluentd forward**             | Container stdout → fluent-bit                | Fluentd on TCP 24224    |
 | **HTTP JSON ingest**            | fluent-bit → openobserve                     | HTTP POST `/api/.../whs_logs/_json` |
 | **Kafka admin TCP**             | kafka-ui → kafka                             | Kafka admin protocol    |
 
-### 5.3. C&C Diagram
-
-This new C&C view, specifically authored for this report, is typed: each connector is annotated with the protocol used.
+### 6.3. C&C Diagram
 
 ```mermaid
 flowchart LR
@@ -333,11 +397,14 @@ flowchart LR
         U["UI"]
     end
 
-    subgraph FE["frontend (Next.js :3000)"]
-        FEAPI["BFF / Pages"]
+    subgraph FE["frontend — API Gateway / BFF (Next.js :3000)"]
+        FEAPI["Dashboard Pages"]
+        REWRITES["Next.js Rewrites\n/api/* → backend"]
+        SSEP["/api/events (SSE)"]
+        STATUS["/api/status"]
     end
 
-    subgraph Core["Core Services"]
+    subgraph Core["Core Services (Docker-internal)"]
         direction TB
         INV["inventory-service :3001"]
         ORD["order-service :3002"]
@@ -371,15 +438,18 @@ flowchart LR
         KUI["kafka-ui :8090"]
     end
 
-    U -- "HTTP" --> FEAPI
-    FEAPI -- "REST" --> INV
-    FEAPI -- "REST" --> ORD
-    FEAPI -- "REST" --> PICK
-    FEAPI -- "REST" --> SHIP
-    INV -- "WebSocket" --> FEAPI
-    ORD -- "WebSocket" --> FEAPI
-    PICK -- "WebSocket" --> FEAPI
-    SHIP -- "WebSocket" --> FEAPI
+    U -- "HTTP /api/*" --> REWRITES
+    U -- "SSE /api/events" --> SSEP
+    SSEP -- "SSE stream" --> U
+    REWRITES -- "proxy" --> INV
+    REWRITES -- "proxy" --> ORD
+    REWRITES -- "proxy" --> PICK
+    REWRITES -- "proxy" --> SHIP
+    REWRITES -- "proxy" --> INVSIM
+    REWRITES -- "proxy" --> SHIPSIM
+    REWRITES -- "proxy" --> ORDSIM
+    REWRITES -- "proxy" --> PICKSIM
+    SSEP -- "Kafka consumer" --> TOPICS
 
     INV <-- "Kafka pub/sub" --> TOPICS
     ORD <-- "Kafka pub/sub" --> TOPICS
@@ -407,44 +477,45 @@ flowchart LR
     KUI -. "Kafka admin" .-> TOPICS
 ```
 
-### 5.4. Per-Component Detail
+### 6.4. Per-Component Detail
 
-#### 5.4.1. `frontend`
+#### 6.4.1. `frontend` (API Gateway / BFF)
 
-- **Role:** operator dashboards (Orders, Inventory, Picking, Shipping, Status, Inbound), plus an internal API used to proxy backend calls.
-- **Inbound connectors:** HTTP from the browser; WebSocket events from each core service.
-- **Outbound connectors:** REST to the four core services; WebSocket subscriptions.
+- **Role:** single public entry point (API Gateway) for the browser. Serves operator dashboards (Orders, Inventory, Picking, Shipping, Status, Inbound) and proxies all `/api/*` requests to the corresponding backend services via Next.js rewrites. Also exposes `/api/events` (SSE) and `/api/status` (health aggregator) as Next.js API route handlers.
+- **Inbound connectors:** HTTP from the browser on port 3000 — the *only* port exposed externally.
+- **Outbound connectors:** REST proxy to the four core services and four simulators (via server-side rewrites using environment variables); Kafka consumer for the SSE endpoint; SSE stream back to the browser.
+- **API Gateway semantics:** backend service URLs (`INVENTORY_SERVICE_URL`, `ORDER_SERVICE_URL`, etc.) are injected as server-side environment variables and validated at startup with `requireEnv()`. They are *never* sent to the client. This decouples the deployment topology from the frontend code: the same Next.js build works against `localhost:300x` (development), Docker service names (compose), and Kubernetes DNS names (production).
 - **Dependencies:** declared in docker-compose.yml — `frontend` waits for Kafka, `kafka-init`, and all core/simulator services before starting (only for orderly UX bootstrap; the UI can technically render without backends).
 
-#### 5.4.2. `inventory-service`
+#### 6.4.2. `inventory-service`
 
 - **Schema:** a single `Inventory` aggregate keyed by `(productId, location)` with `quantity` and `reservedQuantity` (inventory.schema.ts).
 - **Consumed events:** `OrderPlaced`, `OrderCancelled`.
 - **Produced events:** `ItemStored`, `InventoryAllocated`, `OutOfStock`.
 - **Behavior:** owns stock levels and reservation logic. On `OrderPlaced`, the `HandleOrderPlacedHandler` iterates the requested items and attempts to reserve sufficient quantity at a matching location; if all items are satisfiable it emits `InventoryAllocated` (carrying the resolved allocations), otherwise it emits `OutOfStock`. When goods arrive from the simulator, the `ReceiveGoodsHandler` increments the stored quantity at the specified location and emits `ItemStored`, which in turn allows the Order Service to retry suspended orders. On `OrderCancelled`, the `HandleOrderCancelledHandler` releases the reserved quantities recorded in the event's `allocations` payload and emits `ItemStored` to signal that stock is again available.
 
-#### 5.4.3. `order-service`
+#### 6.4.3. `order-service`
 
 - **Schema:** `Order` aggregate with `orderId`, `items[]`, `status`, `allocations[]` (order.schema.ts). Status enum: `PENDING | SUSPENDED | ALLOCATED | PICKING_COMPLETED | SHIPPED | CANCELLED`.
 - **Consumed:** `InventoryAllocated`, `OutOfStock`, `ItemStored`, `PickingTaskCompleted`, `ShipmentAssigned`.
 - **Produced:** `OrderPlaced`, `OrderCancelled`, `OrderReadyForPicking`, `OrderSuspended`, `CancelPickingTask`.
 - **Behavior:** owns the per-order state machine. When a new order is placed, the `PlaceOrderHandler` persists the order as `PENDING` and emits `OrderPlaced` to trigger inventory allocation. On `InventoryAllocated`, the `HandleInventoryAllocatedHandler` transitions to `ALLOCATED` and emits `OrderReadyForPicking`; on `OutOfStock`, the `HandleOutOfStockHandler` transitions to `SUSPENDED` and emits `OrderSuspended`. On `ItemStored`, the `HandleItemStoredHandler` scans for suspended orders matching the restocked product and re-emits `OrderPlaced` for each (the **restock flow**). On `PickingTaskCompleted`, transitions to `PICKING_COMPLETED`; on `ShipmentAssigned`, transitions to `SHIPPED`. Cancellation transitions any cancellable order to `CANCELLED`, conditionally emits `CancelPickingTask` (if previously `ALLOCATED`), and always emits `OrderCancelled` carrying `previousStatus` and `allocations` so Inventory can release reserved stock.
 
-#### 5.4.4. `picking-service`
+#### 6.4.4. `picking-service`
 
 - **Schema:** `PickingTask` aggregate with `taskId`, `orderId`, `allocations[]`, `status` ∈ `{PENDING, IN_PROGRESS, COMPLETED, CANCELLED}` (picking.schema.ts).
 - **Consumed:** `OrderReadyForPicking`, `CancelPickingTask`.
 - **Produced:** `PickingTaskCreated`, `PickingTaskCompleted`.
 - **Behavior:** owns the picking task lifecycle. On `OrderReadyForPicking`, the `HandleOrderReadyForPickingHandler` creates a `PickingTask` in `PENDING` state and emits `PickingTaskCreated`. When a worker or simulator marks the task complete, the `CompletePickingTaskHandler` transitions the task to `COMPLETED` and emits `PickingTaskCompleted`. On `CancelPickingTask`, the `HandleCancelPickingTaskHandler` cancels the task only if still `PENDING` (idempotent guard).
 
-#### 5.4.5. `shipping-service`
+#### 6.4.5. `shipping-service`
 
 - **Schemas:** `Vehicle` aggregate (`vehicleId`, `maxCapacity`, `currentLoad`, `assignedTaskIds[]`, `status` ∈ `{AVAILABLE, DISPATCHED}`) and `PendingShipment` aggregate (vehicle.schema.ts, pending-shipment.schema.ts).
 - **Consumed:** `PickingTaskCompleted`.
 - **Produced:** `VehicleRegistered`, `ShipmentAssigned`, `VehicleDispatched`.
 - **Behavior:** owns the vehicle lifecycle and outbound shipment assignment. On `PickingTaskCompleted`, the `HandlePickingTaskCompletedHandler` attempts to assign the task to an available vehicle with spare capacity and emits `ShipmentAssigned`; if no suitable vehicle exists, the task is persisted as a `PendingShipment` and will be assigned once a vehicle with sufficient capacity is registered. When an operator or simulator dispatches a vehicle, the `DispatchVehicleHandler` transitions it to `DISPATCHED` and emits `VehicleDispatched`.
 
-#### 5.4.6. Simulators
+#### 6.4.6. Simulators
 
 | Simulator                       | Drives                                            | Mechanism                  |
 |---------------------------------|---------------------------------------------------|----------------------------|
@@ -457,11 +528,11 @@ Each simulator exposes start/stop/status controls for runtime control.
 
 ---
 
-## 6. Domain Model & Bounded Contexts (DDD)
+## 7. Domain Model & Bounded Contexts (DDD)
 
 The system uses **Domain-Driven Design (DDD)** applied at the level of *strategic design*: the four core services correspond to four **bounded contexts**, each with its own ubiquitous language and aggregates. *Tactical* DDD constructs (rich aggregates, value objects, domain services) are intentionally kept lightweight given the academic scope.
 
-### 6.1. Bounded Contexts
+### 7.1. Bounded Contexts
 
 | Bounded Context | Aggregate(s)                       | Owns                                                                 |
 |-----------------|------------------------------------|----------------------------------------------------------------------|
@@ -470,7 +541,7 @@ The system uses **Domain-Driven Design (DDD)** applied at the level of *strategi
 | Picking         | `PickingTask`                      | Picking tasks generated from allocated orders                        |
 | Shipping        | `Vehicle`, `PendingShipment`       | Vehicles, capacity, dispatch state, queue of pending shipments       |
 
-### 6.2. Ubiquitous Language
+### 7.2. Ubiquitous Language
 
 | Term              | Meaning in WHS                                                       | Source                                  |
 |-------------------|-----------------------------------------------------------------------|-----------------------------------------|
@@ -481,7 +552,7 @@ The system uses **Domain-Driven Design (DDD)** applied at the level of *strategi
 | **Inbound**       | Goods arriving from a supplier, to be stored                         | Inbound receipt flow                    |
 | **Restock**       | Stock arrival that *unblocks* previously suspended orders            | `ItemStored` triggering retry           |
 
-### 6.3. Order State Machine
+### 7.3. Order State Machine
 
 The most complex domain object is the `Order`. Its lifecycle is implemented across the command handlers in order-service/src/commands/ and validated by tests in order-service/test/.
 
@@ -504,7 +575,7 @@ stateDiagram-v2
 
 Two transitions are *forbidden* and are enforced as preconditions in the `CancelOrderHandler`: shipped orders cannot be cancelled, and orders with completed picking tasks are also rejected.
 
-### 6.4. Picking Task State Machine
+### 7.4. Picking Task State Machine
 
 ```mermaid
 stateDiagram-v2
@@ -517,7 +588,7 @@ stateDiagram-v2
 
 `IN_PROGRESS` is reserved in the schema for future operator hand-off mid-task but is currently unused.
 
-### 6.5. Vehicle State Machine
+### 7.5. Vehicle State Machine
 
 ```mermaid
 stateDiagram-v2
@@ -527,7 +598,7 @@ stateDiagram-v2
     DISPATCHED --> [*]
 ```
 
-### 6.6. Anti-Corruption Layer
+### 7.6. Anti-Corruption Layer
 
 The simulators play the role of an **Anti-Corruption Layer (ACL)** for the artificial workload generation: instead of polluting the core services with “demo data” seeders, simulators sit *outside* the bounded contexts and drive them through their public API REST endpoints. This preserves the integrity of the domain model.
 
@@ -535,15 +606,15 @@ Beyond artificial workload generation, the simulator architecture also enables *
 
 ---
 
-## 7. Tools & Technology Stack
+## 8. Tools & Technology Stack
 
 The stack is intentionally minimal and optimized for local, end-to-end demonstrations.
 
 | Area | Main choices |
 |------|--------------|
 | **Runtime & language** | Node.js **22.22.2 LTS** + TypeScript **5.7.3** (pinned via `engines`) |
-| **Backend** | NestJS **11.x** (`@nestjs/core`, `@nestjs/microservices`, `@nestjs/cqrs`, `@nestjs/mongoose`, Socket.IO) + `kafkajs` **2.2.x** + `mongoose` **9.2.x** |
-| **Frontend** | Next.js **16.1.6**, React **19.2.x**, Tailwind **4.x**, `socket.io-client` **4.8.x**, `framer-motion` **12.x** |
+| **Backend** | NestJS **11.x** (`@nestjs/core`, `@nestjs/microservices`, `@nestjs/cqrs`, `@nestjs/mongoose`) + `kafkajs` **2.2.x** + `mongoose` **9.2.x** |
+| **Frontend** | Next.js **16.1.6**, React **19.2.x**, Tailwind **4.x**, `framer-motion` **12.x** |
 | **Messaging** | Apache Kafka (KRaft), listeners on `9092` (Docker) / `29092` (host), single-broker didactic topology |
 | **Persistence** | MongoDB per service (`inventory`, `order`, `picking`, `shipping`) on ports `27017–27020` |
 | **Testing & quality** | Jest 30 + ts-jest 29, supertest 7, ESLint 9, Prettier 3 |
@@ -555,9 +626,9 @@ The stack is intentionally minimal and optimized for local, end-to-end demonstra
 
 ---
 
-## 8. Event Catalog & API Reference
+## 9. Event Catalog & API Reference
 
-### 8.1. Topic Catalog
+### 9.1. Topic Catalog
 
 The 13 topics are pre-created at startup by the `kafka-init` container, which executes `scripts/init-kafka-topics.sh`. Each topic has 1 partition and replication factor 1.
 
@@ -577,7 +648,7 @@ The 13 topics are pre-created at startup by the `kafka-init` container, which ex
 | `VehicleDispatched`        | shipping-service         | frontend                 |
 | `VehicleRegistered`        | shipping-service         | frontend                 |
 
-### 8.2. Producer/Consumer Map (reused diagram)
+### 9.2. Producer/Consumer Map (reused diagram)
 
 ```mermaid
 graph LR
@@ -639,11 +710,11 @@ graph LR
 
 ---
 
-## 9. Event Flows (Behavioral Views)
+## 10. Event Flows (Behavioral Views)
 
 The three flows below are the demonstration scenarios for the system.
 
-### 9.1. Happy Path
+### 10.1. Happy Path
 
 ```mermaid
 sequenceDiagram
@@ -673,7 +744,7 @@ sequenceDiagram
     end
 ```
 
-### 9.2. Cancellation Flow
+### 10.2. Cancellation Flow
 
 ```mermaid
 sequenceDiagram
@@ -698,7 +769,7 @@ Two design points are worth highlighting:
 1. **The cancellation is initiated synchronously** (HTTP `PATCH`) but its consequences (releasing stock, cancelling the picking task) are propagated **asynchronously** via Kafka. This is a deliberate inversion of control to keep services decoupled.
 2. **`OrderCancelled` carries `previousStatus` and `allocations`**. This is necessary because Inventory must know *which* allocations to release, even though the order has already transitioned to `CANCELLED`.
 
-### 9.3. Restock-Driven Resume
+### 10.3. Restock-Driven Resume
 
 ```mermaid
 sequenceDiagram
@@ -720,31 +791,31 @@ This is the system’s **eventual consistency** showcase: the Order Service does
 
 ---
 
-## 10. Deployment Architecture
+## 11. Deployment Architecture
 
 The deployment process is realized entirely via **Docker Compose**, defined in the single docker-compose.yml file at the repository root and driven by npm scripts in the root package.json.
 
-### 10.1. Build Process
+### 11.1. Build Process
 
 Each service has its own `Dockerfile` and follows the same simple build pattern: install dependencies, copy the source, build the app, and start the production entrypoint. All Dockerfiles are intentionally single-stage; multi-stage builds are listed in §15 as future work.
 
-### 10.2. Orchestration: `docker-compose.yml`
+### 11.2. Orchestration: `docker-compose.yml`
 
 The compose file defines:
 
 - **Infrastructure containers:** `kafka`, `kafka-init`, `kafka-ui`, `openobserve`, `fluent-bit`, plus four `mongo:latest` instances.
 - **Application containers:** four core services, four simulators, and the frontend.
 - **Volumes:** four named volumes for Mongo persistence (`inventory_mongodb_data`, …) and one for OpenObserve (`openobserve_data`).
-- **Service-to-service environment wiring:** every NestJS service receives `KAFKA_BROKER=kafka:9092`; simulators receive HTTP URLs of the services they drive.
+- **Service-to-service environment wiring:** every NestJS service receives `KAFKA_BROKER=kafka:9092`; simulators receive HTTP URLs of the services they drive; the frontend receives server-side environment variables for every backend service (`INVENTORY_SERVICE_URL=http://inventory-service:3001`, etc.) used by the Next.js rewrites to proxy `/api/*` requests — these URLs are never exposed to the browser.
 
-### 10.3. Startup Dependency Chain
+### 11.3. Startup Dependency Chain
 
 The startup order is enforced by `depends_on` with `condition`. Two condition types are used:
 
 - `service_healthy` — for Kafka (driven by a `healthcheck` running `kafka-broker-api-versions.sh`).
 - `service_completed_successfully` — for `kafka-init` (a one-shot container that exits 0 when topics are created).
 
-### 10.4. CI/CD Pipeline (GitHub Actions)
+### 11.4. CI/CD Pipeline (GitHub Actions)
 
 The CI/CD pipeline is fully implemented on **GitHub Actions** (`.github/workflows/deploy.yml`) and is triggered on every `push` to the repository. The workflow is designed as a two-stage process using job matrices to parallelize operations across all microservices and simulators:
 
@@ -789,21 +860,21 @@ flowchart TB
     K --> KUI["kafka-ui"]
 ```
 
-### 10.4. The `kafka-init` Initialization Container
+### 11.4. The `kafka-init` Initialization Container
 
 The `kafka-init` container runs a short bootstrap script that creates all required topics with idempotent, `if-not-exists` semantics after Kafka becomes healthy. Every microservice depends on `kafka-init` completing successfully before it starts.
 
-### 10.5. Persistence and Volumes
+### 11.5. Persistence and Volumes
 
 Mongo data survives container recreation thanks to named volumes, along with a persistent volume for OpenObserve.
 
 To reset domain state during demos, the developer runs `npm run docker:clean:db`, which stops the stack and removes the four Mongo volumes.
 
-### 10.6. Frontend Build
+### 11.6. Frontend Build
 
 The frontend Dockerfile (frontend/Dockerfile) is the same single-stage pattern but ends with `CMD ["npm", "start"]`, which runs `next start` on the pre-built `.next` artifact.
 
-### 10.7. Operations Cheat-Sheet
+### 11.7. Operations Cheat-Sheet
 
 Top-level npm scripts (package.json) abstract common docker compose invocations:
 
@@ -818,17 +889,17 @@ Top-level npm scripts (package.json) abstract common docker compose invocations:
 
 These are the *only* commands a demonstrator needs to operate the system end to end.
 
-### 10.8. Kubernetes Readiness
+### 11.8. Kubernetes Readiness
 
 Although no K8s manifests are part of the current deliverable, the architecture is intentionally compatible with K8s: services are stateless (state lives in Kafka and Mongo), each service has a `health` endpoint usable as a liveness/readiness probe, configuration is environment-variable-only, and the `kafka-init` pattern naturally translates to a K8s **Job** with `initContainers` semantics.
 
 ---
 
-## 11. Observability
+## 12. Observability
 
 Observability is a first-class architectural driver (ASR-5). The system implements the **logs** pillar fully, the **metrics** pillar partially (via health endpoints and Kafka UI), and *does not* implement **distributed tracing** — which is acknowledged in §15.
 
-### 11.1. Logging Pipeline
+### 12.1. Logging Pipeline
 
 The pipeline is fully declarative and routes every container’s stdout into OpenObserve via Fluent Bit.
 
@@ -854,13 +925,13 @@ flowchart LR
     KUI["kafka-ui :8090"] -. "topic introspection" .-> KAF[(kafka)]
 ```
 
-### 11.2. The `fluentd` Logging Driver
+### 12.2. The `fluentd` Logging Driver
 
 Every core service in `docker-compose.yml` is configured with the Docker `fluentd` logging driver, using the same asynchronous retry settings and a per-service tag.
 
 This means **the application code does not call any logging library other than `console.log` / `Logger`**: the Docker engine itself ships stdout to Fluent Bit. The architecture is therefore *log-library agnostic*, and a service can be re-implemented in any language without breaking the observability contract.
 
-### 11.3. Fluent Bit Configuration
+### 12.3. Fluent Bit Configuration
 
 The Fluent Bit pipeline listens for forwarded container logs, adds a couple of metadata fields, removes noisy bootstrap output, strips ANSI escape sequences, and forwards the cleaned records to OpenObserve as compressed JSON.
 
@@ -870,11 +941,11 @@ Three things are notable:
 2. **A Lua script strips ANSI escape sequences** that would otherwise pollute log records.
 3. **Output is gzipped JSON** to OpenObserve’s ingest endpoint, indexed under a dedicated stream.
 
-### 11.4. OpenObserve
+### 12.4. OpenObserve
 
 OpenObserve is the analytics endpoint: it stores logs, exposes a UI on port 5080, and supports SQL-like queries. A healthcheck on `/healthz` enforces dependency ordering.
 
-### 11.4.1. Practical Example: Tracing an Order
+### 12.4.1. Practical Example: Tracing an Order
 
 To demonstrate OpenObserve's query capabilities, suppose you need to trace a specific order (`1778183057229`) through the entire system from placement to dispatch. The following SQL query retrieves all related log entries ordered by timestamp:
 
@@ -890,56 +961,52 @@ ORDER BY _timestamp ASC
 LIMIT 1000
 ```
 
-### 11.5. Kafka UI
+### 12.5. Kafka UI
 
 Provectus Kafka UI is configured as a read-only introspector so topic inspection is possible during demos without risking accidental topic deletion or message production.
 
-### 11.6. Health Endpoints
+### 12.6. Health Endpoints
 
 Every core service exposes `GET /<service>/health` returning `{ status: 'ok', service: '<name>' }`. The frontend uses these as a status badge in the “Status” page. They are also the hook for any future K8s liveness probe.
 
-### 11.7. What is *not* implemented
+### 12.7. What is *not* implemented
 
 - **Distributed tracing** (OpenTelemetry, Jaeger). Acknowledged in §15. The current pipeline supports correlation only via `orderId` / `taskId` strings present in log records.
 - **Application metrics** (Prometheus, OTel). Currently absent; Kafka UI gives a partial view of broker health and consumer-group lag.
 
 ---
 
-## 12. Testing Strategy
+## 13. Testing Strategy
 
 Testability (ASR-4) is a primary driver, and the codebase reflects this with a clear test taxonomy. The Jest configuration is co-located in each service’s `package.json`.
 
-### 12.1. Test Pyramid
+### 13.1. Test Pyramid
 
 ```mermaid
 graph TD
     subgraph "Testing Pyramid"
     direction BT
         U["<b>Unit Tests</b><br/>(many)<br/>CQRS Handlers<br/>Controllers"]
-        G["<b>Gateway Tests</b><br/>(medium)<br/>Socket.IO Emits"]
         B["<b>Bootstrap Tests</b><br/>(few)<br/>main.spec.ts<br/>Wiring"]
         E2E["<b>E2E Tests</b><br/>(few)<br/>HTTP Smoke<br/>Supertest"]
 
-        U --- G
-        G --- B
+        U --- B
         B --- E2E
     end
 
     classDef default fill:#f9f9f9,stroke:#333,stroke-width:1px,color:#000;
     classDef unit fill:#d1e7dd,stroke:#0f5132,stroke-width:2px,color:#000;
-    classDef gateway fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#000;
     classDef bootstrap fill:#cfe2ff,stroke:#084298,stroke-width:2px,color:#000;
     classDef e2e fill:#f8d7da,stroke:#842029,stroke-width:2px,color:#000;
 
     class U unit
-    class G gateway
     class B bootstrap
     class E2E e2e
 ```
 
-### 12.2. Unit Tests
+### 13.2. Unit Tests
 
-Each service follows the canonical NestJS CQRS pattern: controller tests mock `CommandBus` and `QueryBus`; handler tests mock the specific dependencies (Kafka, Mongo model, EventsGateway).
+Each service follows the canonical NestJS CQRS pattern: controller tests mock `CommandBus` and `QueryBus`; handler tests mock the specific dependencies (Kafka, Mongo model).
 
 **Controller tests** — verify routing, parameter parsing, and dispatch to the correct Command/Query.
 
@@ -948,28 +1015,22 @@ Each service follows the canonical NestJS CQRS pattern: controller tests mock `C
 Unit tests cover:
 
 - **Controllers** — REST routing, parameter parsing, CommandBus/QueryBus delegation, `@EventPattern` message filtering and dispatch.
-- **Command Handlers** — state transitions, Kafka event emissions, MongoDB writes, WebSocket notifications.
+- **Command Handlers** — state transitions, Kafka event emissions, MongoDB writes.
 - **Query Handlers** — correct Mongoose `find()` calls and response shape.
 
-### 12.3. Bootstrap Tests (`main.spec.ts`)
+### 13.3. Bootstrap Tests (`main.spec.ts`)
 
 `main.ts` performs side effects (creating an app, starting microservices, listening) at import time. The test pattern uses module reset and a mocked Nest factory to verify bootstrap wiring, including Kafka transport and the configured port.
 
 This validates that the Kafka transport is wired with the correct consumer group, that CORS is enabled, and that the right port is used. A second test sets `process.env.PORT='3111'` and asserts the override is respected.
 
-### 12.4. Gateway Tests
-
-WebSocket gateways are tested by injecting a fake `server` object and asserting that `notifyDataChanged()` emits `dataChanged`.
-
-Connection / disconnection callbacks are also asserted to log via `Logger.prototype.log`.
-
-### 12.5. End-to-End Tests
+### 13.4. End-to-End Tests
 
 E2E tests use **supertest** against a fully bootstrapped NestJS app, with the service layer mocked so the suite does not depend on Kafka or Mongo.
 
 This is enough to validate routing, Nest decorators, status codes, and response shape across a real HTTP stack.
 
-### 12.6. Coverage
+### 13.5. Coverage
 
 Each workspace declares a Jest configuration that collects coverage from `src/**/*.(t|j)s` and writes reports under `coverage/`. The targets remain >80% for business logic and >60% for infrastructure code. 
 
@@ -988,34 +1049,34 @@ Each workspace declares a Jest configuration that collects coverage from `src/**
 
 *Note: the branch coverage gap (from 100%) in the core services is entirely attributable to the native JavaScript transpilations of NestJS TypeScript decorators (such as `@Inject` and `@Controller`) which contain branch logic that is untestable within a Node test runner. All business logic pathways are fully covered.*
 
-### 12.7. Cross-Workspace Test Runner
+### 13.7. Cross-Workspace Test Runner
 
 The root package scripts run every workspace’s Jest suite in turn, giving the repository a single CI-friendly test entrypoint.
 
-### 12.8. What is *not* tested
+### 13.8. What is *not* tested
 
 - **Real Kafka / Mongo integration tests.** The system relies on Docker Compose for that, manually exercised via the simulators. A production-grade approach would add Testcontainers-based integration tests; this is listed in §15.
 - **End-to-end multi-service flows.** No single test bootstraps all four services and asserts a full happy-path event chain; the burden is shifted to the live demo + log inspection in OpenObserve.
 
 ---
 
-## 13. Trade-offs & Alternatives Considered
+## 14. Trade-offs & Alternatives Considered
 
-### 13.1. Kafka vs RabbitMQ vs NATS
+### 14.1. Kafka vs RabbitMQ vs NATS
 
 | Option        | Pros                                                                | Cons                                                | Why not chosen                                 |
 |---------------|---------------------------------------------------------------------|------------------------------------------------------|------------------------------------------------|
 | **Kafka**     | Durable event log, replay, partition-based scalability              | Heavier; KRaft mode still maturing                  | **Chosen.** Event log is the keystone of §4.3. |
 | RabbitMQ      | Simpler to operate, good fit for AMQP work-queue use cases          | Not a log; no native replay; harder for event sourcing | Insufficient for event-sourcing posture        |
 
-### 13.2. MongoDB vs PostgreSQL
+### 14.2. MongoDB vs PostgreSQL
 
 | Option         | Pros                                                          | Cons                                                | Why not chosen                                 |
 |----------------|---------------------------------------------------------------|------------------------------------------------------|------------------------------------------------|
 | **MongoDB**    | Document model maps well to aggregates with embedded items   | Weaker constraints; eventual consistency mindset    | **Chosen.** Schemas in §6 are document-shaped. |
 | PostgreSQL     | Strong relational integrity, transactions                    | Cross-service transactions not allowed anyway       | Overkill given no joins across contexts        |
 
-### 13.3. Choreography vs Orchestration (Saga)
+### 14.3. Choreography vs Orchestration (Saga)
 
 The cancellation flow could have been implemented as an **orchestrated saga** (a dedicated coordinator service driving order-cancel → release-stock → cancel-picking-task). Choreography was preferred because:
 
@@ -1023,7 +1084,7 @@ The cancellation flow could have been implemented as an **orchestrated saga** (a
 - No new component to deploy.
 - The price paid is *harder global tracing*: there is no central place to ask “what happened to order X?” — which is mitigated by the centralized log aggregation in §11.
 
-### 13.4. CQRS — Code-Level Adoption
+### 14.4. CQRS — Code-Level Adoption
 
 The initial design (prior to the refactor) kept read and write logic in a single `AppService` class per service. As the number of Kafka event handlers and REST operations grew, this class became a *god object* — violating single responsibility and making isolated testing harder.
 
@@ -1043,25 +1104,26 @@ The CQRS split is **not infrastructural**: both read and write paths share the s
 
 The trade-off is slightly more boilerplate per operation (command class + handler class vs. a single service method), which is acceptable given the pedagogical aim and the maintainability gain.
 
-### 13.5. Single Broker, RF=1
+### 14.5. Single Broker, RF=1
 
 Operating a single Kafka broker with replication factor 1 means **any broker outage causes data loss**. This is acceptable for the academic context — the system is reset between demos — but the architecture is otherwise broker-replication-ready.
 
-### 13.6. WebSocket vs Server-Sent Events (SSE) for UI Push
+### 14.6. Server-Sent Events (SSE) for UI Push
 
-Socket.IO was chosen over SSE because:
+SSE was chosen over WebSocket/Socket.IO because:
 
-- NestJS has first-class Socket.IO support via `@nestjs/platform-socket.io`.
-- Bidirectional channels open the door to interactive features (cursors, room-based updates) that may be added later.
-- SSE’s simpler unidirectional model would have been sufficient today but constraining tomorrow.
+- The UI push is strictly unidirectional (server to browser): Kafka events trigger data re-fetches.
+- SSE is simpler to implement (native EventSource API, no library needed on the client).
+- The frontend `/api/events` endpoint connects to Kafka as a consumer and streams events directly, eliminating per-service WebSocket gateways.
+- No additional dependencies required.
 
-### 13.7. Single-Stage vs Multi-Stage Dockerfiles
+### 14.7. Single-Stage vs Multi-Stage Dockerfiles
 
 Single-stage was chosen for simplicity and faster iteration during development. The cost is larger images that include `devDependencies`. This is a deliberate trade-off, listed in §15 as future work.
 
 ---
 
-## 14. Architectural Decision Records (ADRs)
+## 15. Architectural Decision Records (ADRs)
 
 ### ADR-001 — Apache Kafka as the Primary Broker
 
@@ -1108,12 +1170,23 @@ Single-stage was chosen for simplicity and faster iteration during development. 
 ### ADR-008 — Simulators as External Drivers
 
 - **Context.** Simulability driver requires unattended end-to-end execution.
-- **Decision.** Build four separate simulator services that drive the system exclusively through its public REST contracts, not through internal hooks.
+- **Decision.** Build four separate simulator services that drive the system exclusively through their public REST contracts, not through internal hooks.
 - **Consequences.** Simulators can be replaced or scaled independently. Core services remain free of demo-specific code paths.
+
+### ADR-009 — Server-Sent Events (SSE) over WebSocket/Socket.IO
+
+- **Context.** The original real-time push mechanism used **Socket.IO** (`@nestjs/websockets` + `@nestjs/platform-socket.io` on the backend, `socket.io-client` on the frontend). Each core microservice exposed its own WebSocket gateway, and the frontend opened four independent Socket.IO connections — one per service — to receive domain events. This introduced several pain points: (1) **four extra dependencies** (`@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io`, `socket.io-client`) across the stack; (2) **per-service gateway boilerplate** duplicated in every microservice; (3) the frontend needed to manage multiple persistent connections with independent reconnection logic; (4) Socket.IO's bidirectional capabilities were unused — the UI only *received* events, never *sent* them through the socket.
+- **Decision.** Replace all Socket.IO gateways with a single **Server-Sent Events (SSE)** endpoint at `/api/events` in the Next.js frontend. This endpoint connects to Kafka as a consumer (subscribing to all 13 domain topics), and streams each event to the browser as an SSE message. On the client side, the native `EventSource` API replaces `socket.io-client`, wrapped in a custom `useRealtimeSSE(topics, fetchFn)` React hook that filters events by topic and triggers data re-fetches.
+- **Consequences.**
+  - **Dependency reduction:** removed `@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io`, and `socket.io-client` from the entire codebase — four fewer runtime dependencies to maintain and audit.
+  - **Simplified topology:** real-time push is consolidated in a single endpoint (`/api/events`) rather than scattered across four WebSocket gateways. The core microservices no longer carry any real-time push responsibility; they only produce Kafka events.
+  - **Native browser API:** `EventSource` is built into every modern browser, requires no polyfill, and handles reconnection automatically with exponential backoff.
+  - **Unidirectional by design:** SSE enforces the server→client direction, which matches the actual data flow (Kafka events → UI refresh). The bidirectional overhead of WebSocket/Socket.IO was unnecessary.
+  - **Trade-off — no client→server push:** if a future feature requires client-initiated real-time messages (e.g., collaborative editing, cursor sharing), SSE alone would be insufficient and WebSocket would need to be reintroduced for that specific use-case. This is acceptable given the current unidirectional requirement.
 
 ---
 
-## 15. Known Limitations & Future Work
+## 16. Known Limitations & Future Work
 
 Each item is paired with an attribute it would improve.
 
@@ -1130,16 +1203,16 @@ Each item is paired with an attribute it would improve.
 | 9 | No real Kafka/Mongo integration tests                                        | Testability                    | Testcontainers integration suite                                  |
 |10 | Hard-coded development credentials (Mongo `root:example`, OpenObserve)       | Security                       | Docker secrets / env-driven secret injection                      |
 |11 | Cancellation idempotency relies on local state checks, not on event idempotency keys | Resilience                | Add a deduplication store keyed by `eventId`                      |
-|12 | UI status is bound to WebSocket `dataChanged` (re-fetch trigger), no granular events | Performance                | Replace with topic-specific Socket.IO rooms                       |
+|12 | UI SSE re-fetches entire dataset on every event, no granular updates         | Performance                | Send partial payloads via SSE to enable incremental UI updates    |
 |13 | `inventory-service` exposes inbound HTTP                                   | Pattern purity                 | Make inbound a Kafka-only entry point; the HTTP route was a holdover from early iterations |
 
 ---
 
-## 16. Conclusions & Lessons Learned
+## 17. Conclusions & Lessons Learned
 
 WHS represents a deliberate and measurable architectural evolution over the project from which it originated. The prior system covered only the **picking sub-domain** across **two microservices**, used a **message-driven** (not event-sourced) communication model, and shared a **single database** between its components. Each of those choices — narrow domain scope, transient messaging, shared persistence — was a concrete pain point that motivated the rework. The results confirm that the investment was worthwhile.
 
-### 16.1. What the Rework Improved
+### 17.1. What the Rework Improved
 
 **Domain coverage.** The original two-service scope (picking service + picking handler) made it impossible to exercise inter-domain flows such as inventory allocation, order suspension, or cancellation propagation. WHS expands to four bounded-context-aligned services covering the full warehouse lifecycle — inbound, inventory, orders, picking, and shipping — making these flows first-class, demonstrable scenarios rather than out-of-scope future work.
 
@@ -1151,7 +1224,7 @@ WHS represents a deliberate and measurable architectural evolution over the proj
 
 **Observability.** The original system had no centralized log aggregation. WHS introduces a full declarative logging pipeline — Docker `fluentd` driver → Fluent Bit → OpenObserve — that aggregates structured logs from every container without modifying a single line of application code. The `fluentd` logging driver (ADR-007) acts as an architectural seam: once in place, the pipeline is language- and framework-agnostic.
 
-### 16.2. Lessons Learned
+### 17.2. Lessons Learned
 
 1. **Startup ordering is part of the architecture.** The race condition that motivated the `kafka-init` container (ADR-006) is not a bug — it is a property of any system that subscribes to topics that may not yet exist. Treating initialization as an explicit pattern (using Docker Compose's `service_completed_successfully` condition) avoided the temptation of `sleep` hacks and produced a fully declarative startup contract.
 
@@ -1161,7 +1234,9 @@ WHS represents a deliberate and measurable architectural evolution over the proj
 
 4. **Code-level CQRS eliminates god-services early.** Introducing `@nestjs/cqrs` (ADR-002) decomposed what were growing `AppService` monoliths into focused, single-responsibility handlers. The thin-controller pattern makes the system more navigable: a developer reading `app.controller.ts` sees the full routing table, and each handler file is self-contained. The additional boilerplate (command class + handler class per operation) is offset by dramatically simpler unit tests, since each handler is instantiated with only its own dependencies.
 
-### 16.3. Looking Ahead
+5. **The frontend as API Gateway makes deployment topology-agnostic.** The original architecture hardcoded `localhost:300x` URLs in the frontend client code, coupling the UI to a specific deployment topology and making production deployment impossible without code changes. By moving to server-side Next.js rewrites with environment-variable-driven backend URLs, the same frontend build now works unchanged across local development (`localhost`), Docker Compose (`http://inventory-service:3001`), and Kubernetes (`http://inventory-service.whs.svc.cluster.local:3001`). The single exposed port (3000) also simplifies reverse-proxy and load-balancer configuration in production.
+
+### 17.3. Looking Ahead
 
 In its current form WHS is a complete, demonstrable, didactically valuable system. The gap between the original two-service project and this rework is not merely quantitative (more services, more tests, more infrastructure) but qualitative: the architecture now supports independent evolvability, fault containment, and operational introspection — qualities that the original design structurally precluded. The limitations in §15 mark the next gap to close.
 

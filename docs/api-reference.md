@@ -3,9 +3,42 @@
 Documento di riepilogo completo degli endpoint REST e messaggi Kafka per ogni microservizio del sistema WHS (Warehouse Management System).
 
 **Struttura del documento:**
+- **API Gateway (Frontend)**: Pattern di proxying via Next.js rewrites
 - **Endpoint REST**: Metodo HTTP, percorso e descrizione
 - **Kafka Consumati**: Messaggi che il servizio ascolta
 - **Kafka Inviati**: Messaggi che il servizio emette
+
+---
+
+## Frontend come API Gateway (BFF)
+
+Il frontend Next.js funge da **API Gateway / Backend for Frontend (BFF)**. Tutte le chiamate dal browser transitano attraverso il server Next.js sulla porta **3000**, che le inoltra ai microservizi backend tramite **rewrites server-side**. **Nessun URL di microservizio è esposto al client browser.**
+
+### Mapping delle API
+
+| Path Browser (`/api/...`) | Servizio Backend | Destinazione Interna |
+|---|---|---|
+| `/api/inventory/:path*` | Inventory Service | `http://inventory-service:3001/inventory/:path*` |
+| `/api/orders/:path*` | Order Service | `http://order-service:3002/orders/:path*` |
+| `/api/picking/:path*` | Picking Service | `http://picking-service:3003/picking/:path*` |
+| `/api/shipping/:path*` | Shipping Service | `http://shipping-service:3004/shipping/:path*` |
+| `/api/inbound/:path*` | Inbound Simulator | `http://inventory-simulator-service:3005/inbound/:path*` |
+| `/api/dispatch/:path*` | Dispatch Simulator | `http://shipping-simulator-service:3006/dispatch/:path*` |
+| `/api/order-simulator/:path*` | Order Simulator | `http://order-simulator-service:3007/order-simulator/:path*` |
+| `/api/picking-simulator/:path*` | Picking Simulator | `http://picking-simulator-service:3008/picking-simulator/:path*` |
+
+### Endpoint API Route (Next.js)
+
+| Metodo | Percorso | Descrizione |
+|--------|----------|-------------|
+| `GET` | `/api/events` | SSE stream: consuma topic Kafka e streamma eventi al browser in tempo reale |
+| `GET` | `/api/status` | Health check aggregator: verifica lo stato di tutti i servizi + infrastruttura |
+
+### Principi di Design
+
+- **Deploy-ready:** Solo la porta 3000 del frontend è esposta pubblicamente; le porte dei microservizi restano interne alla rete Docker.
+- **Sicurezza:** Gli URL dei microservizi sono variabili d'ambiente **server-side** (`requireEnv()` in `next.config.ts`), mai esposte al browser.
+- **Portabilità:** In produzione basta cambiare le variabili d'ambiente per puntare ai servizi reali (hostnames Docker, Kubernetes Services, ecc.).
 
 ---
 
@@ -401,18 +434,19 @@ Response: { status: 'ok', service: '{service-name}' }
 
 ## Port Mapping
 
-| Servizio | Porta | Tipo |
-|----------|-------|------|
-| Inventory Service | 3001 | NestJS + WebSocket |
-| Order Service | 3002 | NestJS + WebSocket |
-| Picking Service | 3003 | NestJS + WebSocket |
-| Shipping Service | 3004 | NestJS + WebSocket |
-| Inbound Simulator | 3005 | NestJS |
-| Dispatch Simulator | 3006 | NestJS |
-| Order Simulator | 3007 | NestJS |
-| Picking Simulator | 3008 | NestJS |
-| Kafka Broker | 9092 (localhost), 29092 (docker) | Message Broker |
-| MongoDB Services | 27017–27020 | Database (una per servizio core) |
+| Servizio | Porta | Tipo | Accesso Esterno |
+|----------|-------|------|-----------------|
+| Frontend (API Gateway) | 3000 | Next.js BFF | Sì — unico punto d'accesso pubblico |
+| Inventory Service | 3001 | NestJS | No — solo rete Docker interna |
+| Order Service | 3002 | NestJS | No — solo rete Docker interna |
+| Picking Service | 3003 | NestJS | No — solo rete Docker interna |
+| Shipping Service | 3004 | NestJS | No — solo rete Docker interna |
+| Inbound Simulator | 3005 | NestJS | No — solo rete Docker interna |
+| Dispatch Simulator | 3006 | NestJS | No — solo rete Docker interna |
+| Order Simulator | 3007 | NestJS | No — solo rete Docker interna |
+| Picking Simulator | 3008 | NestJS | No — solo rete Docker interna |
+| Kafka Broker | 9092 (localhost), 29092 (docker) | Message Broker | No |
+| MongoDB Services | 27017–27020 | Database (una per servizio core) | No |
 
 ---
 
@@ -426,11 +460,13 @@ Response: { status: 'ok', service: '{service-name}' }
 
 4. **Simulatori**: I simulatori controllano i servizi via HTTP REST API e generano carico di test/simulazione.
 
-5. **WebSocket Real-Time**: Tutti e 4 i servizi principali (Inventory, Order, Picking, Shipping) espongono WebSocket gateway per notificare il frontend dei cambiamenti in tempo reale via evento `dataChanged`.
+5. **SSE Real-Time**: Il frontend riceve aggiornamenti in tempo reale tramite Server-Sent Events (SSE) via l'endpoint `/api/events`, che consuma i topic Kafka e li streamma al browser. Il hook `useRealtimeSSE(topics, fetchFn)` sottoscrive i topic specifici e triggera il re-fetch dei dati.
 
 6. **Cancellazione Picking**: L'order service emette `CancelPickingTask` via Kafka quando un ordine allocato viene annullato; il picking service gestisce l'annullamento in modo asincrono e idempotente.
 
+7. **API Gateway / BFF**: Il frontend Next.js funge da unico punto d'accesso per il browser. Tutte le chiamate passano per `/api/*` e vengono inoltrate ai microservizi via rewrites server-side. Nessun URL di microservizio è esposto al client, rendendo il sistema pronto per il deploy in produzione.
+
 ---
 
-**Ultimo aggiornamento**: Aprile 2026
-**Versione**: 1.0
+**Ultimo aggiornamento**: Maggio 2026
+**Versione**: 1.1 (aggiornato con pattern API Gateway / BFF)

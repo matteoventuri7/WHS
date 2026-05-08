@@ -167,17 +167,46 @@ To add a new topic (e.g., `OrderCompleted`):
 7. **Picking Service** (consuma `CancelPickingTask`) annulla il picking task se in stato `PENDING`.
 8. **(UI)** Il badge dell'ordine diventa `CANCELLED`; il badge del task di picking diventa `CANCELLED`.
 
-## 5. La UI di Next.js (Simulatore)
+## 5. La UI di Next.js (BFF / API Gateway)
 
-L'applicazione frontend presenterà dashboard separate per ogni dominio, permettendo all'utente "Dio" di scatenare tutti gli eventi:
+L'applicazione frontend Next.js funge da **Backend for Frontend (BFF)** e **API Gateway**: tutte le chiamate dal browser transitano attraverso il server Next.js, che le inoltra ai microservizi backend tramite il meccanismo di **rewrites**. **Nessun URL di microservizio viene mai esposto al client browser.**
+
+### 5.1. API Proxying via Next.js Rewrites
+
+Il file `next.config.ts` configura le rewrites server-side. Gli URL dei microservizi sono iniettati come **variabili d'ambiente server-side** (mai esposte al browser), validate con `requireEnv()`:
+
+| Path Frontend (browser) | Destinazione Backend (server-side) |
+|---|---|
+| `/api/inventory/:path*` | `INVENTORY_SERVICE_URL/inventory/:path*` |
+| `/api/orders/:path*` | `ORDER_SERVICE_URL/orders/:path*` |
+| `/api/picking/:path*` | `PICKING_SERVICE_URL/picking/:path*` |
+| `/api/shipping/:path*` | `SHIPPING_SERVICE_URL/shipping/:path*` |
+| `/api/inbound/:path*` | `INBOUND_SIMULATOR_URL/inbound/:path*` |
+| `/api/dispatch/:path*` | `DISPATCH_SIMULATOR_URL/dispatch/:path*` |
+| `/api/order-simulator/:path*` | `ORDER_SIMULATOR_URL/order-simulator/:path*` |
+| `/api/picking-simulator/:path*` | `PICKING_SIMULATOR_URL/picking-simulator/:path*` |
+
+Questo pattern garantisce:
+- **Deploy-ready:** Non è necessario esporre le porte dei microservizi all'esterno; solo la porta 3000 del frontend è pubblica.
+- **Sicurezza:** Gli URL interni dei servizi non sono mai visibili al client.
+- **Portabilità:** In produzione basta cambiare le variabili d'ambiente per puntare ai servizi reali (es. hostnames Docker, Kubernetes Services).
+
+### 5.2. Real-Time via Server-Sent Events (SSE)
+
+Il frontend espone un endpoint `/api/events` (API route Next.js) che si connette a Kafka come consumer e streamma gli eventi al browser via SSE. L'hook `useRealtimeSSE(topics, fetchFn)` si sottoscrive a topic specifici e triggera il re-fetch dei dati quando arrivano eventi corrispondenti.
+
+### 5.3. Dashboard Operative
+
+L'applicazione presenta dashboard separate per ogni dominio, permettendo all'utente "Dio" di scatenare tutti gli eventi:
 - **Gestore Ordini:** Form di immissione e lista stato (Allocato, Sospeso, Spedito).
 - **Gestione Inbound:** Per immettere merce (risolve gli OutOfStock).
 - **Mappa/Lista Inventario:** Fotografia live dello stato mantenuto dall'Inventory Service nei propri database per vedere dove si trova fisicamente la merce.
 - **Palmare Magazziniere:** Interfaccia di task list su cosa prelevare.
 - **Piazzale Spedizioni:** Dashboard dei camionisti/spedizionieri.
+- **Status:** Dashboard di salute del sistema (health check aggregator).
 
 ---
 
-**Last Updated:** April 2026 (includes Kafka topic pre-initialization via kafka-init container)  
+**Last Updated:** Maggio 2026 (includes API Gateway pattern via Next.js rewrites, Kafka topic pre-initialization via kafka-init container)  
 **Architecture Focus:** Event-Driven, Event Sourcing, Microservices Pattern  
-**Infrastructure:** Docker Compose with Kafka, MongoDB, NestJS, Next.js
+**Infrastructure:** Docker Compose with Kafka, MongoDB, NestJS, Next.js (BFF/API Gateway)
