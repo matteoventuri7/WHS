@@ -8,24 +8,12 @@ type ServiceDef = {
   type: 'http' | 'tcp';
 };
 
-const ENV_DEFAULTS: Record<string, string> = {
-  INVENTORY_SERVICE_URL: 'http://inventory-service:3001',
-  ORDER_SERVICE_URL: 'http://order-service:3002',
-  PICKING_SERVICE_URL: 'http://picking-service:3003',
-  SHIPPING_SERVICE_URL: 'http://shipping-service:3004',
-  INBOUND_SIMULATOR_URL: 'http://inventory-simulator-service:3005',
-  DISPATCH_SIMULATOR_URL: 'http://shipping-simulator-service:3006',
-  ORDER_SIMULATOR_URL: 'http://order-simulator-service:3007',
-  PICKING_SIMULATOR_URL: 'http://picking-simulator-service:3008',
-  OPENOBSERVE_URL: 'http://openobserve:5080',
-  KAFKA_HOST: 'kafka',
-  KAFKA_PORT: '9092',
-  FLUENTBIT_HOST: 'fluent-bit',
-  FLUENTBIT_PORT: '24224',
-};
-
 function requireEnv(name: string): string {
-  return process.env[name] || ENV_DEFAULTS[name] || '';
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Environment variable ${name} is required but not set.`);
+  }
+  return value;
 }
 
 function getServiceDefinitions(): { services: ServiceDef[]; infrastructure: ServiceDef[] } {
