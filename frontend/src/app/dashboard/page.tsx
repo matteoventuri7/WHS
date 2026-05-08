@@ -51,7 +51,7 @@ export default function DashboardPage() {
           const data = JSON.parse(event.data);
           setEvents((prev) => {
             const newEvent = {
-              id: crypto.randomUUID(),
+              id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
               topic: data.topic,
               payload: data.payload,
               timestamp: new Date()
