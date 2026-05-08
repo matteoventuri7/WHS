@@ -1,11 +1,11 @@
 /**
  * Next.js instrumentation hook — runs once at server startup.
- * Validates all required environment variables before the server
- * accepts any request, so a missing var causes an immediate, clear error.
+ * Warns about missing environment variables. Services will use
+ * Docker-network defaults from next.config.ts if not explicitly set.
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const required = [
+    const recommended = [
       'INVENTORY_SERVICE_URL',
       'ORDER_SERVICE_URL',
       'PICKING_SERVICE_URL',
@@ -22,12 +22,12 @@ export async function register() {
       'FLUENTBIT_PORT',
     ];
 
-    const missing = required.filter((name) => !process.env[name]);
+    const missing = recommended.filter((name) => !process.env[name]);
 
     if (missing.length > 0) {
-      throw new Error(
-        `[WHS] Missing required environment variables:\n  ${missing.join('\n  ')}\n` +
-        `Check your .env.local (local dev) or docker-compose.yml (Docker).`,
+      console.warn(
+        `[WHS] Missing environment variables (using defaults where available):\n  ${missing.join('\n  ')}\n` +
+        `Set them in .env.local (local dev) or docker-compose.yml (Docker) for explicit configuration.`,
       );
     }
   }

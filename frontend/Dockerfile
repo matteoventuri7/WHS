@@ -1,4 +1,4 @@
-FROM node:22.22.2-alpine
+FROM node:22.22.2-alpine AS builder
 
 WORKDIR /app
 
@@ -9,4 +9,18 @@ COPY . .
 
 RUN npm run build
 
-CMD ["npm", "start"]
+# --- Production image ---
+FROM node:22.22.2-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy standalone server and static assets
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
