@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { PickingTask } from '../src/schemas/picking.schema';
-import { EventsGateway } from '../src/events.gateway';
 import { CompletePickingTaskHandler } from '../src/commands/complete-picking-task.handler';
 import { HandleOrderReadyForPickingHandler } from '../src/commands/handle-order-ready-for-picking.handler';
 import { CancelPickingTaskHandler } from '../src/commands/cancel-picking-task.handler';
@@ -14,11 +13,9 @@ import { GetAllTasksQuery } from '../src/queries/get-all-tasks.query';
 describe('Picking Command & Query Handlers', () => {
   let kafkaClient: any;
   let taskModel: any;
-  let eventsGateway: any;
 
   beforeEach(() => {
     kafkaClient = { emit: jest.fn() };
-    eventsGateway = { notifyDataChanged: jest.fn() };
     taskModel = jest.fn().mockImplementation((dto) => ({
       ...dto,
       taskId: 'T1',
@@ -37,7 +34,6 @@ describe('Picking Command & Query Handlers', () => {
           CompletePickingTaskHandler,
           { provide: 'KAFKA_CLIENT', useValue: kafkaClient },
           { provide: getModelToken(PickingTask.name), useValue: taskModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<CompletePickingTaskHandler>(CompletePickingTaskHandler);
@@ -63,7 +59,6 @@ describe('Picking Command & Query Handlers', () => {
         orderId: 'O1',
         allocations: task.allocations,
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toBe(task);
     });
 
@@ -91,7 +86,6 @@ describe('Picking Command & Query Handlers', () => {
           HandleOrderReadyForPickingHandler,
           { provide: 'KAFKA_CLIENT', useValue: kafkaClient },
           { provide: getModelToken(PickingTask.name), useValue: taskModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<HandleOrderReadyForPickingHandler>(
@@ -119,7 +113,6 @@ describe('Picking Command & Query Handlers', () => {
         orderId: 'O1',
         allocations: [{ productId: 'P1', quantity: 5, location: 'A1' }],
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should not create task if one already exists for the order', async () => {
@@ -130,7 +123,6 @@ describe('Picking Command & Query Handlers', () => {
       );
 
       expect(kafkaClient.emit).not.toHaveBeenCalled();
-      expect(eventsGateway.notifyDataChanged).not.toHaveBeenCalled();
     });
   });
 
@@ -142,7 +134,6 @@ describe('Picking Command & Query Handlers', () => {
         providers: [
           CancelPickingTaskHandler,
           { provide: getModelToken(PickingTask.name), useValue: taskModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<CancelPickingTaskHandler>(CancelPickingTaskHandler);
@@ -163,7 +154,6 @@ describe('Picking Command & Query Handlers', () => {
 
       expect(task.status).toBe('CANCELLED');
       expect(task.save).toHaveBeenCalled();
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toEqual({ success: true, message: 'Picking task annullato.' });
     });
 

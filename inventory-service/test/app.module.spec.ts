@@ -1,7 +1,6 @@
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { AppModule } from '../src/app.module';
 import { AppController } from '../src/app.controller';
-import { EventsGateway } from '../src/events.gateway';
 
 describe('AppModule', () => {
   it('should be defined', () => {
@@ -17,7 +16,6 @@ describe('AppModule', () => {
     const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, AppModule);
 
     expect(controllers).toContain(AppController);
-    expect(providers).toContain(EventsGateway);
     expect(imports.length).toBeGreaterThan(0);
   });
 });

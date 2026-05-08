@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Truck, Send, PackageCheck, Clock, Package } from 'lucide-react';
-import { useRealtimeData } from '../useRealtimeData';
+import { useRealtimeSSE } from '../useRealtimeSSE';
 import DispatchSimulatorToggle from '../components/DispatchSimulatorToggle';
 
 type VehicleFilter = 'ALL' | 'AVAILABLE' | 'DISPATCHED';
@@ -18,8 +18,8 @@ export default function ShippingPage() {
         setLoading(true);
         try {
             const [vehiclesRes, pendingRes] = await Promise.all([
-                fetch('http://localhost:3004/shipping/vehicles'),
-                fetch('http://localhost:3004/shipping/pending')
+                fetch('/api/shipping/vehicles'),
+                fetch('/api/shipping/pending')
             ]);
             const vData = await vehiclesRes.json();
             const pData = await pendingRes.json();
@@ -33,11 +33,11 @@ export default function ShippingPage() {
     };
 
     useEffect(() => { fetchData(); }, []);
-    useRealtimeData('http://localhost:3004', fetchData);
+    useRealtimeSSE(['ShipmentAssigned', 'VehicleDispatched', 'VehicleRegistered'], fetchData);
 
 
     const dispatchVehicle = async (id: string) => {
-        await fetch(`http://localhost:3004/shipping/vehicles/${id}/dispatch`, { method: 'POST' });
+        await fetch(`/api/shipping/vehicles/${id}/dispatch`, { method: 'POST' });
         fetchData();
     };
 

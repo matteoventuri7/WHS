@@ -7,7 +7,7 @@ export default function OrderSimulatorToggle() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('http://localhost:3007/order-simulator/status')
+        fetch('/api/order-simulator/status')
             .then((res) => res.json())
             .then((data) => {
                 setIsSimulating(data.isSimulating);
@@ -28,7 +28,7 @@ export default function OrderSimulatorToggle() {
 
         try {
             const endpoint = isSimulating ? 'stop' : 'start';
-            const res = await fetch(`http://localhost:3007/order-simulator/${endpoint}`, {
+            const res = await fetch(`/api/order-simulator/${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
             });

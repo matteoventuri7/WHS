@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Inventory } from '../src/schemas/inventory.schema';
-import { EventsGateway } from '../src/events.gateway';
 import { ReceiveGoodsHandler } from '../src/commands/receive-goods.handler';
 import { HandleOrderPlacedHandler } from '../src/commands/handle-order-placed.handler';
 import { HandleOrderCancelledHandler } from '../src/commands/handle-order-cancelled.handler';
@@ -24,10 +23,6 @@ describe('Inventory Command & Query Handlers', () => {
     updateOne: jest.fn(),
   };
 
-  const mockEventsGateway = {
-    notifyDataChanged: jest.fn(),
-  };
-
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -41,7 +36,6 @@ describe('Inventory Command & Query Handlers', () => {
           ReceiveGoodsHandler,
           { provide: 'KAFKA_CLIENT', useValue: mockKafkaClient },
           { provide: getModelToken(Inventory.name), useValue: mockInventoryModel },
-          { provide: EventsGateway, useValue: mockEventsGateway },
         ],
       }).compile();
       handler = module.get<ReceiveGoodsHandler>(ReceiveGoodsHandler);
@@ -74,7 +68,6 @@ describe('Inventory Command & Query Handlers', () => {
         totalQuantity: mockItem.quantity,
       });
 
-      expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toEqual(mockItem);
     });
   });
@@ -88,7 +81,6 @@ describe('Inventory Command & Query Handlers', () => {
           HandleOrderPlacedHandler,
           { provide: 'KAFKA_CLIENT', useValue: mockKafkaClient },
           { provide: getModelToken(Inventory.name), useValue: mockInventoryModel },
-          { provide: EventsGateway, useValue: mockEventsGateway },
         ],
       }).compile();
       handler = module.get<HandleOrderPlacedHandler>(HandleOrderPlacedHandler);
@@ -118,7 +110,6 @@ describe('Inventory Command & Query Handlers', () => {
         orderId: 'O1',
         allocations: [{ productId: 'P1', quantity: 5, location: 'A1' }],
       });
-      expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should allocate from multiple locations if required', async () => {
@@ -201,7 +192,6 @@ describe('Inventory Command & Query Handlers', () => {
         providers: [
           HandleOrderCancelledHandler,
           { provide: getModelToken(Inventory.name), useValue: mockInventoryModel },
-          { provide: EventsGateway, useValue: mockEventsGateway },
         ],
       }).compile();
       handler = module.get<HandleOrderCancelledHandler>(
@@ -226,7 +216,6 @@ describe('Inventory Command & Query Handlers', () => {
         { productId: 'P2', location: 'B1' },
         { $inc: { reservedQuantity: -2 } },
       );
-      expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should do nothing if no allocations are provided', async () => {
@@ -235,7 +224,6 @@ describe('Inventory Command & Query Handlers', () => {
       );
 
       expect(mockInventoryModel.updateOne).not.toHaveBeenCalled();
-      expect(mockEventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
   });
 

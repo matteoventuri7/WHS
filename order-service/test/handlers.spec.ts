@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Order } from '../src/schemas/order.schema';
-import { EventsGateway } from '../src/events.gateway';
 import { PlaceOrderHandler } from '../src/commands/place-order.handler';
 import { CancelOrderHandler } from '../src/commands/cancel-order.handler';
 import { ResumeOrderHandler } from '../src/commands/resume-order.handler';
@@ -24,11 +23,9 @@ import { GetAllOrdersQuery } from '../src/queries/get-all-orders.query';
 describe('Order Command & Query Handlers', () => {
   let kafkaClient: any;
   let orderModel: any;
-  let eventsGateway: any;
 
   beforeEach(() => {
     kafkaClient = { emit: jest.fn() };
-    eventsGateway = { notifyDataChanged: jest.fn() };
     orderModel = jest.fn().mockImplementation((dto) => ({
       ...dto,
       orderId: 'O1',
@@ -47,7 +44,6 @@ describe('Order Command & Query Handlers', () => {
           PlaceOrderHandler,
           { provide: 'KAFKA_CLIENT', useValue: kafkaClient },
           { provide: getModelToken(Order.name), useValue: orderModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<PlaceOrderHandler>(PlaceOrderHandler);
@@ -66,7 +62,6 @@ describe('Order Command & Query Handlers', () => {
         orderId: 'O1',
         items,
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should not emit OrderPlaced if order is not created properly', async () => {
@@ -92,7 +87,6 @@ describe('Order Command & Query Handlers', () => {
           CancelOrderHandler,
           { provide: 'KAFKA_CLIENT', useValue: kafkaClient },
           { provide: getModelToken(Order.name), useValue: orderModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<CancelOrderHandler>(CancelOrderHandler);
@@ -153,7 +147,6 @@ describe('Order Command & Query Handlers', () => {
         previousStatus: 'PENDING',
         allocations: [],
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toBe(order);
     });
 
@@ -189,7 +182,6 @@ describe('Order Command & Query Handlers', () => {
           ResumeOrderHandler,
           { provide: 'KAFKA_CLIENT', useValue: kafkaClient },
           { provide: getModelToken(Order.name), useValue: orderModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<ResumeOrderHandler>(ResumeOrderHandler);
@@ -229,7 +221,6 @@ describe('Order Command & Query Handlers', () => {
         orderId: 'O1',
         items: order.items,
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result).toBe(order);
     });
   });
@@ -243,7 +234,6 @@ describe('Order Command & Query Handlers', () => {
           HandleInventoryAllocatedHandler,
           { provide: 'KAFKA_CLIENT', useValue: kafkaClient },
           { provide: getModelToken(Order.name), useValue: orderModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<HandleInventoryAllocatedHandler>(
@@ -274,7 +264,6 @@ describe('Order Command & Query Handlers', () => {
         orderId: 'O1',
         allocations: ['a1'],
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should do nothing if order is already ALLOCATED', async () => {
@@ -302,7 +291,6 @@ describe('Order Command & Query Handlers', () => {
           HandleOutOfStockHandler,
           { provide: 'KAFKA_CLIENT', useValue: kafkaClient },
           { provide: getModelToken(Order.name), useValue: orderModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<HandleOutOfStockHandler>(HandleOutOfStockHandler);
@@ -326,7 +314,6 @@ describe('Order Command & Query Handlers', () => {
       expect(kafkaClient.emit).toHaveBeenCalledWith('OrderSuspended', {
         orderId: 'O1',
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should do nothing if order is already SUSPENDED', async () => {
@@ -399,7 +386,6 @@ describe('Order Command & Query Handlers', () => {
         providers: [
           HandleShipmentAssignedHandler,
           { provide: getModelToken(Order.name), useValue: orderModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<HandleShipmentAssignedHandler>(
@@ -422,7 +408,6 @@ describe('Order Command & Query Handlers', () => {
 
       expect(order.status).toBe('SHIPPED');
       expect(order.save).toHaveBeenCalled();
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should do nothing if order is not found', async () => {
@@ -439,7 +424,6 @@ describe('Order Command & Query Handlers', () => {
         providers: [
           HandlePickingCompletedHandler,
           { provide: getModelToken(Order.name), useValue: orderModel },
-          { provide: EventsGateway, useValue: eventsGateway },
         ],
       }).compile();
       handler = module.get<HandlePickingCompletedHandler>(
@@ -462,13 +446,11 @@ describe('Order Command & Query Handlers', () => {
 
       expect(order.status).toBe('PICKING_COMPLETED');
       expect(order.save).toHaveBeenCalled();
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should do nothing if order is not found', async () => {
       orderModel.findOne.mockResolvedValue(null);
       await handler.execute(new HandlePickingCompletedCommand('O1'));
-      expect(eventsGateway.notifyDataChanged).not.toHaveBeenCalled();
     });
 
     it('should ignore event if order is not ALLOCATED', async () => {
@@ -483,7 +465,6 @@ describe('Order Command & Query Handlers', () => {
 
       expect(order.status).toBe('CANCELLED');
       expect(order.save).not.toHaveBeenCalled();
-      expect(eventsGateway.notifyDataChanged).not.toHaveBeenCalled();
     });
   });
 

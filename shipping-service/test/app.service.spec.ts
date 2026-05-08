@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { EventsGateway } from '../src/events.gateway';
 import { Vehicle } from '../src/schemas/vehicle.schema';
 import { PendingShipment } from '../src/schemas/pending-shipment.schema';
 import { RegisterVehicleHandler } from '../src/commands/register-vehicle.handler';
@@ -59,7 +58,6 @@ describe('Shipping Handlers', () => {
   let getPendingShipmentsHandler: GetPendingShipmentsHandler;
   let shipmentAssignment: ShipmentAssignmentService;
   let kafkaClient: any;
-  let eventsGateway: any;
 
   const mockQuery = {
     exec: jest.fn(),
@@ -76,7 +74,6 @@ describe('Shipping Handlers', () => {
     MockPendingShipmentModel.deleteOne.mockReturnValue(mockQuery);
 
     const mockKafkaClient = { emit: jest.fn() };
-    const mockEventsGateway = { notifyDataChanged: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -98,10 +95,6 @@ describe('Shipping Handlers', () => {
           provide: 'KAFKA_CLIENT',
           useValue: mockKafkaClient,
         },
-        {
-          provide: EventsGateway,
-          useValue: mockEventsGateway,
-        },
       ],
     }).compile();
 
@@ -112,7 +105,6 @@ describe('Shipping Handlers', () => {
     getPendingShipmentsHandler = module.get(GetPendingShipmentsHandler);
     shipmentAssignment = module.get(ShipmentAssignmentService);
     kafkaClient = module.get('KAFKA_CLIENT');
-    eventsGateway = module.get(EventsGateway);
 
     jest.clearAllMocks();
   });
@@ -152,7 +144,6 @@ describe('Shipping Handlers', () => {
         vehicleId: 'V1',
         maxCapacity: 10,
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
       expect(result.vehicleId).toEqual('V1');
     });
 
@@ -209,7 +200,6 @@ describe('Shipping Handlers', () => {
         vehicleId: 'V1',
         tasks: ['T1'],
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should throw an error if vehicle not found', async () => {
@@ -231,7 +221,6 @@ describe('Shipping Handlers', () => {
       );
 
       expect(mockSave).toHaveBeenCalledTimes(1);
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should assign to vehicle if one is available', async () => {
@@ -256,7 +245,6 @@ describe('Shipping Handlers', () => {
         orderId: 'O1',
         vehicleId: 'V1',
       });
-      expect(eventsGateway.notifyDataChanged).toHaveBeenCalled();
     });
 
     it('should break assignment if a pending shipment cannot be assigned', async () => {

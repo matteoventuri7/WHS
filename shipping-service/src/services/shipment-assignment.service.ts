@@ -7,7 +7,6 @@ import {
   PendingShipment,
   PendingShipmentDocument,
 } from '../schemas/pending-shipment.schema';
-import { EventsGateway } from '../events.gateway';
 
 @Injectable()
 export class ShipmentAssignmentService {
@@ -18,7 +17,6 @@ export class ShipmentAssignmentService {
     @InjectModel(Vehicle.name) private vehicleModel: Model<VehicleDocument>,
     @InjectModel(PendingShipment.name)
     private pendingShipmentModel: Model<PendingShipmentDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async tryAssignToVehicle(
@@ -75,7 +73,6 @@ export class ShipmentAssignmentService {
         this.logger.log(
           `Spedizione pendente per task ${pending.taskId} assegnata e rimossa dalla coda.`,
         );
-        this.eventsGateway.notifyDataChanged();
       } else {
         this.logger.log(
           `Impossibile assegnare spedizione pendente per task ${pending.taskId}. Verrà riprovata.`,

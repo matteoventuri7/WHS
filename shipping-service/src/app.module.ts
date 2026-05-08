@@ -3,7 +3,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CqrsModule } from '@nestjs/cqrs';
 import { AppController } from './app.controller';
-import { EventsGateway } from './events.gateway';
 import { Vehicle, VehicleSchema } from './schemas/vehicle.schema';
 import {
   PendingShipment,
@@ -49,7 +48,6 @@ import { ShipmentAssignmentService } from './services/shipment-assignment.servic
   ],
   controllers: [AppController],
   providers: [
-    EventsGateway,
     ShipmentAssignmentService,
     ...CommandHandlers,
     ...QueryHandlers,

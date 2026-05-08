@@ -9,7 +9,7 @@ export default function DispatchSimulatorToggle() {
     const [intervalMs, setIntervalMs] = useState(15000);
 
     useEffect(() => {
-        fetch('http://localhost:3006/dispatch/status')
+        fetch('/api/dispatch/status')
             .then(res => res.json())
             .then(data => {
                 setIsSimulating(data.isSimulating);
@@ -32,7 +32,7 @@ export default function DispatchSimulatorToggle() {
             const endpoint = isSimulating ? 'stop' : 'start';
             const body = !isSimulating ? JSON.stringify({ intervalMs }) : undefined;
 
-            const res = await fetch(`http://localhost:3006/dispatch/${endpoint}`, {
+            const res = await fetch(`/api/dispatch/${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body,
@@ -51,7 +51,7 @@ export default function DispatchSimulatorToggle() {
 
     const addRandomTruck = async () => {
         try {
-            await fetch('http://localhost:3006/dispatch/truck', {
+            await fetch('/api/dispatch/truck', {
                 method: 'POST',
             });
         } catch (err) {

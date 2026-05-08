@@ -4,7 +4,6 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PickingTask, PickingTaskDocument } from '../schemas/picking.schema';
-import { EventsGateway } from '../events.gateway';
 import { CompletePickingTaskCommand } from './complete-picking-task.command';
 
 @CommandHandler(CompletePickingTaskCommand)
@@ -17,7 +16,6 @@ export class CompletePickingTaskHandler
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(PickingTask.name)
     private taskModel: Model<PickingTaskDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: CompletePickingTaskCommand) {
@@ -32,7 +30,6 @@ export class CompletePickingTaskHandler
         orderId: task.orderId,
         allocations: task.allocations,
       });
-      this.eventsGateway.notifyDataChanged();
       return task;
     }
     throw new Error('Task non trovato o già completato');

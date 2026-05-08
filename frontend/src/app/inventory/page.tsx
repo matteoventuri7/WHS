@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PackageOpen, Plus, ArchiveRestore, Eye, EyeOff } from 'lucide-react';
-import { useRealtimeData } from '../useRealtimeData';
+import { useRealtimeSSE } from '../useRealtimeSSE';
 import SimulatorToggle from '../components/SimulatorToggle';
 
 export default function InventoryPage() {
@@ -18,7 +18,7 @@ export default function InventoryPage() {
     const fetchInventory = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3001/inventory');
+            const res = await fetch('/api/inventory');
             const data = await res.json();
             setItems(data);
         } catch (e) {
@@ -29,11 +29,11 @@ export default function InventoryPage() {
     };
 
     useEffect(() => { fetchInventory(); }, []);
-    useRealtimeData('http://localhost:3001', fetchInventory);
+    useRealtimeSSE(['ItemStored', 'InventoryAllocated', 'OutOfStock', 'GoodsArriving'], fetchInventory);
 
     const handleInbound = async (e: React.FormEvent) => {
         e.preventDefault();
-        await fetch('http://localhost:3001/inventory/receive', {
+        await fetch('/api/inventory/receive', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId, location, quantity: Number(quantity) })

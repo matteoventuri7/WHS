@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PickingTask, PickingTaskDocument } from '../schemas/picking.schema';
-import { EventsGateway } from '../events.gateway';
 import { CancelPickingTaskCommand } from './cancel-picking-task.command';
 
 @CommandHandler(CancelPickingTaskCommand)
@@ -15,7 +14,6 @@ export class CancelPickingTaskHandler
   constructor(
     @InjectModel(PickingTask.name)
     private taskModel: Model<PickingTaskDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: CancelPickingTaskCommand) {
@@ -33,7 +31,6 @@ export class CancelPickingTaskHandler
       this.logger.log(
         `Picking Task ${task.taskId} annullato per ordine ${command.orderId}.`,
       );
-      this.eventsGateway.notifyDataChanged();
       return { success: true, message: 'Picking task annullato.' };
     }
 

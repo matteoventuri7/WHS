@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ScanBarcode, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { useRealtimeData } from '../useRealtimeData';
+import { useRealtimeSSE } from '../useRealtimeSSE';
 import PickingSimulatorToggle from '../components/PickingSimulatorToggle';
 
 export default function PickingPage() {
@@ -12,7 +12,7 @@ export default function PickingPage() {
     const fetchTasks = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3003/picking/tasks');
+            const res = await fetch('/api/picking/tasks');
             const data = await res.json();
             setTasks(data.sort((a: any, b: any) => parseInt(b.taskId) - parseInt(a.taskId)));
         } catch (e) {
@@ -23,10 +23,10 @@ export default function PickingPage() {
     };
 
     useEffect(() => { fetchTasks(); }, []);
-    useRealtimeData('http://localhost:3003', fetchTasks);
+    useRealtimeSSE(['PickingTaskCreated', 'PickingTaskCompleted', 'CancelPickingTask'], fetchTasks);
 
     const completeTask = async (taskId: string) => {
-        await fetch(`http://localhost:3003/picking/tasks/${taskId}/complete`, { method: 'POST' });
+        await fetch(`/api/picking/tasks/${taskId}/complete`, { method: 'POST' });
         fetchTasks();
     };
 

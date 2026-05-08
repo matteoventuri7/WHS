@@ -8,7 +8,7 @@ export default function SimulatorToggle() {
     const [intervalMs, setIntervalMs] = useState(15000);
 
     useEffect(() => {
-        fetch('http://localhost:3005/inbound/status')
+        fetch('/api/inbound/status')
             .then(res => res.json())
             .then(data => {
                 setIsSimulating(data.isSimulating);
@@ -31,7 +31,7 @@ export default function SimulatorToggle() {
             const endpoint = isSimulating ? 'stop' : 'start';
             const body = !isSimulating ? JSON.stringify({ intervalMs }) : undefined;
 
-            const res = await fetch(`http://localhost:3005/inbound/${endpoint}`, {
+            const res = await fetch(`/api/inbound/${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body,

@@ -4,7 +4,6 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Inventory, InventoryDocument } from '../schemas/inventory.schema';
-import { EventsGateway } from '../events.gateway';
 import { HandleOrderPlacedCommand } from './handle-order-placed.command';
 
 @CommandHandler(HandleOrderPlacedCommand)
@@ -17,7 +16,6 @@ export class HandleOrderPlacedHandler
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(Inventory.name)
     private inventoryModel: Model<InventoryDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: HandleOrderPlacedCommand) {
@@ -99,6 +97,5 @@ export class HandleOrderPlacedHandler
       }
       this.kafkaClient.emit('OutOfStock', { orderId: command.orderId });
     }
-    this.eventsGateway.notifyDataChanged();
   }
 }

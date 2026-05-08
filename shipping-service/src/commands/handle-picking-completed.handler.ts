@@ -6,7 +6,6 @@ import {
   PendingShipment,
   PendingShipmentDocument,
 } from '../schemas/pending-shipment.schema';
-import { EventsGateway } from '../events.gateway';
 import { ShipmentAssignmentService } from '../services/shipment-assignment.service';
 import { HandlePickingCompletedCommand } from './handle-picking-completed.command';
 
@@ -19,7 +18,6 @@ export class HandlePickingCompletedHandler
   constructor(
     @InjectModel(PendingShipment.name)
     private pendingShipmentModel: Model<PendingShipmentDocument>,
-    private readonly eventsGateway: EventsGateway,
     private readonly shipmentAssignment: ShipmentAssignmentService,
   ) {}
 
@@ -52,6 +50,5 @@ export class HandlePickingCompletedHandler
         );
       }
     }
-    this.eventsGateway.notifyDataChanged();
   }
 }

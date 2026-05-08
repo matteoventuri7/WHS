@@ -5,72 +5,32 @@ import { Activity, Server, RefreshCw, CheckCircle2, XCircle, AlertCircle, Databa
 
 type ServiceStatus = {
     name: string;
-    url: string;
-    port: number;
     status: 'online' | 'offline' | 'loading';
 };
 
-const INITIAL_SERVICES: ServiceStatus[] = [
-    { name: 'Inventory Service', url: 'http://localhost:3001/inventory/health', port: 3001, status: 'loading' },
-    { name: 'Order Service', url: 'http://localhost:3002/orders/health', port: 3002, status: 'loading' },
-    { name: 'Picking Service', url: 'http://localhost:3003/picking/health', port: 3003, status: 'loading' },
-    { name: 'Shipping Service', url: 'http://localhost:3004/shipping/health', port: 3004, status: 'loading' },
-    { name: 'Inventory Simulator', url: 'http://localhost:3005/inbound/health', port: 3005, status: 'loading' },
-    { name: 'Shipping Simulator', url: 'http://localhost:3006/dispatch/health', port: 3006, status: 'loading' },
-    { name: 'Picking Simulator', url: 'http://localhost:3008/picking-simulator/health', port: 3008, status: 'loading' }
-];
-
-const INFRA_SERVICES: ServiceStatus[] = [
-    { name: 'OpenObserve', url: 'http://localhost:5080', port: 5080, status: 'loading' },
-    { name: 'Kafka Broker', url: 'http://localhost:9092', port: 9092, status: 'loading' },
-    { name: 'Fluent-Bit', url: 'http://localhost:24224', port: 24224, status: 'loading' }
-];
-
 export default function StatusPage() {
-    const [services, setServices] = useState<ServiceStatus[]>(INITIAL_SERVICES);
-    const [infraServices, setInfraServices] = useState<ServiceStatus[]>(INFRA_SERVICES);
+    const [services, setServices] = useState<ServiceStatus[]>([]);
+    const [infraServices, setInfraServices] = useState<ServiceStatus[]>([]);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
-    const checkServiceStatus = async (service: ServiceStatus, type: 'http' | 'tcp' = 'http'): Promise<ServiceStatus> => {
-        try {
-            // timeout leggermente superiore per la chiamata proxy
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 4000);
-
-            const res = await fetch(`/api/health?url=${encodeURIComponent(service.url)}&type=${type}`, { signal: controller.signal });
-            clearTimeout(id);
-
-            if (res.ok) {
-                const data = await res.json();
-                if (data.status === 'online') {
-                    return { ...service, status: 'online' };
-                }
-            }
-        } catch (e) {
-            // Errore di connessione o timeout
-        }
-        return { ...service, status: 'offline' };
-    };
-
     const checkAllServices = async () => {
         setIsRefreshing(true);
-        const [updatedServices, updatedInfra] = await Promise.all([
-            Promise.all(services.map(s => checkServiceStatus({ ...s, status: 'loading' }, 'http'))),
-            Promise.all(infraServices.map(s => {
-                const isTcp = [9092, 24224].includes(s.port);
-                return checkServiceStatus({ ...s, status: 'loading' }, isTcp ? 'tcp' : 'http');
-            }))
-        ]);
-        setServices(updatedServices);
-        setInfraServices(updatedInfra);
-        setLastChecked(new Date());
-        setIsRefreshing(false);
+        try {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            setServices(data.services);
+            setInfraServices(data.infrastructure);
+            setLastChecked(new Date());
+        } catch (e) {
+            console.error('Failed to fetch status', e);
+        } finally {
+            setIsRefreshing(false);
+        }
     };
 
     useEffect(() => {
         checkAllServices();
-        // Polling automatico ogni 30 secondi
         const interval = setInterval(() => {
             checkAllServices();
         }, 30000);
@@ -177,15 +137,6 @@ export default function StatusPage() {
 
                             <div>
                                 <h2 className="text-xl font-bold text-slate-200 mb-1">{service.name}</h2>
-                                <div className="flex items-center gap-4 text-sm font-mono text-slate-500">
-                                    <span className="truncate max-w-[200px]" title={service.url}>
-                                        {new URL(service.url).pathname}
-                                    </span>
-                                    <span className="flex items-center gap-1 ml-auto shrink-0">
-                                        <span className="w-2 h-2 rounded-full bg-slate-700"></span>
-                                        {service.port}
-                                    </span>
-                                </div>
                             </div>
                         </motion.div>
                     ))}
@@ -247,15 +198,6 @@ export default function StatusPage() {
 
                             <div>
                                 <h2 className="text-xl font-bold text-slate-200 mb-1">{service.name}</h2>
-                                <div className="flex items-center gap-4 text-sm font-mono text-slate-500">
-                                    <span className="truncate max-w-[200px]" title={service.url}>
-                                        {new URL(service.url).pathname !== '/' ? new URL(service.url).pathname : 'TCP/HTTP'}
-                                    </span>
-                                    <span className="flex items-center gap-1 ml-auto shrink-0">
-                                        <span className="w-2 h-2 rounded-full bg-slate-700"></span>
-                                        {service.port}
-                                    </span>
-                                </div>
                             </div>
                         </motion.div>
                     ))}

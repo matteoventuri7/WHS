@@ -3,7 +3,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CqrsModule } from '@nestjs/cqrs';
 import { AppController } from './app.controller';
-import { EventsGateway } from './events.gateway';
 import { Order, OrderSchema } from './schemas/order.schema';
 import { CommandHandlers } from './commands';
 import { QueryHandlers } from './queries';
@@ -40,6 +39,6 @@ import { QueryHandlers } from './queries';
     CqrsModule,
   ],
   controllers: [AppController],
-  providers: [EventsGateway, ...CommandHandlers, ...QueryHandlers],
+  providers: [...CommandHandlers, ...QueryHandlers],
 })
 export class AppModule {}

@@ -4,7 +4,6 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Vehicle, VehicleDocument } from '../schemas/vehicle.schema';
-import { EventsGateway } from '../events.gateway';
 import { DispatchVehicleCommand } from './dispatch-vehicle.command';
 
 @CommandHandler(DispatchVehicleCommand)
@@ -16,7 +15,6 @@ export class DispatchVehicleHandler
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(Vehicle.name) private vehicleModel: Model<VehicleDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: DispatchVehicleCommand) {
@@ -32,7 +30,6 @@ export class DispatchVehicleHandler
         vehicleId: command.vehicleId,
         tasks: v.assignedTaskIds,
       });
-      this.eventsGateway.notifyDataChanged();
       return v;
     }
     throw new Error('Veicolo non trovato o non pronto');

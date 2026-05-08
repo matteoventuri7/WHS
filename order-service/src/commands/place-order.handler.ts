@@ -4,7 +4,6 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order, OrderDocument } from '../schemas/order.schema';
-import { EventsGateway } from '../events.gateway';
 import { PlaceOrderCommand } from './place-order.command';
 
 @CommandHandler(PlaceOrderCommand)
@@ -14,7 +13,6 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand> {
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: PlaceOrderCommand) {
@@ -31,7 +29,6 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand> {
       items: order.items,
     });
 
-    this.eventsGateway.notifyDataChanged();
     return order;
   }
 }

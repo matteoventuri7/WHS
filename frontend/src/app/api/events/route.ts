@@ -4,7 +4,10 @@ import { Kafka } from 'kafkajs';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || 'localhost:29092';
+const KAFKA_BROKER = process.env.KAFKA_BROKER;
+if (!KAFKA_BROKER) {
+  throw new Error('Missing required environment variable: KAFKA_BROKER');
+}
 
 const kafka = new Kafka({
   clientId: 'nexus-frontend-dashboard',

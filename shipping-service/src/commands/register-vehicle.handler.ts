@@ -4,7 +4,6 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Vehicle, VehicleDocument } from '../schemas/vehicle.schema';
-import { EventsGateway } from '../events.gateway';
 import { ShipmentAssignmentService } from '../services/shipment-assignment.service';
 import { RegisterVehicleCommand } from './register-vehicle.command';
 
@@ -17,7 +16,6 @@ export class RegisterVehicleHandler
   constructor(
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(Vehicle.name) private vehicleModel: Model<VehicleDocument>,
-    private readonly eventsGateway: EventsGateway,
     private readonly shipmentAssignment: ShipmentAssignmentService,
   ) {}
 
@@ -34,7 +32,6 @@ export class RegisterVehicleHandler
       vehicleId: command.vehicleId,
       maxCapacity: command.maxCapacity,
     });
-    this.eventsGateway.notifyDataChanged();
 
     await this.shipmentAssignment.processPendingShipments();
 

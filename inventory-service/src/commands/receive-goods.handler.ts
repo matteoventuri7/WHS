@@ -4,7 +4,6 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Inventory, InventoryDocument } from '../schemas/inventory.schema';
-import { EventsGateway } from '../events.gateway';
 import { ReceiveGoodsCommand } from './receive-goods.command';
 
 @CommandHandler(ReceiveGoodsCommand)
@@ -17,7 +16,6 @@ export class ReceiveGoodsHandler
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(Inventory.name)
     private inventoryModel: Model<InventoryDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: ReceiveGoodsCommand) {
@@ -41,7 +39,6 @@ export class ReceiveGoodsHandler
       totalQuantity: item.quantity,
     });
 
-    this.eventsGateway.notifyDataChanged();
     return item;
   }
 }

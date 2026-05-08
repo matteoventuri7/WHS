@@ -8,7 +8,7 @@ export default function PickingSimulatorToggle() {
     const [intervalMs, setIntervalMs] = useState(15000);
 
     useEffect(() => {
-        fetch('http://localhost:3008/picking-simulator/status')
+        fetch('/api/picking-simulator/status')
             .then((res) => res.json())
             .then((data) => {
                 setIsSimulating(data.isSimulating);
@@ -34,7 +34,7 @@ export default function PickingSimulatorToggle() {
             const endpoint = isSimulating ? 'stop' : 'start';
             const body = !isSimulating ? JSON.stringify({ intervalMs }) : undefined;
 
-            const res = await fetch(`http://localhost:3008/picking-simulator/${endpoint}`, {
+            const res = await fetch(`/api/picking-simulator/${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body,

@@ -4,7 +4,6 @@ import { ClientKafka } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PickingTask, PickingTaskDocument } from '../schemas/picking.schema';
-import { EventsGateway } from '../events.gateway';
 import { HandleOrderReadyForPickingCommand } from './handle-order-ready-for-picking.command';
 
 @CommandHandler(HandleOrderReadyForPickingCommand)
@@ -17,7 +16,6 @@ export class HandleOrderReadyForPickingHandler
     @Inject('KAFKA_CLIENT') private readonly kafkaClient: ClientKafka,
     @InjectModel(PickingTask.name)
     private taskModel: Model<PickingTaskDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: HandleOrderReadyForPickingCommand) {
@@ -38,7 +36,6 @@ export class HandleOrderReadyForPickingHandler
         orderId: task.orderId,
         allocations: task.allocations,
       });
-      this.eventsGateway.notifyDataChanged();
     }
   }
 }

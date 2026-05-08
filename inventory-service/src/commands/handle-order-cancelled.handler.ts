@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Inventory, InventoryDocument } from '../schemas/inventory.schema';
-import { EventsGateway } from '../events.gateway';
 import { HandleOrderCancelledCommand } from './handle-order-cancelled.command';
 
 @CommandHandler(HandleOrderCancelledCommand)
@@ -15,7 +14,6 @@ export class HandleOrderCancelledHandler
   constructor(
     @InjectModel(Inventory.name)
     private inventoryModel: Model<InventoryDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: HandleOrderCancelledCommand) {
@@ -36,6 +34,5 @@ export class HandleOrderCancelledHandler
         `Stock liberato con successo per ordine ${command.orderId}`,
       );
     }
-    this.eventsGateway.notifyDataChanged();
   }
 }

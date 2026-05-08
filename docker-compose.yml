@@ -247,12 +247,35 @@ services:
         condition: service_started
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        INVENTORY_SERVICE_URL: http://inventory-service:3001
+        ORDER_SERVICE_URL: http://order-service:3002
+        PICKING_SERVICE_URL: http://picking-service:3003
+        SHIPPING_SERVICE_URL: http://shipping-service:3004
+        INBOUND_SIMULATOR_URL: http://inventory-simulator-service:3005
+        DISPATCH_SIMULATOR_URL: http://shipping-simulator-service:3006
+        ORDER_SIMULATOR_URL: http://order-simulator-service:3007
+        PICKING_SIMULATOR_URL: http://picking-simulator-service:3008
     ports:
       - "3000:3000"
     environment:
-      - PORT_TO_SERVICE={"3001":"inventory-service","3002":"order-service","3003":"picking-service","3004":"shipping-service","3005":"inventory-simulator-service","3006":"shipping-simulator-service","3007":"order-simulator-service","3008":"picking-simulator-service", "5080":"openobserve","9092":"kafka","24224":"fluent-bit"}
+      - INVENTORY_SERVICE_URL=http://inventory-service:3001
+      - ORDER_SERVICE_URL=http://order-service:3002
+      - PICKING_SERVICE_URL=http://picking-service:3003
+      - SHIPPING_SERVICE_URL=http://shipping-service:3004
+      - INBOUND_SIMULATOR_URL=http://inventory-simulator-service:3005
+      - DISPATCH_SIMULATOR_URL=http://shipping-simulator-service:3006
+      - ORDER_SIMULATOR_URL=http://order-simulator-service:3007
+      - PICKING_SIMULATOR_URL=http://picking-simulator-service:3008
       - KAFKA_BROKER=kafka:9092
+      - OPENOBSERVE_URL=http://openobserve:5080
+      - KAFKA_UI_URL=http://kafka-ui:8080
+      - KAFKA_HOST=kafka
+      - KAFKA_PORT=9092
+      - FLUENTBIT_HOST=fluent-bit
+      - FLUENTBIT_PORT=24224
     depends_on:
       kafka:
         condition: service_healthy

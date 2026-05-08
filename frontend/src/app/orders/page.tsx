@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Plus, AlertCircle, CheckCircle2, Clock, Truck } from 'lucide-react';
-import { useRealtimeData } from '../useRealtimeData';
+import { useRealtimeSSE } from '../useRealtimeSSE';
 import OrderSimulatorToggle from '../components/OrderSimulatorToggle';
 
 export default function OrdersPage() {
@@ -17,7 +17,7 @@ export default function OrdersPage() {
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3002/orders');
+            const res = await fetch('/api/orders');
             const data = await res.json();
             setOrders(data.sort((a: any, b: any) => parseInt(b.orderId) - parseInt(a.orderId)));
         } catch (e) {
@@ -28,11 +28,11 @@ export default function OrdersPage() {
     };
 
     useEffect(() => { fetchOrders(); }, []);
-    useRealtimeData('http://localhost:3002', fetchOrders);
+    useRealtimeSSE(['OrderPlaced', 'OrderCancelled', 'OrderSuspended', 'InventoryAllocated', 'OutOfStock', 'OrderReadyForPicking'], fetchOrders);
 
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
-        await fetch('http://localhost:3002/orders', {
+        await fetch('/api/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ items: [{ productId, quantity: Number(quantity) }] })
@@ -43,7 +43,7 @@ export default function OrdersPage() {
 
     const handleCancelOrder = async (orderId: string) => {
         try {
-            const res = await fetch(`http://localhost:3002/orders/${orderId}/cancel`, {
+            const res = await fetch(`/api/orders/${orderId}/cancel`, {
                 method: 'PATCH'
             });
             if (!res.ok) {
@@ -59,7 +59,7 @@ export default function OrdersPage() {
 
     const handleResumeOrder = async (orderId: string) => {
         try {
-            const res = await fetch(`http://localhost:3002/orders/${orderId}/resume`, {
+            const res = await fetch(`/api/orders/${orderId}/resume`, {
                 method: 'PATCH'
             });
             if (!res.ok) {

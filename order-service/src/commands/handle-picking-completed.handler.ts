@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order, OrderDocument } from '../schemas/order.schema';
-import { EventsGateway } from '../events.gateway';
 import { HandlePickingCompletedCommand } from './handle-picking-completed.command';
 
 @CommandHandler(HandlePickingCompletedCommand)
@@ -14,7 +13,6 @@ export class HandlePickingCompletedHandler
 
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async execute(command: HandlePickingCompletedCommand) {
@@ -30,6 +28,5 @@ export class HandlePickingCompletedHandler
     order.status = 'PICKING_COMPLETED';
     await order.save();
     this.logger.log(`Ordine ${order.orderId} aggiornato a PICKING_COMPLETED.`);
-    this.eventsGateway.notifyDataChanged();
   }
 }
