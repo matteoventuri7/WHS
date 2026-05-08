@@ -4,17 +4,19 @@ import { Kafka } from 'kafkajs';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER;
-if (!KAFKA_BROKER) {
-  throw new Error('Missing required environment variable: KAFKA_BROKER');
+function getKafka() {
+  const broker = process.env.KAFKA_BROKER;
+  if (!broker) {
+    throw new Error('Missing required environment variable: KAFKA_BROKER');
+  }
+  return new Kafka({
+    clientId: 'nexus-frontend-dashboard',
+    brokers: [broker],
+  });
 }
 
-const kafka = new Kafka({
-  clientId: 'nexus-frontend-dashboard',
-  brokers: [KAFKA_BROKER],
-});
-
 export async function GET(req: NextRequest) {
+  const kafka = getKafka();
   const consumer = kafka.consumer({ groupId: `dashboard-consumer-${Date.now()}` });
 
   try {
