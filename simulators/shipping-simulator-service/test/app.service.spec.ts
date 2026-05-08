@@ -181,7 +181,7 @@ describe('AppService', () => {
       await service['simulateDispatch']();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        'Formato risposta non valido da shipping-service',
+        'Invalid response format from shipping-service',
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -204,7 +204,7 @@ describe('AppService', () => {
       await service['simulateDispatch']();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Nessun veicolo pronto per la partenza'),
+        expect.stringContaining('No vehicles ready for dispatch'),
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -218,7 +218,7 @@ describe('AppService', () => {
       await service['simulateDispatch']();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        'Impossibile contattare shipping-service: Connection refused',
+        'Unable to contact shipping-service: Connection refused',
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -242,7 +242,7 @@ describe('AppService', () => {
       await service['simulateDispatch']();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        'Errore durante il dispatch del veicolo V1: Dispatch failed',
+        'Error during vehicle dispatch V1: Dispatch failed',
       );
     });
   });

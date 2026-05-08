@@ -201,7 +201,7 @@ describe('AppService', () => {
       await service['simulateOrder']();
 
       expect(warnSpy).toHaveBeenCalledWith(
-        'Formato risposta non valido da inventory-service',
+        'Invalid response format from inventory-service',
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -216,7 +216,7 @@ describe('AppService', () => {
       await service['simulateOrder']();
 
       expect(logSpy).toHaveBeenCalledWith(
-        'Nessun prodotto disponibile: ordine non generato.',
+        'No products available: order not generated.',
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -229,7 +229,7 @@ describe('AppService', () => {
       await service['simulateOrder']();
 
       expect(errorSpy).toHaveBeenCalledWith(
-        'Impossibile contattare inventory-service: Connection refused',
+        'Unable to contact inventory-service: Connection refused',
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -248,7 +248,7 @@ describe('AppService', () => {
       await service['simulateOrder']();
 
       expect(errorSpy).toHaveBeenCalledWith(
-        'Errore durante la creazione ordine: Order endpoint down',
+        'Error during order creation: Order endpoint down',
       );
     });
 
@@ -359,7 +359,7 @@ describe('AppService', () => {
 
       expect(mockHttpService.patch).not.toHaveBeenCalled();
       expect(logSpy).toHaveBeenCalledWith(
-        'Nessun ordine non completato disponibile per la cancellazione random.',
+        'No incomplete orders available for random cancellation.',
       );
     });
 
@@ -394,7 +394,7 @@ describe('AppService', () => {
 
       expect(mockHttpService.patch).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
-        'Formato risposta non valido da order-service durante la selezione ordine da annullare',
+        'Invalid response format from order-service during cancellable order selection',
       );
     });
 
@@ -429,7 +429,7 @@ describe('AppService', () => {
 
       expect(mockHttpService.patch).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
-        'Tentativo di cancellazione random fallito: Order service unavailable',
+        'Random cancellation attempt failed: Order service unavailable',
       );
     });
 
@@ -471,7 +471,7 @@ describe('AppService', () => {
         {},
       );
       expect(warnSpy).toHaveBeenCalledWith(
-        'Tentativo di cancellazione random fallito: Cannot cancel now',
+        'Random cancellation attempt failed: Cannot cancel now',
       );
     });
   });

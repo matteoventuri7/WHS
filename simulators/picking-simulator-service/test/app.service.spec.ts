@@ -170,7 +170,7 @@ describe('AppService', () => {
       await service['simulatePicking']();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        'Formato risposta non valido da picking-service',
+        'Invalid response format from picking-service',
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -184,7 +184,7 @@ describe('AppService', () => {
       await service['simulatePicking']();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        'Nessun picking task PENDING disponibile.',
+        'No PENDING picking tasks available.',
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -198,7 +198,7 @@ describe('AppService', () => {
       await service['simulatePicking']();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        'Impossibile contattare picking-service: Connection refused',
+        'Unable to contact picking-service: Connection refused',
       );
       expect(mockHttpService.post).not.toHaveBeenCalled();
     });
@@ -216,7 +216,7 @@ describe('AppService', () => {
       await service['simulatePicking']();
 
       expect(loggerSpy).toHaveBeenCalledWith(
-        'Errore durante il completamento del task TASK-901: Complete endpoint down',
+        'Error completing task TASK-901: Complete endpoint down',
       );
     });
   });

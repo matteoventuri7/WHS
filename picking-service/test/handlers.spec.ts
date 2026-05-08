@@ -154,7 +154,7 @@ describe('Picking Command & Query Handlers', () => {
 
       expect(task.status).toBe('CANCELLED');
       expect(task.save).toHaveBeenCalled();
-      expect(result).toEqual({ success: true, message: 'Picking task annullato.' });
+      expect(result).toEqual({ success: true, message: 'Picking task cancelled.' });
     });
 
     it('should return success if no task exists for the order', async () => {
@@ -164,7 +164,7 @@ describe('Picking Command & Query Handlers', () => {
 
       expect(result).toEqual({
         success: true,
-        message: 'Nessun picking task associato.',
+        message: 'No picking task associated.',
       });
     });
 
