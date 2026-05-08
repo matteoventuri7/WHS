@@ -22,7 +22,7 @@ export class HandleOutOfStockHandler
     if (order && order.status !== 'SUSPENDED') {
       order.status = 'SUSPENDED';
       await order.save();
-      this.logger.log(`Ordine ${order.orderId} sospeso (OutOfStock).`);
+      this.logger.log(`Order ${order.orderId} suspended (OutOfStock).`);
       this.kafkaClient.emit('OrderSuspended', { orderId: order.orderId });
     }
   }

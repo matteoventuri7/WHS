@@ -20,25 +20,25 @@ export class CancelPickingTaskHandler
     const task = await this.taskModel.findOne({ orderId: command.orderId });
     if (!task) {
       this.logger.log(
-        `Nessun picking task trovato per l'ordine ${command.orderId}. Annullamento consentito.`,
+        `No picking task found for order ${command.orderId}. Cancellation allowed.`,
       );
-      return { success: true, message: 'Nessun picking task associato.' };
+      return { success: true, message: 'No picking task associated.' };
     }
 
     if (task.status === 'PENDING') {
       task.status = 'CANCELLED';
       await task.save();
       this.logger.log(
-        `Picking Task ${task.taskId} annullato per ordine ${command.orderId}.`,
+        `Picking Task ${task.taskId} cancelled for order ${command.orderId}.`,
       );
-      return { success: true, message: 'Picking task annullato.' };
+      return { success: true, message: 'Picking task cancelled.' };
     }
 
     this.logger.warn(
-      `Impossibile annullare Picking Task ${task.taskId} per ordine ${command.orderId} (stato: ${task.status}).`,
+      `Unable to cancel Picking Task ${task.taskId} for order ${command.orderId} (status: ${task.status}).`,
     );
     throw new Error(
-      `Impossibile annullare: il task di picking è in stato ${task.status}`,
+      `Unable to cancel: the picking task is in status ${task.status}`,
     );
   }
 }

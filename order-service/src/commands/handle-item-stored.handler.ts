@@ -23,7 +23,7 @@ export class HandleItemStoredHandler
       .sort({ _id: 1 });
     for (const order of suspendedOrders) {
       this.logger.log(
-        `Ripristino e ri-tentativo di allocazione per ordine sospeso ${order.orderId}`,
+        `Restoring and retrying allocation for suspended order ${order.orderId}`,
       );
       this.kafkaClient.emit('OrderPlaced', {
         orderId: order.orderId,

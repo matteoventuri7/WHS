@@ -20,7 +20,7 @@ export class HandleShipmentAssignedHandler
     if (order) {
       order.status = 'SHIPPED';
       await order.save();
-      this.logger.log(`Ordine ${order.orderId} aggiornato a SHIPPED.`);
+      this.logger.log(`Order ${order.orderId} updated to SHIPPED.`);
     }
   }
 }

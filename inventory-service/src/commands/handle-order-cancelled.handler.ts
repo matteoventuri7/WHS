@@ -18,11 +18,11 @@ export class HandleOrderCancelledHandler
 
   async execute(command: HandleOrderCancelledCommand) {
     this.logger.log(
-      `Ricevuto evento OrderCancelled per ordine ${command.orderId}`,
+      `Received OrderCancelled event for order ${command.orderId}`,
     );
     if (command.allocations && command.allocations.length > 0) {
       this.logger.log(
-        `Annullamento allocazioni per ordine ${command.orderId}. Ripristino stock...`,
+        `Cancelling allocations for order ${command.orderId}. Restoring stock...`,
       );
       for (const alloc of command.allocations) {
         await this.inventoryModel.updateOne(
@@ -31,7 +31,7 @@ export class HandleOrderCancelledHandler
         );
       }
       this.logger.log(
-        `Stock liberato con successo per ordine ${command.orderId}`,
+        `Stock successfully freed for order ${command.orderId}`,
       );
     }
   }

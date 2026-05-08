@@ -46,7 +46,7 @@ export class HandlePickingCompletedHandler
         });
         await pending.save();
         this.logger.warn(
-          `Nessun veicolo disponibile. Task ${command.taskId} salvato come spedizione pendente.`,
+          `No vehicle available. Task ${command.taskId} saved as pending shipment.`,
         );
       }
     }

@@ -38,7 +38,7 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand> {
     order.status = 'CANCELLED';
     await order.save();
 
-    this.logger.log(`Ordine ${order.orderId} annullato.`);
+    this.logger.log(`Order ${order.orderId} cancelled.`);
 
     this.kafkaClient.emit('OrderCancelled', {
       orderId: order.orderId,

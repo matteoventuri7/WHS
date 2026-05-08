@@ -42,7 +42,7 @@ describe('Inventory Command & Query Handlers', () => {
       jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
     });
 
-    it('should save inventory, emit event and notify gateway', async () => {
+    it('should save inventory and emit ItemStored event', async () => {
       const mockItem = {
         productId: 'P1',
         quantity: 15,
@@ -200,7 +200,7 @@ describe('Inventory Command & Query Handlers', () => {
       jest.spyOn(handler['logger'], 'log').mockImplementation(() => undefined);
     });
 
-    it('should release reserved allocations and notify gateway', async () => {
+    it('should release reserved allocations', async () => {
       await handler.execute(
         new HandleOrderCancelledCommand('O4', 'ALLOCATED', [
           { productId: 'P1', quantity: 5, location: 'A1' },

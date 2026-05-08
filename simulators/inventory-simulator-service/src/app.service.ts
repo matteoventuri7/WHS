@@ -30,7 +30,7 @@ export class AppService {
     this.isSimulating = true;
     this.currentInterval = intervalMs;
     this.logger.log(
-      `Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`,
+      `Automatic simulation started (every ${intervalMs / 1000} seconds)...`,
     );
 
     // Eseguiamo subito la prima passata
@@ -59,13 +59,13 @@ export class AppService {
 
     this.isSimulating = false;
     this.currentInterval = null;
-    this.logger.log('Simulazione automatica arrestata.');
+    this.logger.log('Automatic simulation stopped.');
 
     return { message: 'Inbound simulation stopped', isSimulating: false };
   }
 
   private async simulateInbound() {
-    this.logger.log('Generazione eventi inbound...');
+    this.logger.log('Generating inbound events...');
     const products = [
       'PROD-001',
       'PROD-002',
@@ -84,7 +84,7 @@ export class AppService {
 
       const payload = { productId, quantity, location };
       this.logger.log(
-        `Invio merce in arrivo via HTTP: ${JSON.stringify(payload)}`,
+        `Sending incoming goods via HTTP: ${JSON.stringify(payload)}`,
       );
       try {
         await firstValueFrom(
@@ -92,7 +92,7 @@ export class AppService {
         );
       } catch (error: any) {
         this.logger.error(
-          `Errore durante l'invio a inventory-service: ${error.message}`,
+          `Error sending to inventory-service: ${error.message}`,
         );
       }
     }

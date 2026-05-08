@@ -28,7 +28,7 @@ export class ResumeOrderHandler implements ICommandHandler<ResumeOrderCommand> {
     await order.save();
 
     this.logger.log(
-      `Ordine ${order.orderId} ripreso manualmente (RESUMED), in attesa di allocazione.`,
+      `Order ${order.orderId} manually resumed, waiting for allocation.`,
     );
 
     this.kafkaClient.emit('OrderPlaced', {

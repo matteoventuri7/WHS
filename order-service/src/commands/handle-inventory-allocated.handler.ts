@@ -23,7 +23,7 @@ export class HandleInventoryAllocatedHandler
       order.status = 'ALLOCATED';
       order.allocations = command.allocations;
       await order.save();
-      this.logger.log(`Ordine ${order.orderId} aggiornato a ALLOCATED.`);
+      this.logger.log(`Order ${order.orderId} updated to ALLOCATED.`);
 
       this.kafkaClient.emit('OrderReadyForPicking', {
         orderId: order.orderId,

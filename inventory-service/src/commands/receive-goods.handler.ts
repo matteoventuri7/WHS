@@ -29,7 +29,7 @@ export class ReceiveGoodsHandler
     );
 
     this.logger.log(
-      `Ricevute ${command.quantity} unità di ${command.productId} nella locazione ${command.location}.`,
+      `Received ${command.quantity} units of ${command.productId} in location ${command.location}.`,
     );
 
     this.kafkaClient.emit('ItemStored', {

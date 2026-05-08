@@ -142,7 +142,7 @@ export default function InventoryPage() {
                             <div className="text-center py-16 border border-slate-800 border-dashed rounded-2xl bg-slate-900/10">
                                 <PackageOpen className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                                 <p className="text-slate-400">
-                                    {showAll ? 'Warehouse is empty. Receive some goods first!' : 'Nessun articolo con disponibilità positiva.'}
+                                    {showAll ? 'Warehouse is empty. Receive some goods first!' : 'No items with positive availability.'}
                                 </p>
                             </div>
                         )}

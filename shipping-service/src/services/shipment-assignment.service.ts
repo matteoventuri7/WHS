@@ -33,7 +33,7 @@ export class ShipmentAssignmentService {
         v.currentLoad += totalItems;
         v.assignedTaskIds.push(taskId);
         await v.save();
-        this.logger.log(`Task ${taskId} assegnato al veicolo ${v.vehicleId}.`);
+        this.logger.log(`Task ${taskId} assigned to vehicle ${v.vehicleId}.`);
         this.kafkaClient.emit('ShipmentAssigned', {
           taskId,
           orderId,
@@ -44,7 +44,7 @@ export class ShipmentAssignmentService {
     }
 
     this.logger.warn(
-      `Nessun veicolo con capienza sufficiente (${totalItems} items) per il Task ${taskId}.`,
+      `No vehicle with sufficient capacity (${totalItems} items) for Task ${taskId}.`,
     );
     return false;
   }
@@ -59,7 +59,7 @@ export class ShipmentAssignmentService {
     }
 
     this.logger.log(
-      `Trovate ${pendingShipments.length} spedizioni pendenti. Tentativo di assegnazione...`,
+      `Found ${pendingShipments.length} pending shipments. Attempting assignment...`,
     );
 
     for (const pending of pendingShipments) {
@@ -71,11 +71,11 @@ export class ShipmentAssignmentService {
       if (assigned) {
         await this.pendingShipmentModel.deleteOne({ _id: pending._id });
         this.logger.log(
-          `Spedizione pendente per task ${pending.taskId} assegnata e rimossa dalla coda.`,
+          `Pending shipment for task ${pending.taskId} assigned and removed from queue.`,
         );
       } else {
         this.logger.log(
-          `Impossibile assegnare spedizione pendente per task ${pending.taskId}. Verrà riprovata.`,
+          `Unable to assign pending shipment for task ${pending.taskId}. Will be retried.`,
         );
         break;
       }

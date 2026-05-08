@@ -27,6 +27,6 @@ export class HandlePickingCompletedHandler
 
     order.status = 'PICKING_COMPLETED';
     await order.save();
-    this.logger.log(`Ordine ${order.orderId} aggiornato a PICKING_COMPLETED.`);
+    this.logger.log(`Order ${order.orderId} updated to PICKING_COMPLETED.`);
   }
 }

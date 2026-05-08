@@ -66,14 +66,14 @@ describe('Picking Command & Query Handlers', () => {
       taskModel.findOne.mockResolvedValue(null);
       await expect(
         handler.execute(new CompletePickingTaskCommand('T1')),
-      ).rejects.toThrow('Task non trovato o già completato');
+      ).rejects.toThrow('Task not found or already completed');
     });
 
     it('should throw if task is already completed', async () => {
       taskModel.findOne.mockResolvedValue({ taskId: 'T1', status: 'COMPLETED' });
       await expect(
         handler.execute(new CompletePickingTaskCommand('T1')),
-      ).rejects.toThrow('Task non trovato o già completato');
+      ).rejects.toThrow('Task not found or already completed');
     });
   });
 
@@ -178,7 +178,7 @@ describe('Picking Command & Query Handlers', () => {
       await expect(
         handler.execute(new CancelPickingTaskCommand('O1')),
       ).rejects.toThrow(
-        'Impossibile annullare: il task di picking è in stato COMPLETED',
+        'Unable to cancel: the picking task is in status COMPLETED',
       );
     });
   });

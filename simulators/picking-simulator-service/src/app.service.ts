@@ -35,7 +35,7 @@ export class AppService {
     this.isSimulating = true;
     this.currentInterval = intervalMs;
     this.logger.log(
-      `Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`,
+      `Automatic simulation started (every ${intervalMs / 1000} seconds)...`,
     );
 
     // Eseguiamo subito la prima passata
@@ -64,13 +64,13 @@ export class AppService {
 
     this.isSimulating = false;
     this.currentInterval = null;
-    this.logger.log('Simulazione automatica arrestata.');
+    this.logger.log('Automatic simulation stopped.');
 
     return { message: 'Picking simulation stopped', isSimulating: false };
   }
 
   private async simulatePicking() {
-    this.logger.log('Ricerca picking task PENDING da completare...');
+    this.logger.log('Searching for PENDING picking tasks to complete...');
 
     try {
       const response = await firstValueFrom(
@@ -79,7 +79,7 @@ export class AppService {
 
       const tasks = response.data;
       if (!Array.isArray(tasks)) {
-        this.logger.warn('Formato risposta non valido da picking-service');
+        this.logger.warn('Invalid response format from picking-service');
         return;
       }
 
@@ -89,7 +89,7 @@ export class AppService {
       );
 
       if (pendingTasks.length === 0) {
-        this.logger.log('Nessun picking task PENDING disponibile.');
+        this.logger.log('No PENDING picking tasks available.');
         return;
       }
 
@@ -104,16 +104,16 @@ export class AppService {
         );
 
         this.logger.log(
-          `Picking task ${selectedTask.taskId} completato automaticamente.`,
+          `Picking task ${selectedTask.taskId} completed automatically.`,
         );
       } catch (completeError: any) {
         this.logger.error(
-          `Errore durante il completamento del task ${selectedTask.taskId}: ${completeError.message}`,
+          `Error completing task ${selectedTask.taskId}: ${completeError.message}`,
         );
       }
     } catch (error: any) {
       this.logger.error(
-        `Impossibile contattare picking-service: ${error.message}`,
+        `Unable to contact picking-service: ${error.message}`,
       );
     }
   }

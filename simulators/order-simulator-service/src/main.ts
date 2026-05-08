@@ -11,6 +11,6 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3007;
   await app.listen(port);
-  logger.log(`Order Simulator Service in ascolto sulla porta ${port}`);
+  logger.log(`Order Simulator Service listening on port ${port}`);
 }
 bootstrap();

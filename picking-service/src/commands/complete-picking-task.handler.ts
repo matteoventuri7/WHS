@@ -23,7 +23,7 @@ export class CompletePickingTaskHandler
     if (task && task.status === 'PENDING') {
       task.status = 'COMPLETED';
       await task.save();
-      this.logger.log(`Picking Task ${task.taskId} COMPLETATO!`);
+      this.logger.log(`Picking Task ${task.taskId} COMPLETED!`);
 
       this.kafkaClient.emit('PickingTaskCompleted', {
         taskId: task.taskId,
@@ -32,6 +32,6 @@ export class CompletePickingTaskHandler
       });
       return task;
     }
-    throw new Error('Task non trovato o già completato');
+    throw new Error('Task not found or already completed');
   }
 }

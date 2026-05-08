@@ -20,7 +20,7 @@ export class HandleOrderPlacedHandler
 
   async execute(command: HandleOrderPlacedCommand) {
     this.logger.log(
-      `Ricevuto evento OrderPlaced per ordine ${command.orderId}`,
+      `Received OrderPlaced event for order ${command.orderId}`,
     );
     const allocations: {
       productId: string;
@@ -80,14 +80,14 @@ export class HandleOrderPlacedHandler
     }
 
     if (canAllocate) {
-      this.logger.log(`Ordine ${command.orderId} allocato correttamente.`);
+      this.logger.log(`Order ${command.orderId} allocated successfully.`);
       this.kafkaClient.emit('InventoryAllocated', {
         orderId: command.orderId,
         allocations,
       });
     } else {
       this.logger.warn(
-        `OutOfStock per ordine ${command.orderId}. Reverting eventuali prenotazioni parziali.`,
+        `OutOfStock for order ${command.orderId}. Reverting any partial reservations.`,
       );
       for (const alloc of allocations) {
         await this.inventoryModel.updateOne(

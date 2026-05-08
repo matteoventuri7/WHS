@@ -11,6 +11,6 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3006;
   await app.listen(port);
-  logger.log(`Dispatch Service (Simulator) in ascolto sulla porta ${port}`);
+  logger.log(`Dispatch Service (Simulator) listening on port ${port}`);
 }
 bootstrap();

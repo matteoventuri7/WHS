@@ -28,7 +28,7 @@ export class HandleOrderReadyForPickingHandler
       });
       await task.save();
       this.logger.log(
-        `Picking Task ${task.taskId} creato per ordine ${task.orderId}`,
+        `Picking Task ${task.taskId} created for order ${task.orderId}`,
       );
 
       this.kafkaClient.emit('PickingTaskCreated', {

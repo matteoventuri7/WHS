@@ -181,17 +181,17 @@ export default function OrdersPage() {
                                         {order.status !== 'SHIPPED' && order.status !== 'CANCELLED' && order.status !== 'PICKING_COMPLETED' && (
                                             cancelingId === order.orderId ? (
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs text-slate-400">Sicuro?</span>
+                                                    <span className="text-xs text-slate-400">Are you sure?</span>
                                                     <button onClick={() => setCancelingId(null)} className="text-xs px-2 py-1.5 rounded-lg border border-slate-600 text-slate-400 hover:bg-slate-800 transition-colors">No</button>
-                                                    <button onClick={() => { setCancelingId(null); handleCancelOrder(order.orderId); }} className="text-xs px-2 py-1.5 rounded-lg border border-red-500/50 text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors">Sì, annulla</button>
+                                                    <button onClick={() => { setCancelingId(null); handleCancelOrder(order.orderId); }} className="text-xs px-2 py-1.5 rounded-lg border border-red-500/50 text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors">Yes, cancel</button>
                                                 </div>
                                             ) : (
                                                 <button 
                                                     onClick={() => setCancelingId(order.orderId)}
                                                     className="text-xs px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 transition-colors flex items-center gap-1"
-                                                    title="Annulla Ordine"
+                                                    title="Cancel Order"
                                                 >
-                                                    Annulla
+                                                    Cancel
                                                 </button>
                                             )
                                         )}

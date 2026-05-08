@@ -22,7 +22,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand> {
     });
     await order.save();
 
-    this.logger.log(`Ordine ${order.orderId} creato in stato PENDING.`);
+    this.logger.log(`Order ${order.orderId} created in PENDING state.`);
 
     this.kafkaClient.emit('OrderPlaced', {
       orderId: order.orderId,

@@ -53,7 +53,7 @@ export class AppService {
     this.isSimulating = true;
     this.currentInterval = intervalMs;
     this.logger.log(
-      `Avviata la simulazione automatica (ogni ${intervalMs / 1000} secondi)...`,
+      `Automatic simulation started (every ${intervalMs / 1000} seconds)...`,
     );
 
     // Eseguiamo subito la prima passata
@@ -82,13 +82,13 @@ export class AppService {
 
     this.isSimulating = false;
     this.currentInterval = null;
-    this.logger.log('Simulazione automatica arrestata.');
+    this.logger.log('Automatic simulation stopped.');
 
     return { message: 'Order simulation stopped', isSimulating: false };
   }
 
   private async simulateOrder() {
-    this.logger.log('Analisi inventario per generare un nuovo ordine...');
+    this.logger.log('Analyzing inventory to generate a new order...');
 
     try {
       const response = await firstValueFrom(
@@ -97,7 +97,7 @@ export class AppService {
 
       const inventoryRows = response.data;
       if (!Array.isArray(inventoryRows)) {
-        this.logger.warn('Formato risposta non valido da inventory-service');
+        this.logger.warn('Invalid response format from inventory-service');
         return;
       }
 
@@ -124,7 +124,7 @@ export class AppService {
         .slice(0, 5);
 
       if (topProducts.length === 0) {
-        this.logger.log('Nessun prodotto disponibile: ordine non generato.');
+        this.logger.log('No products available: order not generated.');
         return;
       }
 
@@ -146,18 +146,18 @@ export class AppService {
             : 'sconosciuto';
 
         this.logger.log(
-          `Ordine generato: ${createdOrderId} - ${quantity}x ${selectedProductId} (disponibilita top: ${selectedAvailability}).`,
+          `Order generated: ${createdOrderId} - ${quantity}x ${selectedProductId} (top availability: ${selectedAvailability}).`,
         );
 
         await this.maybeCancelRandomNonCompletedOrder();
       } catch (orderError: unknown) {
         this.logger.error(
-          `Errore durante la creazione ordine: ${this.getErrorMessage(orderError)}`,
+          `Error during order creation: ${this.getErrorMessage(orderError)}`,
         );
       }
     } catch (error: unknown) {
       this.logger.error(
-        `Impossibile contattare inventory-service: ${this.getErrorMessage(error)}`,
+        `Unable to contact inventory-service: ${this.getErrorMessage(error)}`,
       );
     }
   }
@@ -173,7 +173,7 @@ export class AppService {
       );
       if (!Array.isArray(response.data)) {
         this.logger.warn(
-          'Formato risposta non valido da order-service durante la selezione ordine da annullare',
+          'Invalid response format from order-service during cancellable order selection',
         );
         return;
       }
@@ -183,7 +183,7 @@ export class AppService {
       );
       if (cancellableOrders.length === 0) {
         this.logger.log(
-          'Nessun ordine non completato disponibile per la cancellazione random.',
+          'No incomplete orders available for random cancellation.',
         );
         return;
       }
@@ -202,11 +202,11 @@ export class AppService {
       );
 
       this.logger.log(
-        `Ordine ${orderToCancel.orderId} annullato tramite regola random al 10%.`,
+        `Order ${orderToCancel.orderId} cancelled via random 10% rule.`,
       );
     } catch (error: unknown) {
       this.logger.warn(
-        `Tentativo di cancellazione random fallito: ${this.getErrorMessage(error)}`,
+        `Random cancellation attempt failed: ${this.getErrorMessage(error)}`,
       );
     }
   }

@@ -26,7 +26,7 @@ export class RegisterVehicleHandler
     });
     await v.save();
     this.logger.log(
-      `Veicolo ${command.vehicleId} registrato (capacità: ${command.maxCapacity}).`,
+      `Vehicle ${command.vehicleId} registered (capacity: ${command.maxCapacity}).`,
     );
     this.kafkaClient.emit('VehicleRegistered', {
       vehicleId: command.vehicleId,
