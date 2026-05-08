@@ -289,8 +289,14 @@ WHS/
 ## Documentation
 
 - **Architecture Report:** [docs/software-architecture-report.md](docs/software-architecture-report.md) — complete C&C views, ADRs, event flows, and quality attributes
+- **Architecture Diagrams:** [docs/internal/architecture-diagram.md](docs/internal/architecture-diagram.md) — Mermaid diagrams (system topology, event flows, Kafka topics)
 - **API Reference:** [docs/MICROSERVICES_API_REFERENCE.md](docs/MICROSERVICES_API_REFERENCE.md) — REST endpoints, Kafka events, payloads
-- **Per-Service READMEs:** Each service folder (`README_TECH.md`) contains NestJS-specific patterns and testing details
+- **Per-Service READMEs:**
+  - [frontend/README_TECH.md](frontend/README_TECH.md) — Next.js frontend patterns
+  - [inventory-service/README_TECH.md](inventory-service/README_TECH.md) — Stock & reservations service
+  - [order-service/README_TECH.md](order-service/README_TECH.md) — Order lifecycle service
+  - [picking-service/README_TECH.md](picking-service/README_TECH.md) — Picking tasks service
+  - [shipping-service/README_TECH.md](shipping-service/README_TECH.md) — Vehicle dispatch service
 
 ---
 
