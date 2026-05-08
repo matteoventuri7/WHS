@@ -1,40 +1,49 @@
 # Inventory Service Technical Documentation
 
 ## Overview
-L'**Inventory Service** è responsabile del tracciamento dello stato fisico del magazzino. Gestisce le locazioni, i livelli di giacenza (stock) per ciascun prodotto e l'allocazione delle risorse richieste dagli ordini in uscita.
+The **Inventory Service** is responsible for tracking the physical state of the warehouse. It manages locations, stock levels (inventory quantity) for each product, and allocation of resources requested by outbound orders.
 
-## Tecnologie Core
+## Core Technologies
 - **Framework:** NestJS
 - **Database:** MongoDB (via Mongoose)
 - **Message Broker:** Apache Kafka
 
-## Modello Dati (Schema Mongoose)
-L'entità principale del dominio è l'**Inventory**:
-- `productId` (String): L'identificativo univoco dell'articolo (SKU).
-- `location` (String): La locazione fisica all'interno del magazzino (es. Corsia, Scaffale, Livello).
-- `quantity` (Number): La quantità totale fisicamente presente per quella coppia `productId-location`.
-- `reservedQuantity` (Number): La quantità attualmente "bloccata"/allocata per ordini in fase di prelevamento.
-  - *NB:* La quantità *disponibile* effettiva (Available to Promise) è calcolata come `quantity - reservedQuantity`.
+## Data Model (Mongoose Schema)
+The main domain entity is **Inventory**:
+- `productId` (String): Unique product identifier (SKU).
+- `location` (String): Physical warehouse location (e.g., Aisle, Shelf, Level).
+- `quantity` (Number): Total physical quantity present for that `productId-location` pair.
+- `reservedQuantity` (Number): Quantity currently "locked"/allocated for orders being picked.
+  - *Note:* The actual *available* quantity (Available to Promise) is calculated as `quantity - reservedQuantity`.
 
-## API REST (Endpoint Controller)
-Il servizio espone API REST sulla porta `3001` per l'interazione diretta, in particolare per la simulazione dell'Inbound:
-- `GET /inventory`: Ritorna una fotografia di tutti i record presenti a magazzino, mostrando giacenze e riserve (Read Model locale).
-- `POST /inventory/receive`: Endpoint per registrare l'ingresso di nuova merce (*Inbound*). Richiede payload: `{ productId, location, quantity }`.
+## REST API (Endpoint Controller)
+The service exposes REST APIs on port `3001` for direct interaction, particularly for simulating Inbound operations:
+- `GET /inventory`: Returns a snapshot of all warehouse records, showing stock levels and reserves (local Read Model).
+- `POST /inventory/receive`: Endpoint to register new incoming merchandise (*Inbound*). Requires payload: `{ productId, location, quantity }`.
 
-## Logica Event-Driven (Consumer e Producer)
+## Event-Driven Logic (Consumer and Producer)
 
-### 1. Ricezione Merci (Inbound Handling)
-Quando l'API `/receive` viene invocata, il servizio:
-1. Cerca su DB un record esistente per lo stesso prodotto nella stessa locazione. Se esiste, somma la quantità, altrimenti crea un nuovo record.
-2. **Emissione Evento:** Produce verso Kafka (`localhost:29092`) il messaggio **`ItemStored`**.
-   - **Perché:** Quest'evento è cruciale affinché l'Order Service sappia che c'è nuova merce e possa riprovare ad allocare eventuali ordini precedentemente bloccati (Out of Stock).
+### 1. Goods Reception (Inbound Handling)
+When the API `/receive` is invoked, the service:
+1. Searches the DB for an existing record for the same product in the same location. If it exists, adds the quantity; otherwise, creates a new record.
+2. **Event Emission:** Produces the **`ItemStored`** message to Kafka.
+   - **Why:** This event is crucial so the Order Service knows new merchandise is available and can retry allocating previously blocked orders (Out of Stock).
 
-### 2. Gestione Allocazione (Order Placement Handling)
-Il servizio si iscrive al Consumer Group Kafka `inventory-consumer` e resta in ascolto passivo di uno specifico evento:
+### 2. Allocation Management (Order Placement Handling)
+The service subscribes to the Kafka consumer group `inventory-consumer` and passively listens for specific events:
 
-- **Ascolto evento `OrderPlaced`**
-  - Quando arriva un evento `OrderPlaced` (emesso dall'Order Service), il payload contiene i prodotti e le quantità richieste per l'ordine in transito.
-  - **Logica Core:** Itera su ogni prodotto richiesto, cercando sul DB Mongoose le locazioni dove è stoccato cercando di raggiungere la quota richiesta.
-  - Per ogni locazione, calcola l'Available to Promise (`quantity - reservedQuantity`). Se positivo, "blocca" la parte necessaria incrementando temporaneamente `reservedQuantity`.
-  - **Successo:** Se tutta la merce richiesta viene coperta matematicamente dallo stock, emette verso Kafka l'evento **`InventoryAllocated`**, includendo un array di allocazioni (`[{ productId, quantity, location }]`) che indicherà esattamente "da dove prendere" la merce.
-  - **Fallimento (OutOfStock):** Se la somma delle quantità fisiche disponibili è inferiore al totale richiesto dall'ordine, l'allocazione fallisce. Viene effettuato un **Rollback** nel DB (azzerando eventuali incrementi parziali fatti al `reservedQuantity` durante il loop precedente) e viene emesso verso Kafka l'evento **`OutOfStock`** associato all'ID dell'ordine.
+- **Listening to `OrderPlaced` event**
+  - When an `OrderPlaced` event arrives (emitted by Order Service), the payload contains the products and quantities requested for the order in transit.
+  - **Core Logic:** Iterates over each requested product, searching in the Mongoose DB for locations where it is stocked and attempting to reach the requested quota.
+  - For each location, calculates Available to Promise (`quantity - reservedQuantity`). If positive, "locks" the necessary part by temporarily incrementing `reservedQuantity`.
+  - **Success:** If all requested merchandise is mathematically covered by available stock, emits the **`InventoryAllocated`** event to Kafka, including an array of allocations (`[{ productId, quantity, location }]`) that indicates exactly "where to pick" the merchandise.
+  - **Failure (OutOfStock):** If the sum of physically available quantities is less than the total requested by the order, allocation fails. A **Rollback** is performed in the DB (zeroing any partial increments made to `reservedQuantity` during the previous loop) and the **`OutOfStock`** event is emitted to Kafka associated with the order ID.
+
+### 3. Release Reservations (Order Cancellation Handling)
+The service receives the `OrderCancelled` event from the Order Service (emitted whether the order was cancelled manually or due to policy violation):
+
+- **Listening to `OrderCancelled` event**
+  - Payload: `{ orderId, previousStatus, allocations }`
+  - **Core Logic:** Iterates over the received allocations. For each allocation (product, quantity, location), decrements the corresponding `reservedQuantity` in the MongoDB DB, releasing the "lock" on the merchandise.
+  - This operation is **idempotent**: if the event arrives twice, the first time it actually releases, subsequent times find no more allocations and do nothing.
+  - **Effect:** Stock becomes available again for other orders.

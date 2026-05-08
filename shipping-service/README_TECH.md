@@ -1,37 +1,38 @@
 # Shipping Service Technical Documentation
 
 ## Overview
-Lo **Shipping Service** gestisce l'ultimo miglio. Rappresenta il concetto di piazzale esterno: camion, banchine di carico, ottimizzazione pesi/volumi e autorizzazioni di ripartenza furgonati dai Gate di uscita.
+The **Shipping Service** manages the final mile. It represents the concept of the external yard: trucks, loading docks, weight/volume optimization, and authorizations for dispatching vehicles from exit gates.
 
-## Tecnologie Core
+## Core Technologies
 - **Framework:** NestJS
 - **Database:** MongoDB (via Mongoose)
 - **Message Broker:** Apache Kafka
 
-## Modello Dati (Schema Mongoose)
-L'entità core per questo servizio non è "l'ordine spedito", ma il contenitore vettore, ovvero il **Vehicle**:
-- `vehicleId` (String): L'identificativo del camion/furgone sul piazzale.
-- `maxCapacity` (Number): Simulatore approssimativo del "quanta merce entra nel trailer", calcolato a items (o volume in kg su gestionali complessi).
-- `currentLoad` (Number): Stato live del riempimento del bilico (da 0 a `maxCapacity`).
-- `assignedTaskIds` (Array di String): Traccia per riferimento inverso quali "Picking Task completati" sono montati a bordo del furgone (permettendoci la stampa bollettazione).
-- `status` (Enum String): Tracking tracking logistico ('AVAILABLE' o 'DISPATCHED' cioè in marcia stradale).
+## Data Model (Mongoose Schema)
+The core entity for this service is not "the shipped order", but the carrier container, namely the **Vehicle**:
+- `vehicleId` (String): The identifier of the truck/van in the yard.
+- `maxCapacity` (Number): Approximate simulator of "how much merchandise fits in the trailer", calculated in items (or volume in kg on complete management systems).
+- `currentLoad` (Number): Live status of the truck fill level (from 0 to `maxCapacity`).
+- `assignedTaskIds` (Array of String): Tracks by reverse reference which "completed Picking Tasks" are loaded on board the truck (allowing us to print billing documents).
+- `status` (Enum String): Logistics tracking ('AVAILABLE' or 'DISPATCHED' i.e., on the road).
 
-## API REST (Endpoint Controller)
-Microservizio agganciato sulla porta locale `3004`:
-- `GET /shipping/vehicles`: Visione tabellare realtime del parco mezzi a banchina e livello di riempimento percentuale.
-- `POST /shipping/vehicles`: Modulo di immatricolazione rapida del furgone. Crea record `AVAILABLE` permettendogli di stanziare sul "Piazzale di smistamento" adiacente.
-- `POST /shipping/vehicles/:id/dispatch`: Tasto conclusivo manuale. Autorizza ad alzare la sbarra per i furgoni, cambiando la variabile e confermando il traguardo d'espatrio dei pacchi a bordo.
+## REST API (Endpoint Controller)
+Microservice hooked up on local port `3004`:
+- `GET /shipping/vehicles`: Real-time tabular view of the vehicle fleet at dock and fill level percentage.
+- `POST /shipping/vehicles`: Quick vehicle registration module. Creates an `AVAILABLE` record allowing it to stand in the "Sorting Yard" adjacent. Payload: `{ vehicleId, maxCapacity }`. Emits Kafka event `VehicleRegistered`.
+- `GET /shipping/pending`: Returns the list of shipments awaiting loading on a vehicle.
+- `POST /shipping/vehicles/:id/dispatch`: Final manual button. Authorizes raising the gate for vehicles, changing status from `AVAILABLE` to `DISPATCHED` and confirming the departure target of the packages on board. Emits Kafka event `VehicleDispatched`.
 
-## Logica Event-Driven (Consumer e Producer)
+## Event-Driven Logic (Consumer and Producer)
 
-### 1. Sistema di auto-smistamento sul Piazzale (Core Routing Logics)
-Questo microservizio riceve un impulso (in quanto consumer group `shipping-consumer`) e deve prendere immediatamente una scelta algoritmica.
+### 1. Automatic Yard Sorting System (Core Routing Logics)
+This microservice receives an impulse (as consumer group `shipping-consumer`) and must immediately make an algorithmic choice.
 
-- **Ascolto evento `PickingTaskCompleted`**
-  - **Impulso in entrata:** Un Umano operatore (sul Picking Service) ha terminato di raccogliere la merce da vari scaffali, l'ha impacchettata su un transpall e depositata in area spedizione. Il carico è *Fisicamente sul molo*.
-  - **Calcolo Logico (Knapsack ridotto):** Il microservizio riceve le `allocations`. Tira una semplice somma algoritmica di "quanti item devo ficcare in un camion" (`totalItems`).
-  - Scorre tutti i Camion `AVAILABLE` nel DB Mongo. Valida il cap residuo matematico: se `Vehicle.maxCapacity - Vehicle.currentLoad >= totalItems`, allora prenota il mezzo.
-  - Mutata la base dati MongoDB (aumento del currentLoad e salvataggio nell'array dei colli), viene prodotto l'Evento chiave **`ShipmentAssigned`**.
+- **Listening to `PickingTaskCompleted` event**
+  - **Incoming Impulse:** A Human operator (on the Picking Service) has finished gathering merchandise from various shelves, has packaged it on a pallet and deposited it in the shipping area. The cargo is *physically on the dock*.
+  - **Logical Calculation (Reduced Knapsack):** The microservice receives the `allocations`. It pulls a simple algorithmic sum of "how many items do I need to fit in a truck" (`totalItems`).
+  - Iterates through all `AVAILABLE` trucks in the Mongo DB. Validates the residual mathematical capacity: if `Vehicle.maxCapacity - Vehicle.currentLoad >= totalItems`, then reserves the vehicle.
+  - After mutating the MongoDB (increasing currentLoad and saving in the array of packages), the key event **`ShipmentAssigned`** is produced.
 
-### 2. Disattivazione finale della Bolla Eventata e Tracking (Dispatch Flow)
-- L'emissione di evento `VehicleDispatched` funge da segnatura finale inviata su Kafka per storicizzare in data-warehouse che il camion è decollato dalla via o informare architetture esterne.
+### 2. Final Event Deactivation and Tracking (Dispatch Flow)
+- The emission of `VehicleDispatched` event serves as the final signature sent to Kafka to archive that the truck has left the yard or to inform external architectures.

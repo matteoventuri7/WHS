@@ -77,6 +77,50 @@ Toggle the simulator controls in the frontend **Status** page to auto-generate o
 
 ---
 
+## Screenshots
+
+### Inventory & Inbound Management
+Gestisci i livelli di stock e ricevi nuovi materiali in magazzino.
+
+![Inventory & Inbound Dashboard](docs/images/Screenshot%202026-05-02%20054010.png)
+
+### Order Management
+Monitora il ciclo di vita degli ordini in uscita, dalle allocazioni ai completamenti.
+
+![Order Management Dashboard](docs/images/Screenshot%202026-05-02%20054024.png)
+
+### Picking Operations
+Esegui i compiti di prelievo generati dagli ordini allocati.
+
+![Picking Tasks Dashboard](docs/images/Screenshot%202026-05-02%20054103.png)
+
+### Shipping & Dispatch
+Gestisci la logistica, i veicoli e l'assegnazione finale dei carichi.
+
+![Shipping & Dispatch Dashboard](docs/images/Screenshot%202026-05-02%20054055.png)
+
+### System Status
+Controllo della salute in tempo reale di tutti i microservizi e dell'infrastruttura.
+
+![System Status Dashboard](docs/images/Screenshot%202026-05-02%20054124.png)
+
+### Live Event Dashboard
+Visualizza lo stream di messaggi Kafka in tempo reale da simulatori e microservizi.
+
+![Live Event Dashboard](docs/images/Screenshot%202026-05-02%20054228.png)
+
+### Centralized Logging (OpenObserve)
+Analizza i log aggregati di tutti i servizi e traccia i flussi end-to-end.
+
+![OpenObserve Logs](docs/images/Screenshot%202026-05-02%20054309.png)
+
+### CI/CD Pipeline
+Automazione di test e deployment per tutto lo stack.
+
+![CI/CD Pipeline](docs/images/cicd-pipeline.png)
+
+---
+
 ## Common Commands
 
 ### Development

@@ -1,40 +1,48 @@
-# Inventory Service Technical Documentation
+# Inventory Simulator Service Technical Documentation
 
 ## Overview
-L'**Inventory Service** è responsabile del tracciamento dello stato fisico del magazzino. Gestisce le locazioni, i livelli di giacenza (stock) per ciascun prodotto e l'allocazione delle risorse richieste dagli ordini in uscita.
+The **Inventory Simulator Service** is an automatic HTTP-only agent that simulates periodic arrival of merchandise in the warehouse (inbound), as if it were suppliers continuously unloading goods. It does not use Kafka to consume events. Its purpose is to generate realistic workload to allow core services to process merchandise receipt flows continuously.
 
-## Tecnologie Core
+## Core Technologies
 - **Framework:** NestJS
-- **Database:** MongoDB (via Mongoose)
-- **Message Broker:** Apache Kafka
+- **Communication:** HTTP REST (calls Inventory Service)
+- **Message Broker:** No Kafka consumer (only indirect emit via HTTP)
 
-## Modello Dati (Schema Mongoose)
-L'entità principale del dominio è l'**Inventory**:
-- `productId` (String): L'identificativo univoco dell'articolo (SKU).
-- `location` (String): La locazione fisica all'interno del magazzino (es. Corsia, Scaffale, Livello).
-- `quantity` (Number): La quantità totale fisicamente presente per quella coppia `productId-location`.
-- `reservedQuantity` (Number): La quantità attualmente "bloccata"/allocata per ordini in fase di prelevamento.
-  - *NB:* La quantità *disponibile* effettiva (Available to Promise) è calcolata come `quantity - reservedQuantity`.
+## Operating Logic
 
-## API REST (Endpoint Controller)
-Il servizio espone API REST sulla porta `3001` per l'interazione diretta, in particolare per la simulazione dell'Inbound:
-- `GET /inventory`: Ritorna una fotografia di tutti i record presenti a magazzino, mostrando giacenze e riserve (Read Model locale).
-- `POST /inventory/receive`: Endpoint per registrare l'ingresso di nuova merce (*Inbound*). Richiede payload: `{ productId, location, quantity }`.
+### 1. Automatic Merchandise Generation (Inbound Simulation)
+The service has an internal job (scheduler or interval loop) that:
 
-## Logica Event-Driven (Consumer e Producer)
+1. **Periodically (every N seconds, configurable):** Generates a simulated merchandise load with:
+   - A `productId` randomly selected from a predefined list (e.g., PROD-001, PROD-002, ..., PROD-010)
+   - A `location` randomly selected (e.g., A-01, A-02, ..., B-12, ..., C-15)
+   - A random `quantity` (e.g., between 10 and 100 units)
 
-### 1. Ricezione Merci (Inbound Handling)
-Quando l'API `/receive` viene invocata, il servizio:
-1. Cerca su DB un record esistente per lo stesso prodotto nella stessa locazione. Se esiste, somma la quantità, altrimenti crea un nuovo record.
-2. **Emissione Evento:** Produce verso Kafka (`localhost:29092`) il messaggio **`ItemStored`**.
-   - **Perché:** Quest'evento è cruciale affinché l'Order Service sappia che c'è nuova merce e possa riprovare ad allocare eventuali ordini precedentemente bloccati (Out of Stock).
+2. **Makes an HTTP `POST /inventory/receive` call** to the **Inventory Service** (via Next.js API Gateway or directly to the service if on Docker network) with the payload:
+   ```json
+   {
+     "productId": "PROD-005",
+     "location": "B-07",
+     "quantity": 45
+   }
+   ```
 
-### 2. Gestione Allocazione (Order Placement Handling)
-Il servizio si iscrive al Consumer Group Kafka `inventory-consumer` e resta in ascolto passivo di uno specifico evento:
+3. **Inventory Service reacts:**
+   - Accepts the load, updates its own Mongoose DB
+   - Emits Kafka event `ItemStored`
+   - The Order Service, listening to this event, tries to wake up and retry allocations on `SUSPENDED` orders
 
-- **Ascolto evento `OrderPlaced`**
-  - Quando arriva un evento `OrderPlaced` (emesso dall'Order Service), il payload contiene i prodotti e le quantità richieste per l'ordine in transito.
-  - **Logica Core:** Itera su ogni prodotto richiesto, cercando sul DB Mongoose le locazioni dove è stoccato cercando di raggiungere la quota richiesta.
-  - Per ogni locazione, calcola l'Available to Promise (`quantity - reservedQuantity`). Se positivo, "blocca" la parte necessaria incrementando temporaneamente `reservedQuantity`.
-  - **Successo:** Se tutta la merce richiesta viene coperta matematicamente dallo stock, emette verso Kafka l'evento **`InventoryAllocated`**, includendo un array di allocazioni (`[{ productId, quantity, location }]`) che indicherà esattamente "da dove prendere" la merce.
-  - **Fallimento (OutOfStock):** Se la somma delle quantità fisiche disponibili è inferiore al totale richiesto dall'ordine, l'allocazione fallisce. Viene effettuato un **Rollback** nel DB (azzerando eventuali incrementi parziali fatti al `reservedQuantity` durante il loop precedente) e viene emesso verso Kafka l'evento **`OutOfStock`** associato all'ID dell'ordine.
+### 2. Configuration
+The service exposes an HTTP health check endpoint:
+- `GET /inbound/health`: Returns `{ status: 'ok', service: 'inbound' }`
+
+Optional environment variables (with defaults):
+- `INVENTORY_SERVICE_URL`: Complete address of the Inventory service (default: `http://inventory-service:3001`)
+- `SIMULATOR_INTERVAL_MS`: Interval between generations (default: 15000 ms = 15 seconds)
+
+## Architectural Pattern
+
+- **Non-Event-Driven Internal:** The simulator does not listen to Kafka events, only generates HTTP calls.
+- **HTTP-only Consumer:** Interacts with core services as an external client would (via REST API).
+- **Natural Idempotency:** Each generation is independent; even if the simulator is detached and restarted, it continues to generate consistently.
+- **Scalability:** Modifying `SIMULATOR_INTERVAL_MS` adjusts the simulation speed without code changes.

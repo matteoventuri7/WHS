@@ -1,45 +1,46 @@
 # Picking Service Technical Documentation
 
 ## Overview
-Il **Picking Service** costituisce il Task Manager degli operatori fisici di magazzino. La sua semantica è slegata direttamente dall'Outbound o dallo Stock puro (sebbene li dipenda). Lui gestisce puramente i "Lavori di Prelievo" da far svolgere agli umani (o ai robot industriali).
+The **Picking Service** constitutes the Task Manager for physical warehouse operators. Its semantics are decoupled directly from Outbound or pure Stock (though it depends on them). It purely manages "Picking Jobs" to be performed by humans (or industrial robots).
 
-## Tecnologie Core
+## Core Technologies
 - **Framework:** NestJS
 - **Database:** MongoDB (via Mongoose)
 - **Message Broker:** Apache Kafka
 
-## Modello Dati (Schema Mongoose)
-L'entità principale del dominio è il **PickingTask**:
-- `taskId` (String): ID univoco del lavoro fisico assegnato e stampato al magazziniere.
-- `orderId` (String): Reference di collegamento con l'Ordine cliente padre.
-- `allocations` (Array): L'elenco operativo del lavoratore (es. "Vai in B-12 e preleva 20 bottiglie").
-- `status` (Enum String): Ciclo di vita del task (`PENDING`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`).
+## Data Model (Mongoose Schema)
+The main domain entity is **PickingTask**:
+- `taskId` (String): Unique ID of the physical work assigned and printed to the warehouse operator.
+- `orderId` (String): Reference link with the parent customer Order.
+- `allocations` (Array): The operational list for the worker (e.g., "Go to B-12 and pick 20 bottles").
+- `status` (Enum String): Task lifecycle (`PENDING`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`).
 
-## API REST (Endpoint Controller)
-Il master hub gira sulla porta `3003`:
-- `GET /picking/tasks`: Elenca la "To-Do List" operativa di magazzino in realt-time.
-- `POST /picking/tasks/:taskId/complete`: Simula l'azione del palmare (o lettore RFID) con cui l'omino di magazzino in corsia dice: *"Ho posato i materiali fisicamente nell'area di uscita piazzale"*.
-- `POST /picking/tasks/order/:orderId/cancel`: Endpoint sincrono invocato dall'**Order Service** per annullare il task di picking associato a un dato ordine. Funge da guardia bloccante.
+## REST API (Endpoint Controller)
+The main hub runs on port `3003`:
+- `GET /picking/tasks`: Lists the real-time "To-Do List" of warehouse operations.
+- `POST /picking/tasks/:taskId/complete`: Simulates the action of the mobile device (or RFID reader) with which the warehouse operator in the aisle says: *"I have placed the materials physically in the yard shipping area"*.
 
-## Logica Event-Driven (Consumer e Producer)
+## Event-Driven Logic (Consumer and Producer)
 
-### 1. Innesco (Trigger)
-Questo servizio non fa partire "azioni d'impulso". Tutto è pre-avviato in ascolto sul consumer group `picking-consumer`.
+### 1. Trigger (Ignition)
+This service does not initiate "impulse actions". Everything is pre-started listening on the consumer group `picking-consumer`.
 
-- **Ascolto evento `OrderReadyForPicking`**
-  - **Reazione:** Prende lo schema elaborato dall'Order service. L'Inventory ha precedentemente confermato che "c'è merce in queste specifiche locazioni e il badge `reservedQuantity` è aumentato". Il Picking Service riceve questi dati e crea il **Task di Lavoro Fisico** assegnandolo ad un database Mongo locale (stato: `PENDING`). Da questo momento compare nei monitor sul piano e viene mostrato anche nel tablet dell'operatore.
-  - Genera inoltre, facoltativamente a log diagnostici, un trigger a vuoto `PickingTaskCreated` su Kafka.
+- **Listening to `OrderReadyForPicking` event**
+  - **Reaction:** Takes the schema elaborated by the Order service. The Inventory has previously confirmed that "there is merchandise in these specific locations and the `reservedQuantity` badge has increased". The Picking Service receives this data and creates the **Physical Work Task** assigning it to a local Mongo database (status: `PENDING`). From this moment on it appears in the warehouse floor monitors and is also shown on the operator's tablet.
+  - Optionally generates diagnostic log triggers, and emits a blank `PickingTaskCreated` event to Kafka (for audit purposes).
 
-### 2. Conclusione Materiale del Workflow d'Isola
-- **Emissione evento `PickingTaskCompleted`**
-  - Quando un attore Umano invia l'API `/complete`, lo status del documento MongoDB muta in `COMPLETED`.
-  - In sequenza reattiva, l'operativo Produce (emette su Kafka) evento `PickingTaskCompleted`, avvertendo la filiera di sistema (lo Shipping ed eventuale scarico effettivo della pre-ricevuta di invio).
+### 2. Material Conclusion of Island Workflow
+- **Emission of `PickingTaskCompleted` event**
+  - When a Human actor sends the API `/complete`, the status of the MongoDB document changes to `COMPLETED`.
+  - In reactive sequence, operationally produces (emits to Kafka) the `PickingTaskCompleted` event, warning the system pipeline (Shipping and any actual off-bill receipt loading).
 
-### 3. Cancellazione di un Picking Task (Flusso Sincrono)
-Questo servizio espone un endpoint dedicato che l'Order Service chiama in modo sincrono durante il processo di cancellazione dell'ordine padre.
+### 3. Cancellation of a Picking Task (Asynchronous Flow)
+This service receives a `CancelPickingTask` event from the Order Service during the asynchronous cancellation process of the parent order.
 
-- **`POST /picking/tasks/order/:orderId/cancel`**
-  - **Pre-condizione `PENDING`:** Se il task esiste ed è ancora in stato `PENDING` (il magazziniere non ha ancora iniziato), il servizio aggiorna lo stato in **`CANCELLED`** sul MongoDB locale e risponde `200 OK`. Il task compare nella UI con badge rosso e icona di avviso.
-  - **Pre-condizione `IN_PROGRESS`:** Il task è già in lavorazione. Il servizio risponde `400 Bad Request` con il messaggio `"Il picking task è già in corso e non può essere annullato"`. L'ordine padre non viene cancellato.
-  - **Pre-condizione `COMPLETED`:** Il task è già concluso. Il servizio risponde `400 Bad Request`. L'ordine non può essere annullato.
-  - **Nessun task trovato:** Se non esiste alcun picking task per quell'ordine, risponde `200 OK` (non c'è nulla da bloccare, l'ordine può essere cancellato liberamente).
+- **Listening to `CancelPickingTask` event**
+  - Payload: `{ orderId }`
+  - **Pre-condition `PENDING`:** If the task exists and is still in `PENDING` status (the warehouse operator has not yet started), the service updates the status to **`CANCELLED`** in the local MongoDB. It does not emit any event for this transition.
+  - **Pre-condition `IN_PROGRESS`:** The task is already in progress. The service **does nothing** (does not change status). The parent order remains blocked waiting for the task to be completed; when it is, it is the Shipping Service (not Picking) that terminates the flow.
+  - **Pre-condition `COMPLETED`:** The task is already complete. The service does nothing (nothing to cancel).
+  - **No task found:** If no picking task exists for that order, the service does nothing (it was already cancelled or was never created).
+  - **Idempotency:** The event can arrive multiple times without side effects.

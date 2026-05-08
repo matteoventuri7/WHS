@@ -185,6 +185,7 @@ The second input was empirical: starting from the domain knowledge inherited fro
 - **Iteration 4.** Added Fluent Bit + OpenObserve + Kafka UI to satisfy ASR-5 (observability) — a capability entirely absent in the original project.
 - **Iteration 5.** Added cancellation flow with `CancelPickingTask` event and idempotent consumers, exposing a real exception path.
 - **Iteration 6.** Refactored all core services from a monolithic `AppService` to **CQRS pattern** via `@nestjs/cqrs` (CommandBus + QueryBus), eliminating god-service anti-pattern and enabling per-handler unit testing. *Outcome:* validated Q4 (testability) and Q1 (modifiability — adding a new command is a two-file operation).
+- **Iteration 7.** Implemented real-time dashboard updates via **Server-Sent Events (SSE)**. The frontend exposes an `/api/events` endpoint that connects to Kafka as a consumer, streams domain events directly to the browser, and triggers data re-fetches through the `useRealtimeSSE(topics, fetchFn)` React hook. This replaced the original Socket.IO approach, eliminating per-service WebSocket gateways, reducing dependencies, and simplifying connection management on the client. *Outcome:* validated Q5 (observability — live UI reflects Kafka event stream), and ASR-5 (dashboards are immediately consistent with the event log).
 
 This *grounded* the drivers: each ASR in §2 traces back either to a limitation of the original project or to a concrete iteration of the rework that either failed without it or was simplified by it.
 

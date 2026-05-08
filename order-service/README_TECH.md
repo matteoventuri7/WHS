@@ -1,61 +1,67 @@
 # Order Service Technical Documentation
 
 ## Overview
-L'**Order Service** è il punto di ingresso per gli ordini di spedizione merci (Outbound). Agisce come orchestratore per la validazione di evasibilità di un ordine.
+The **Order Service** is the entry point for outbound merchandise shipment orders. It acts as an orchestrator for order fulfillment validation.
 
-## Tecnologie Core
+## Core Technologies
 - **Framework:** NestJS
 - **Database:** MongoDB (via Mongoose)
 - **Message Broker:** Apache Kafka
 
-## Modello Dati (Schema Mongoose)
-L'entità principale del dominio è l'**Order**:
-- `orderId` (String): ID univoco dell'ordine.
-- `items` (Array di `{ productId, quantity }`): La lista della spesa.
-- `status` (Enum String): Traccia il ciclo di vita (`PENDING`, `SUSPENDED`, `ALLOCATED`, `PICKING_COMPLETED`, `SHIPPED`, `CANCELLED`).
-- `allocations` (Array Libero): Un bucket in cui il microservizio salva le istruzioni esatte su "dove trovare" la merce in magazzino, ricevute dall'Inventory Service in un momento successivo.
+## Data Model (Mongoose Schema)
+The main domain entity is **Order**:
+- `orderId` (String): Unique order ID.
+- `items` (Array of `{ productId, quantity }`): The shopping list.
+- `status` (Enum String): Tracks the lifecycle (`PENDING`, `SUSPENDED`, `ALLOCATED`, `PICKING_COMPLETED`, `SHIPPED`, `CANCELLED`).
+- `allocations` (Array Object): A bucket where the microservice saves exact instructions on "where to find" merchandise in the warehouse, received from the Inventory Service at a later time.
 
-## API REST (Endpoint Controller)
-Il servizio opera sulla porta `3002`:
-- `GET /orders`: Mostra lo stato in tempo reale di tutti gli ordini e del loro Lifecycle (Read Model locale).
-- `POST /orders`: Endpoint transazionale per ricevere una richiesta cliente (es. UI). Immette un nuovo record nel database locale in stato `PENDING` e scatena il flusso Event-Driven.
-- `DELETE /orders/:orderId`: Avvia il flusso di cancellazione di un ordine. Prima di aggiornare il proprio stato, coordina in modo sincrono con il Picking Service.
+## REST API (Endpoint Controller)
+The service operates on port `3002`:
+- `GET /orders`: Shows the real-time status of all orders and their lifecycle (local Read Model).
+- `POST /orders`: Transactional endpoint to receive a customer request (e.g., from UI). Creates a new record in the database in `PENDING` status and triggers the Event-Driven flow.
+- `DELETE /orders/:orderId` or `PATCH /orders/:orderId/cancel`: Initiates the cancellation flow of an order.
 
-## Logica Event-Driven (Consumer e Producer)
+## Event-Driven Logic (Consumer and Producer)
 
-### 1. Inserimento Nuovo Ordine
-L'azione primaria (via API) si traduce in:
-1. Salvataggio su Mongo in stato `PENDING`.
-2. **Emissione Evento:** Produzione verso Kafka di **`OrderPlaced`**. 
-   - Notare che l'Order Service **non sa** e **non chiede** in modo sincrono se c'è stock. Si fida del fatto che un sistema "a valle" (Inventory) reagirà a questo messaggio in differita.
+### 1. New Order Placement
+The primary action (via API) translates to:
+1. Saving to MongoDB in `PENDING` status.
+2. **Event Emission:** Production of **`OrderPlaced`** event to Kafka. 
+   - Note that the Order Service **does not know** and **does not ask synchronously** if there is stock. It trusts that a downstream system (Inventory) will react to this message asynchronously.
 
-### 2. Gestione Coreografica degli Stati (Consumer)
-L'Order Service resta in ascolto del Consumer Group Kafka `order-consumer`. Reagisce ai seguenti eventi, modificando la variabile di stato (`status`) sul proprio database MongoDB per riflettere le mutazioni di dominio.
+### 2. Choreographic State Management (Consumer)
+The Order Service listens to the Kafka consumer group `order-consumer`. It reacts to the following events, modifying the state variable (`status`) in its own MongoDB database to reflect domain mutations.
 
-- **Ascolto evento `InventoryAllocated`**
-  - **Reazione:** Quando riceve l'ok dall'Inventory, aggiorna il proprio stato da PENDING a **ALLOCATED**, associandoci le localizzazioni fisiche ricevute.
-  - **Emissione a valle:** Reagisce a catena emettendo `OrderReadyForPicking`. Passa il rimpallo al Picking Service dicendogli: *"Questa merce è assegnata all'ordine X, il magazziniere può prenderla"*.
+- **Listening to `InventoryAllocated` event**
+  - **Reaction:** When it receives the OK from Inventory, it updates its status from `PENDING` to **`ALLOCATED`**, associating the physical locations received.
+  - **Downstream Emission:** It reactively emits `OrderReadyForPicking`. It passes the baton to the Picking Service saying: *"This merchandise is assigned to order X, the warehouse operator can now pick it"*.
 
-- **Ascolto evento `OutOfStock`**
-  - **Reazione:** Il tentativo di evasione è andato male per colpa di un item mancante in magazzino. L'Ordine transita nello stato **SUSPENDED**. Nessuno nel flusso a valle farà nulla.
+- **Listening to `OutOfStock` event**
+  - **Reaction:** The fulfillment attempt failed because an item is missing from the warehouse. The order transitions to **`SUSPENDED`** status. No one in the downstream flow will take any action.
 
-- **Ascolto evento `ItemStored`** (Evento "Cuore" della reattività)
-  - Questo evento viene sparato passivamente dall'Inventory Service ogni qualvolta un camion fornitore scarica merce (Inbound).
-  - **Reazione:** L'Order Service si "risveglia" selettivamente. Va sul DB a pescare **tutti** gli ordini attualmente in stato `SUSPENDED` (ordinandoli per data). Per ognuno di essi, prova a re-emettere su Kafka il pacchetto **`OrderPlaced`**, come fosse un ordine appena arrivato, sperando che stavolta il magazzino abbia gli articoli a sufficienza.
+- **Listening to `ItemStored` event** (The "Heart" of Reactivity)
+  - This event is fired passively by the Inventory Service whenever a supplier truck offloads merchandise (Inbound).
+  - **Reaction:** The Order Service "wakes up" selectively. It goes to the DB and fetches **all** orders currently in `SUSPENDED` status (sorted by date). For each one, it tries to re-emit the **`OrderPlaced`** package to Kafka, as if it were a newly arrived order, hoping this time the warehouse has sufficient articles.
 
-- **Ascolto evento `ShipmentAssigned`**
-  - **Reazione:** Quando un camion ha fisicamente caricato la merce prelevata nel piazzale del magazzino, aggiorna lo status a **`SHIPPED`**. Questo conclude il ciclo di vita utile tracciato da questo servizio.
+- **Listening to `ShipmentAssigned` event**
+  - **Reaction:** When a truck has physically loaded the picked merchandise in the warehouse yard, it updates the status to **`SHIPPED`**. This concludes the useful lifecycle tracked by this service.
 
-- **Ascolto evento `PickingTaskCompleted`**
-  - **Reazione:** Quando il Picking Service conferma il completamento del task, l'ordine passa da `ALLOCATED` a **`PICKING_COMPLETED`**.
-  - **Effetto sulla UI:** questo stato intermedio impedisce cancellazioni tardive e consente di nascondere subito il bottone di annullamento prima che arrivi `ShipmentAssigned`.
+- **Listening to `PickingTaskCompleted` event**
+  - **Reaction:** When the Picking Service confirms task completion, the order transitions from `ALLOCATED` to **`PICKING_COMPLETED`**.
+  - **UI Effect:** This intermediate status prevents late cancellations and allows hiding the cancel button immediately before `ShipmentAssigned` arrives.
 
-### 3. Cancellazione di un Ordine (Flusso Sincrono)
-La cancellazione avviene tramite una chiamata API REST e **non** transita su Kafka, poiché richiede una risposta immediata (sincrona) prima di procedere.
+### 3. Order Cancellation (Asynchronous Flow via Kafka)
+Cancellation is initiated via a REST API call but uses **Kafka for inter-service communication**, not synchronous HTTP calls.
 
-1. Il service riceve la richiesta di annullamento.
-2. **Coordinamento con Picking Service:** Esegue una chiamata HTTP `POST /picking/tasks/order/:orderId/cancel` verso il Picking Service.
-  - Se l'ordine è in stato `PICKING_COMPLETED`, l'annullamento viene bloccato immediatamente.
-   - Se il Picking Service risponde **`200 OK`**: il picking task è stato annullato con successo (era ancora `PENDING`). L'Order Service procede ad aggiornare lo stato dell'ordine in **`CANCELLED`** su MongoDB.
-   - Se il Picking Service risponde **`400 Bad Request`**: il task è già avanzato (`IN_PROGRESS` o `COMPLETED`) e la cancellazione viene **bloccata**. L'errore viene propagato alla UI con la motivazione.
-3. Se l'ordine non ha ancora un task di picking associato (es. ancora `PENDING` o `SUSPENDED`), viene marcato direttamente come `CANCELLED` senza passare per il Picking Service.
+1. The controller receives the cancellation request (via `DELETE /orders/:orderId` or `PATCH /orders/:orderId/cancel`).
+2. **Local Cancellability Check:** The Order Service verifies if the order is in a cancellable state:
+   - ✅ `PENDING`, `SUSPENDED`, `ALLOCATED` → Cancellable
+   - ❌ `PICKING_COMPLETED`, `SHIPPED`, `CANCELLED` → Not cancellable
+3. **If the order is in `ALLOCATED` status:**
+   - Emits the **`CancelPickingTask`** event to Kafka with payload `{ orderId }`.
+   - The Picking Service receives this event asynchronously and acts accordingly (see Picking Service logic).
+4. **Local State Update and Conclusion Event Emission:**
+   - Updates the order status to **`CANCELLED`** in the local MongoDB.
+   - Emits the **`OrderCancelled`** event to Kafka with payload `{ orderId, previousStatus, allocations }`.
+   - The Inventory Service receives this event and releases stock reservations.
+5. **Immediate Response to Client:** The REST API returns `200 OK` with the updated order, even though the effects (stock release, picking task cancellation) continue in the background asynchronously.
