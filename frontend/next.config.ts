@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
+    // During `next build` in CI, env vars are not available — validation
+    // happens at server startup via src/instrumentation.ts before any request.
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return `http://unset-${name.toLowerCase().replace(/_/g, '-')}`;
+    }
     throw new Error(`Missing required environment variable: ${name}`);
   }
   return value;
