@@ -2,7 +2,9 @@
   "name": "whs-monorepo",
   "private": true,
   "version": "1.0.0",
-  "engines": { "node": "22.22.2" },
+  "engines": {
+    "node": "22.22.2"
+  },
   "workspaces": [
     "simulators/shipping-simulator-service",
     "simulators/picking-simulator-service",
@@ -17,6 +19,7 @@
   "scripts": {
     "test": "npm run test:all",
     "test:all": "npm --workspaces --if-present run test",
+    "test:e2e": "jest --config ./jest.e2e.config.js",
     "docker:start": "docker compose up -d --build",
     "docker:stop": "docker compose down --remove-orphans",
     "docker:restart": "npm run docker:stop && npm run docker:start",
@@ -30,5 +33,11 @@
     "docker:restart:picking-sim": "docker compose up -d --no-deps --build picking-simulator-service",
     "docker:restart:shipping-sim": "docker compose up -d --no-deps --build shipping-simulator-service",
     "docker:clean:db": "npm run docker:stop && docker volume rm whs_inventory_mongodb_data whs_order_mongodb_data whs_picking_mongodb_data whs_shipping_mongodb_data"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "axios": "^1.16.1",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.9"
   }
 }
