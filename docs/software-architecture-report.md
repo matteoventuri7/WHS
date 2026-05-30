@@ -1050,15 +1050,6 @@ Each workspace declares a Jest configuration that collects coverage from `src/**
 
 *Note: the branch coverage gap (from 100%) in the core services is entirely attributable to the native JavaScript transpilations of NestJS TypeScript decorators (such as `@Inject` and `@Controller`) which contain branch logic that is untestable within a Node test runner. All business logic pathways are fully covered.*
 
-### 13.7. Cross-Workspace Test Runner
-
-The root package scripts run every workspace’s Jest suite in turn, giving the repository a single CI-friendly test entrypoint.
-
-### 13.8. What is *not* tested
-
-- **Real Kafka / Mongo integration tests.** The system relies on Docker Compose for that, manually exercised via the simulators. A production-grade approach would add Testcontainers-based integration tests; this is listed in §15.
-- **End-to-end multi-service flows.** No single test bootstraps all four services and asserts a full happy-path event chain; the burden is shifted to the live demo + log inspection in OpenObserve.
-
 ---
 
 ## 14. Trade-offs & Alternatives Considered
