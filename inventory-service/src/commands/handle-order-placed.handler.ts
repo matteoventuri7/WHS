@@ -63,14 +63,17 @@ export class HandleOrderPlacedHandler
           { returnDocument: 'after' },
         );
 
-        if (updatedStock) {
-          allocations.push({
-            productId: reqItem.productId,
-            quantity: toReserve,
-            location: stockDocument.location,
-          });
-          required -= toReserve;
+        if (!updatedStock) {
+          canAllocate = false;
+          break;
         }
+
+        allocations.push({
+          productId: reqItem.productId,
+          quantity: toReserve,
+          location: stockDocument.location,
+        });
+        required -= toReserve;
       }
 
       if (required > 0) {

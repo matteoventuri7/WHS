@@ -182,6 +182,31 @@ describe('Inventory Command & Query Handlers', () => {
         expect.any(Object),
       );
     });
+
+    it('should stop when reservation update is rejected and emit OutOfStock', async () => {
+      mockInventoryModel.findOne.mockResolvedValueOnce({
+        _id: 'id2',
+        productId: 'P4',
+        location: 'A2',
+        quantity: 8,
+        reservedQuantity: 0,
+      });
+      mockInventoryModel.findOneAndUpdate.mockResolvedValueOnce(null);
+
+      await handler.execute(
+        new HandleOrderPlacedCommand('O4', [{ productId: 'P4', quantity: 3 }]),
+      );
+
+      expect(mockInventoryModel.findOneAndUpdate).toHaveBeenCalledTimes(1);
+      expect(mockInventoryModel.updateOne).not.toHaveBeenCalled();
+      expect(mockKafkaClient.emit).toHaveBeenCalledWith('OutOfStock', {
+        orderId: 'O4',
+      });
+      expect(mockKafkaClient.emit).not.toHaveBeenCalledWith(
+        'InventoryAllocated',
+        expect.any(Object),
+      );
+    });
   });
 
   describe('HandleOrderCancelledHandler', () => {
