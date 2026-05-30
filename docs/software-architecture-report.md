@@ -181,7 +181,7 @@ The second input was empirical: starting from the domain knowledge inherited fro
 - **Iteration 0.** Single-service prototype with in-memory state. Used to validate the new technology stack (NestJS + Kafka + Mongoose) and to extend the domain model beyond the picking scope of the prior project.
 - **Iteration 1.** Split into the four core services, expanding from the original two-service picking-only scope to the full warehouse lifecycle. Choreography over Kafka replaced the message-driven approach of the original system. Database-per-service introduced. *Outcome:* validated B1 (bounded contexts) and Q1 (loose coupling).
 - **Iteration 2.** Added simulators to drive the system without manual UI clicks. *Outcome:* validated B4/Q6 (simulability).
-- **Iteration 3.** Observed a startup race condition where multiple consumers subscribed to topics that did not yet exist, occasionally crashing services with `UNKNOWN_TOPIC_OR_PARTITION`. *Outcome:* introduced the **`kafka-init` initialization container** (see ADR-006).
+- **Iteration 3.** Observed a startup race condition where multiple consumers subscribed to topics that did not yet exist, occasionally crashing services with `UNKNOWN_TOPIC_OR_PARTITION`. *Outcome:* introduced the **`kafka-init` initialization container** (see ADR-005).
 - **Iteration 4.** Added Fluent Bit + OpenObserve + Kafka UI to satisfy ASR-5 (observability) — a capability entirely absent in the original project.
 - **Iteration 5.** Added cancellation flow with `CancelPickingTask` event and idempotent consumers, exposing a real exception path.
 - **Iteration 6.** Refactored all core services from a monolithic `AppService` to **CQRS pattern** via `@nestjs/cqrs` (CommandBus + QueryBus), eliminating god-service anti-pattern and enabling per-handler unit testing. *Outcome:* validated Q4 (testability) and Q1 (modifiability — adding a new command is a two-file operation).
@@ -331,7 +331,7 @@ At startup, a dedicated short-lived container creates all 13 topics with `--if-n
 
 All core services depend on `kafka-init` completing successfully before they start.
 
-This eliminates a documented race condition where consumers could subscribe to non-existent topics and crash. See ADR-006 (§14).
+This eliminates a documented race condition where consumers could subscribe to non-existent topics and crash. See ADR-005 (§14).
 
 ### 5.9. Idempotent Consumer (cancellation)
 
@@ -989,7 +989,7 @@ graph TD
     direction BT
         U["<b>Unit Tests</b><br/>(many)<br/>CQRS Handlers<br/>Controllers"]
         B["<b>Bootstrap Tests</b><br/>(few)<br/>main.spec.ts<br/>Wiring"]
-        E2E["<b>E2E Tests</b><br/>(few)<br/>HTTP Smoke<br/>Supertest"]
+        E2E["<b>E2E Tests</b><br/>(few)<br/>HTTP Smoke + full-stack architecture"]
 
         U --- B
         B --- E2E
@@ -1027,9 +1027,9 @@ This validates that the Kafka transport is wired with the correct consumer group
 
 ### 13.4. End-to-End Tests
 
-E2E tests use **supertest** against a fully bootstrapped NestJS app, with the service layer mocked so the suite does not depend on Kafka or Mongo.
+The codebase includes two e2e layers. Service-level e2e tests use **supertest** against a fully bootstrapped NestJS app, with the service layer mocked so the suite does not depend on Kafka or Mongo. In addition, architecture.e2e-spec.ts runs a full-stack architecture e2e scenario: it starts the Docker stack, waits for the services to become healthy, enables the simulators, and verifies cross-service behavior through the live HTTP APIs.
 
-This is enough to validate routing, Nest decorators, status codes, and response shape across a real HTTP stack.
+Together, these validate routing, Nest decorators, status codes, response shape, startup wiring, health endpoints, simulator orchestration, and a real end-to-end deployment path.
 
 ### 13.5. Coverage
 
@@ -1123,49 +1123,43 @@ Single-stage was chosen for simplicity and faster iteration during development. 
 - **Decision.** Use Apache Kafka in KRaft mode. Topics are named after domain events in PascalCase. One partition per topic for the didactic deployment.
 - **Consequences.** Replay is feasible (event-sourcing posture, §4.3). Operational complexity higher than a transient broker. KRaft removes ZooKeeper, limiting moving parts.
 
-### ADR-002 — Code-Level CQRS via `@nestjs/cqrs`
-
-- **Context.** The initial monolithic `AppService` per microservice mixed Kafka event handling, REST business logic, and read queries in a single class, growing into a god-object that hindered testability and readability.
-- **Decision.** Adopt `@nestjs/cqrs` module. Decompose each service into Commands (write operations) and Queries (read operations), each with a dedicated handler class. The controller becomes a thin dispatcher using `CommandBus` and `QueryBus`. Both paths share the same MongoDB — no infrastructural read/write store separation.
-- **Consequences.** Handlers are independently testable (mock only their direct dependencies). Adding a new event listener is a two-file operation (`command.ts` + `handler.ts`). Slightly more boilerplate per use-case, but the canonical file structure (§4.4, Appendix C) makes it predictable. The `CqrsModule` import is required in every `app.module.ts`.
-
-### ADR-003 — Database-per-Service (MongoDB)
+### ADR-002 — Database-per-Service (MongoDB)
 
 - **Context.** Loose coupling driver demands schema independence per bounded context.
 - **Decision.** Four separate Mongo containers, one per service, with isolated credentials and volumes.
 - **Consequences.** No cross-service joins; data duplication in event payloads is accepted (e.g., `allocations` carried in events).
 
-### ADR-004 — Choreography over Orchestration
+### ADR-003 — Choreography over Orchestration
 
 - **Context.** Two reasonable styles for multi-service workflows.
 - **Decision.** Choreography. No orchestrator service.
 - **Consequences.** Pro: each service evolves independently. Con: tracing is harder; mitigated by §11 log aggregation. The cancellation flow is the most complex case and remains tractable thanks to enriched events (`previousStatus`, `allocations`).
 
-### ADR-005 — Cancellation Flow Inversion (HTTP in, Kafka out)
+### ADR-004 — Cancellation Flow Inversion (HTTP in, Kafka out)
 
 - **Context.** Cancellation is initiated by an operator in the UI but must propagate to multiple services.
 - **Decision.** Expose a single cancellation entry point in the Order Service. After the local state transition, emit `CancelPickingTask` and `OrderCancelled` to Kafka. Other services react asynchronously and idempotently.
 - **Consequences.** UX is responsive (synchronous ACK from Order). Side effects are decoupled. Idempotency must be enforced in consumers (cf. §4.8).
 
-### ADR-006 — `kafka-init` Initialization Container
+### ADR-005 — `kafka-init` Initialization Container
 
 - **Context.** Iteration 3 (§3.2) revealed `UNKNOWN_TOPIC_OR_PARTITION` errors when consumers subscribed before topics existed.
 - **Decision.** Introduce a one-shot `kafka-init` container that pre-creates all 13 topics with `--if-not-exists` after Kafka’s healthcheck. All app containers depend on `kafka-init: service_completed_successfully`.
 - **Consequences.** Removes the race condition. Adds one container to the topology. Idempotent across restarts. Adding a new topic now requires a one-line edit to scripts/init-kafka-topics.sh.
 
-### ADR-007 — Fluentd Docker Logging Driver as the Log Transport
+### ADR-006 — Fluentd Docker Logging Driver as the Log Transport
 
 - **Context.** Observability driver requires centralized logs without burdening application code.
 - **Decision.** Use Docker’s `fluentd` log driver on every core service, with a per-service `tag`. Fluent Bit terminates the connection.
 - **Consequences.** Application code stays log-library-agnostic. A Fluent Bit outage does not block applications (driver is `async` with retries).
 
-### ADR-008 — Simulators as External Drivers
+### ADR-007 — Simulators as External Drivers
 
 - **Context.** Simulability driver requires unattended end-to-end execution.
 - **Decision.** Build four separate simulator services that drive the system exclusively through their public REST contracts, not through internal hooks.
 - **Consequences.** Simulators can be replaced or scaled independently. Core services remain free of demo-specific code paths.
 
-### ADR-009 — Server-Sent Events (SSE) over WebSocket/Socket.IO
+### ADR-008 — Server-Sent Events (SSE) over WebSocket/Socket.IO
 
 - **Context.** The original real-time push mechanism used **Socket.IO** (`@nestjs/websockets` + `@nestjs/platform-socket.io` on the backend, `socket.io-client` on the frontend). Each core microservice exposed its own WebSocket gateway, and the frontend opened four independent Socket.IO connections — one per service — to receive domain events. This introduced several pain points: (1) **four extra dependencies** (`@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io`, `socket.io-client`) across the stack; (2) **per-service gateway boilerplate** duplicated in every microservice; (3) the frontend needed to manage multiple persistent connections with independent reconnection logic; (4) Socket.IO's bidirectional capabilities were unused — the UI only *received* events, never *sent* them through the socket.
 - **Decision.** Replace all Socket.IO gateways with a single **Server-Sent Events (SSE)** endpoint at `/api/events` in the Next.js frontend. This endpoint connects to Kafka as a consumer (subscribing to all 13 domain topics), and streams each event to the browser as an SSE message. On the client side, the native `EventSource` API replaces `socket.io-client`, wrapped in a custom `useRealtimeSSE(topics, fetchFn)` React hook that filters events by topic and triggers data re-fetches.
@@ -1175,6 +1169,12 @@ Single-stage was chosen for simplicity and faster iteration during development. 
   - **Native browser API:** `EventSource` is built into every modern browser, requires no polyfill, and handles reconnection automatically with exponential backoff.
   - **Unidirectional by design:** SSE enforces the server→client direction, which matches the actual data flow (Kafka events → UI refresh). The bidirectional overhead of WebSocket/Socket.IO was unnecessary.
   - **Trade-off — no client→server push:** if a future feature requires client-initiated real-time messages (e.g., collaborative editing, cursor sharing), SSE alone would be insufficient and WebSocket would need to be reintroduced for that specific use-case. This is acceptable given the current unidirectional requirement.
+
+### ADR-009 — Code-Level CQRS via `@nestjs/cqrs`
+
+- **Context.** The initial monolithic `AppService` per microservice mixed Kafka event handling, REST business logic, and read queries in a single class, growing into a god-object that hindered testability and readability.
+- **Decision.** Adopt `@nestjs/cqrs` module. Decompose each service into Commands (write operations) and Queries (read operations), each with a dedicated handler class. The controller becomes a thin dispatcher using `CommandBus` and `QueryBus`. Both paths share the same MongoDB — no infrastructural read/write store separation.
+- **Consequences.** Handlers are independently testable (mock only their direct dependencies). Adding a new event listener is a two-file operation (`command.ts` + `handler.ts`). Slightly more boilerplate per use-case, but the canonical file structure (§4.4, Appendix C) makes it predictable. The `CqrsModule` import is required in every `app.module.ts`.
 
 ---
 
@@ -1210,21 +1210,21 @@ WHS represents a deliberate and measurable architectural evolution over the proj
 
 **Loose coupling and failure isolation.** The original message-driven design coupled the picking handler tightly to the picking service: a failure in one stalled the other. By replacing direct message passing with a **durable Kafka event log** and **choreography-based coordination**, WHS achieves true failure isolation: each service can crash and recover independently, consuming missed events on restart, with no data loss and no synchronous dependency on any peer.
 
-**Scalability via database-per-service.** The shared database of the original project was both a coupling point and a scaling bottleneck — any schema change or load spike on one component affected the other. The **database-per-service** pattern (ADR-003) eliminates both problems: each service owns its read model, evolves its schema independently, and can be scaled without interference.
+**Scalability via database-per-service.** The shared database of the original project was both a coupling point and a scaling bottleneck — any schema change or load spike on one component affected the other. The **database-per-service** pattern (ADR-002) eliminates both problems: each service owns its read model, evolves its schema independently, and can be scaled without interference.
 
-**Testability.** The original codebase concentrated logic in a small number of large components, making isolated unit testing difficult. The **code-level CQRS** refactoring (ADR-002) decomposed these into focused, single-responsibility handlers, each testable with a handful of mocked dependencies and no framework bootstrapping overhead. The result is a four-layer test pyramid (unit → bootstrap → gateway → e2e) across every service, compared to the minimal test coverage of the prior project.
+**Testability.** The original codebase concentrated logic in a small number of large components, making isolated unit testing difficult. The **code-level CQRS** refactoring (ADR-009) decomposed these into focused, single-responsibility handlers, each testable with a handful of mocked dependencies and no framework bootstrapping overhead. The result is a four-layer test pyramid (unit → bootstrap → gateway → e2e) across every service, compared to the minimal test coverage of the prior project.
 
-**Observability.** The original system had no centralized log aggregation. WHS introduces a full declarative logging pipeline — Docker `fluentd` driver → Fluent Bit → OpenObserve — that aggregates structured logs from every container without modifying a single line of application code. The `fluentd` logging driver (ADR-007) acts as an architectural seam: once in place, the pipeline is language- and framework-agnostic.
+**Observability.** The original system had no centralized log aggregation. WHS introduces a full declarative logging pipeline — Docker `fluentd` driver → Fluent Bit → OpenObserve — that aggregates structured logs from every container without modifying a single line of application code. The `fluentd` logging driver (ADR-006) acts as an architectural seam: once in place, the pipeline is language- and framework-agnostic.
 
 ### 17.2. Lessons Learned
 
-1. **Startup ordering is part of the architecture.** The race condition that motivated the `kafka-init` container (ADR-006) is not a bug — it is a property of any system that subscribes to topics that may not yet exist. Treating initialization as an explicit pattern (using Docker Compose's `service_completed_successfully` condition) avoided the temptation of `sleep` hacks and produced a fully declarative startup contract.
+1. **Startup ordering is part of the architecture.** The race condition that motivated the `kafka-init` container (ADR-005) is not a bug — it is a property of any system that subscribes to topics that may not yet exist. Treating initialization as an explicit pattern (using Docker Compose's `service_completed_successfully` condition) avoided the temptation of `sleep` hacks and produced a fully declarative startup contract.
 
-2. **Choreography pays back the moment you cancel.** The cancellation flow could easily have grown into a multi-call synchronous monster. By inverting it into an HTTP entry point followed by Kafka fan-out (ADR-005), each service's code remained small and locally reasoned. The cost — global tracing — was repaid by the centralized log aggregation in §11.
+2. **Choreography pays back the moment you cancel.** The cancellation flow could easily have grown into a multi-call synchronous monster. By inverting it into an HTTP entry point followed by Kafka fan-out (ADR-004), each service's code remained small and locally reasoned. The cost — global tracing — was repaid by the centralized log aggregation in §11.
 
-3. **Observability does not have to be expensive.** A 50-line `fluent-bit.conf` and a single OpenObserve container were enough to satisfy ASR-5 in full for the logs pillar. The architectural lever was the `fluentd` Docker logging driver (ADR-007): once that contract was in place, application code remained log-library agnostic and could focus on domain logic.
+3. **Observability does not have to be expensive.** A 50-line `fluent-bit.conf` and a single OpenObserve container were enough to satisfy ASR-5 in full for the logs pillar. The architectural lever was the `fluentd` Docker logging driver (ADR-006): once that contract was in place, application code remained log-library agnostic and could focus on domain logic.
 
-4. **Code-level CQRS eliminates god-services early.** Introducing `@nestjs/cqrs` (ADR-002) decomposed what were growing `AppService` monoliths into focused, single-responsibility handlers. The thin-controller pattern makes the system more navigable: a developer reading `app.controller.ts` sees the full routing table, and each handler file is self-contained. The additional boilerplate (command class + handler class per operation) is offset by dramatically simpler unit tests, since each handler is instantiated with only its own dependencies.
+4. **Code-level CQRS eliminates god-services early.** Introducing `@nestjs/cqrs` (ADR-009) decomposed what were growing `AppService` monoliths into focused, single-responsibility handlers. The thin-controller pattern makes the system more navigable: a developer reading `app.controller.ts` sees the full routing table, and each handler file is self-contained. The additional boilerplate (command class + handler class per operation) is offset by dramatically simpler unit tests, since each handler is instantiated with only its own dependencies.
 
 5. **The frontend as API Gateway makes deployment topology-agnostic.** The original architecture hardcoded `localhost:300x` URLs in the frontend client code, coupling the UI to a specific deployment topology and making production deployment impossible without code changes. By moving to server-side Next.js rewrites with environment-variable-driven backend URLs, the same frontend build now works unchanged across local development (`localhost`), Docker Compose (`http://inventory-service:3001`), and Kubernetes (`http://inventory-service.whs.svc.cluster.local:3001`). The single exposed port (3000) also simplifies reverse-proxy and load-balancer configuration in production.
 

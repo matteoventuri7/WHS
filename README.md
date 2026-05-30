@@ -207,11 +207,11 @@ The frontend stays eventually consistent with the domain state—no polling requ
 
 ## Testing
 
-All services follow **Jest** with a three-tier pyramid:
+All services follow **Jest** with a three-tier pyramid, plus a repo-root full-stack architecture e2e harness:
 
 - **Unit tests** (mocked Kafka/Mongo): `npm run test`
 - **Bootstrap tests** (`main.spec.ts`): Kafka transport wiring
-- **E2E tests** (supertest): HTTP contracts
+- **E2E tests** (supertest): service HTTP contracts and the full-stack architecture scenario in `test/architecture.e2e-spec.ts`
 
 ```bash
 # Run all tests across the monorepo
