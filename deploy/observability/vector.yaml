@@ -31,7 +31,6 @@ transforms:
         # Merge parsed payload to root if successful
         . = merge!(., parsed)
       }
-      
       # Keep metadata
       ._kafka_topic = .topic
       ._kafka_partition = .partition
