@@ -1,0 +1,54 @@
+sources:
+  kafka_input:
+    type: kafka
+    bootstrap_servers: kafka:9092
+    group_id: vector_openobserve_consumer
+    auto_offset_reset: earliest
+    topics:
+      - OrderPlaced
+      - OrderCancelled
+      - OrderReadyForPicking
+      - OrderSuspended
+      - InventoryAllocated
+      - OutOfStock
+      - ItemStored
+      - PickingTaskCreated
+      - PickingTaskCompleted
+      - CancelPickingTask
+      - ShipmentAssigned
+      - VehicleDispatched
+      - VehicleRegistered
+
+transforms:
+  parse_json:
+    type: remap
+    inputs:
+      - kafka_input
+    source: |
+      # Parse the Kafka JSON message payload, or default to an empty object
+      parsed = parse_json(.message) ?? {}
+      
+      # Merge parsed payload to root and keep metadata
+      . = merge(., parsed)
+      ._kafka_topic = .topic
+      ._kafka_partition = .partition
+      ._kafka_offset = .offset
+
+      # Remove the raw message to avoid indexing duplicates
+      del(.message)
+
+sinks:
+  openobserve:
+    type: http
+    inputs:
+      - parse_json
+    uri: "http://openobserve:5080/api/default/kafka_events/_json"
+    method: post
+    auth:
+      strategy: basic
+      user: "root@example.com"
+      password: "Complexpass#123"
+    compression: gzip
+    encoding:
+      codec: json
+      timestamp_format: rfc3339

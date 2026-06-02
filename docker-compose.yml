@@ -67,6 +67,17 @@ services:
       openobserve:
         condition: service_started
 
+  vector:
+    image: timberio/vector:latest-alpine
+    container_name: vector
+    volumes:
+      - ./deploy/observability/vector.yaml:/etc/vector/vector.yaml:ro
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      openobserve:
+        condition: service_started
+
   inventory-db:
     image: mongo:latest
     ports:
