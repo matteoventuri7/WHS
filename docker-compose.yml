@@ -70,9 +70,9 @@ services:
   vector:
     image: timberio/vector:latest-alpine
     container_name: vector
-    command: ["--config", "/etc/vector/vector.yaml"]
+    command: ["--config", "/etc/vector/vector-custom.yaml"]
     volumes:
-      - ./deploy/observability/vector.yaml:/etc/vector/vector.yaml:z
+      - ./deploy/observability/vector.yaml:/etc/vector/vector-custom.yaml:ro
     depends_on:
       kafka-init:
         condition: service_completed_successfully
