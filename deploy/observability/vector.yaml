@@ -26,10 +26,13 @@ transforms:
       - kafka_input
     source: |
       # Parse the Kafka JSON message payload, or default to an empty object
-      parsed = parse_json(.message) ?? {}
+      parsed, err = parse_json(.message)
+      if err == null {
+        # Merge parsed payload to root if successful
+        . = merge!(., parsed)
+      }
       
-      # Merge parsed payload to root and keep metadata
-      . = merge(., parsed)
+      # Keep metadata
       ._kafka_topic = .topic
       ._kafka_partition = .partition
       ._kafka_offset = .offset
